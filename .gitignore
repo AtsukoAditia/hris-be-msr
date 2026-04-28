@@ -28,3 +28,12 @@ Homestead.json
 .env.production
 .phpactor.json
 auth.json
+
+# Additional Laravel ignores
+bootstrap/cache/*.php
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/logs/*
+database/database.sqlite
+database/migrations/
