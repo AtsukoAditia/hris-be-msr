@@ -43,7 +43,16 @@ Route::prefix('v1')->group(function () {
         });
 
         // Employees
-        Route::apiResource('/employees', EmployeeController::class);
+        // Hanya admin & hr yang boleh list/show/create/update
+        Route::middleware('role:admin,hr')->group(function () {
+            Route::apiResource('/employees', EmployeeController::class)->except(['destroy']);
+        });
+
+        // Hanya admin yang boleh delete
+        Route::middleware('role:admin')->group(function () {
+            Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy'])
+                ->name('employees.destroy');
+        });
 
         // Attendance
         Route::get('/attendance/my', [AttendanceController::class, 'my']);
