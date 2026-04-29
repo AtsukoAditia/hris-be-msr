@@ -46,8 +46,16 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('/employees', EmployeeController::class);
 
         // Attendance
-        Route::get('/attendance', [AttendanceController::class, 'index']);
+        Route::get('/attendance/my', [AttendanceController::class, 'my']);
         Route::get('/attendance/today', [AttendanceController::class, 'today']);
+        Route::post('/attendance/check-in', [AttendanceController::class, 'checkIn']);
+        Route::post('/attendance/check-out', [AttendanceController::class, 'checkOut']);
+        Route::post('/attendance/check-in/qr', [AttendanceController::class, 'checkInQr']);
+        Route::post('/attendance/check-out/qr', [AttendanceController::class, 'checkOutQr']);
+        Route::get('/attendance/employee/{employeeId}', [AttendanceController::class, 'getByEmployee']);
+        Route::get('/attendance/export', [AttendanceController::class, 'export']);
+        Route::get('/attendance/{id}', [AttendanceController::class, 'show'])->whereNumber('id');
+        Route::get('/attendance', [AttendanceController::class, 'index']);
         Route::post('/attendance/check-in', [AttendanceController::class, 'checkIn']);
         Route::post('/attendance/check-out', [AttendanceController::class, 'checkOut']);
         Route::get('/attendance/{id}', [AttendanceController::class, 'show']);
