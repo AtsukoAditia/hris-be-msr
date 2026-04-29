@@ -48,40 +48,45 @@ Route::prefix('v1')->group(function () {
             Route::apiResource('/employees', EmployeeController::class)->except(['destroy']);
         });
 
-        // Hanya admin yang boleh delete
+        // Hanya admin yang boleh delete employee
         Route::middleware('role:admin')->group(function () {
             Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy'])
                 ->name('employees.destroy');
         });
 
-        // Attendance
-        Route::get('/attendance/my', [AttendanceController::class, 'my']);
-        Route::get('/attendance/today', [AttendanceController::class, 'today']);
-        Route::post('/attendance/check-in', [AttendanceController::class, 'checkIn']);
-        Route::post('/attendance/check-out', [AttendanceController::class, 'checkOut']);
-        Route::post('/attendance/check-in/qr', [AttendanceController::class, 'checkInQr']);
-        Route::post('/attendance/check-out/qr', [AttendanceController::class, 'checkOutQr']);
-        Route::get('/attendance/employee/{employeeId}', [AttendanceController::class, 'getByEmployee']);
-        Route::get('/attendance/export', [AttendanceController::class, 'export']);
-        Route::get('/attendance/{id}', [AttendanceController::class, 'show'])->whereNumber('id');
-        Route::get('/attendance', [AttendanceController::class, 'index']);
-        Route::post('/attendance/check-in', [AttendanceController::class, 'checkIn']);
-        Route::post('/attendance/check-out', [AttendanceController::class, 'checkOut']);
-        Route::get('/attendance/{id}', [AttendanceController::class, 'show']);
+        // Attendance - self service untuk user yang memiliki profil employee
+        Route::middleware('role:admin,hr,manager,employee')->group(function () {
+            Route::get('/attendance/my', [AttendanceController::class, 'my']);
+            Route::get('/attendance/today', [AttendanceController::class, 'today']);
+            Route::post('/attendance/check-in', [AttendanceController::class, 'checkIn']);
+            Route::post('/attendance/check-out', [AttendanceController::class, 'checkOut']);
+        });
+
+        // Attendance - monitoring dan manajemen untuk admin/hr
+        Route::middleware('role:admin,hr')->group(function () {
+            Route::get('/attendance', [AttendanceController::class, 'index']);
+            Route::get('/attendance/{attendance}', [AttendanceController::class, 'show']);
+            Route::post('/attendance', [AttendanceController::class, 'store']);
+            Route::put('/attendance/{attendance}', [AttendanceController::class, 'update']);
+            Route::delete('/attendance/{attendance}', [AttendanceController::class, 'destroy']);
+        });
 
         // Shifts
         Route::apiResource('/shifts', ShiftController::class);
 
         // Leaves
-        Route::get('/leaves', [LeaveController::class, 'index']);
+        Route::get('/leaves/my', [LeaveController::class, 'my']);
         Route::post('/leaves', [LeaveController::class, 'store']);
-        Route::get('/leaves/{id}', [LeaveController::class, 'show']);
-        Route::put('/leaves/{id}/approve', [LeaveController::class, 'approve']);
-        Route::put('/leaves/{id}/reject', [LeaveController::class, 'reject']);
-        Route::delete('/leaves/{id}', [LeaveController::class, 'destroy']);
+        Route::get('/leaves', [LeaveController::class, 'index']);
+        Route::get('/leaves/{leave}', [LeaveController::class, 'show']);
+        Route::post('/leaves/{leave}/approve', [LeaveController::class, 'approve']);
+        Route::post('/leaves/{leave}/reject', [LeaveController::class, 'reject']);
+        Route::delete('/leaves/{leave}', [LeaveController::class, 'destroy']);
 
         // Reports
         Route::get('/reports/attendance', [ReportController::class, 'attendance']);
         Route::get('/reports/leave', [ReportController::class, 'leave']);
+        Route::get('/reports/payroll', [ReportController::class, 'payroll']);
+        Route::get('/reports/dashboard', [ReportController::class, 'dashboard']);
     });
 });

@@ -47,3 +47,4 @@ database/migrations/
 *~
 .vscode/
 .idea/
+composer.lock
