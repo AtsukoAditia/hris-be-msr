@@ -4,37 +4,45 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\Employee;
-use Illuminate\Http\Request;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class EmployeeController extends Controller
 {
-    /**
-     * Display a listing of employees.
-     */
     public function index(Request $request): JsonResponse
     {
         $query = Employee::with(['user', 'shift']);
 
-        // Filter by department if provided
-        if ($request->has('department_id')) {
-            $query->where('department_id', $request->department_id);
+        if ($request->filled('department')) {
+            $query->where('department', $request->department);
         }
 
-        // Filter by status if provided
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
+        if ($request->filled('status')) {
+            $query->where('is_active', $request->status === 'active');
         }
 
-        // Search by name or NIK
-        if ($request->has('search')) {
-            $query->where(function($q) use ($request) {
-                $q->where('full_name', 'like', '%' . $request->search . '%')
-                  ->orWhere('nik', 'like', '%' . $request->search . '%');
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('employee_number', 'like', '%' . $search . '%')
+                  ->orWhere('nik', 'like', '%' . $search . '%')
+                  ->orWhere('department', 'like', '%' . $search . '%')
+                  ->orWhere('position', 'like', '%' . $search . '%')
+                  ->orWhereHas('user', function ($userQuery) use ($search) {
+                      $userQuery->where('name', 'like', '%' . $search . '%')
+                                ->orWhere('email', 'like', '%' . $search . '%');
+                  });
             });
         }
 
-        $employees = $query->paginate($request->get('per_page', 15));
+        $employees = $query->latest()->paginate($request->get('per_page', 15));
+        $employees->getCollection()->transform(function ($employee) {
+            $employee->formatted_employee_number = $this->formatEmployeeNumber($employee->department, $employee->user_id, $employee->employee_number);
+            return $employee;
+        });
 
         return response()->json([
             'success' => true,
@@ -42,73 +50,127 @@ class EmployeeController extends Controller
         ]);
     }
 
-    /**
-     * Store a newly created employee.
-     */
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'nik' => 'required|unique:employees,nik',
-            'full_name' => 'required|string|max:255',
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'nik' => 'required|string|max:50|unique:employees,nik',
             'position' => 'required|string|max:255',
             'department' => 'required|string|max:255',
-            'shift_id' => 'nullable|exists:shifts,id',
             'phone' => 'nullable|string|max:20',
             'address' => 'nullable|string',
             'join_date' => 'required|date',
+            'role' => 'required|string|in:admin,hr,manager,employee',
+            'status' => 'required|string|in:active,inactive',
         ]);
 
-        $employee = Employee::create($validated);
+        $result = DB::transaction(function () use ($validated) {
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => Hash::make('password'),
+                'role' => $validated['role'],
+                'is_active' => $validated['status'] === 'active',
+            ]);
+
+            $rawEmployeeNumber = $this->generateEmployeeNumber();
+
+            $employee = Employee::create([
+                'user_id' => $user->id,
+                'employee_number' => $rawEmployeeNumber,
+                'nik' => $validated['nik'],
+                'phone' => $validated['phone'] ?? null,
+                'address' => $validated['address'] ?? null,
+                'department' => $validated['department'],
+                'position' => $validated['position'],
+                'join_date' => $validated['join_date'],
+                'is_active' => $validated['status'] === 'active',
+            ]);
+
+            $employee = $employee->load(['user', 'shift']);
+            $employee->formatted_employee_number = $this->formatEmployeeNumber($employee->department, $employee->user_id, $employee->employee_number);
+
+            return $employee;
+        });
 
         return response()->json([
             'success' => true,
             'message' => 'Employee created successfully',
-            'data' => $employee->load(['user', 'shift']),
+            'data' => $result,
         ], 201);
     }
 
-    /**
-     * Display the specified employee.
-     */
-    public function show(Employee $employee): JsonResponse
+    public function show(string $id): JsonResponse
     {
+        $employee = Employee::with(['user', 'shift'])->findOrFail($id);
+        $employee->formatted_employee_number = $this->formatEmployeeNumber($employee->department, $employee->user_id, $employee->employee_number);
+
         return response()->json([
             'success' => true,
-            'data' => $employee->load(['user', 'shift']),
+            'data' => $employee,
         ]);
     }
 
-    /**
-     * Update the specified employee.
-     */
-    public function update(Request $request, Employee $employee): JsonResponse
+    public function update(Request $request, string $id): JsonResponse
     {
+        $employee = Employee::with('user')->findOrFail($id);
+
         $validated = $request->validate([
-            'full_name' => 'sometimes|string|max:255',
-            'position' => 'sometimes|string|max:255',
-            'department' => 'sometimes|string|max:255',
-            'shift_id' => 'nullable|exists:shifts,id',
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $employee->user_id,
+            'nik' => 'required|string|max:50|unique:employees,nik,' . $employee->id,
+            'position' => 'required|string|max:255',
+            'department' => 'required|string|max:255',
             'phone' => 'nullable|string|max:20',
             'address' => 'nullable|string',
-            'status' => 'sometimes|in:active,inactive',
+            'join_date' => 'required|date',
+            'role' => 'required|string|in:admin,hr,manager,employee',
+            'status' => 'required|string|in:active,inactive',
         ]);
 
-        $employee->update($validated);
+        $result = DB::transaction(function () use ($employee, $validated) {
+            $employee->user->update([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'role' => $validated['role'],
+                'is_active' => $validated['status'] === 'active',
+            ]);
+
+            $employee->update([
+                'nik' => $validated['nik'],
+                'phone' => $validated['phone'] ?? null,
+                'address' => $validated['address'] ?? null,
+                'department' => $validated['department'],
+                'position' => $validated['position'],
+                'join_date' => $validated['join_date'],
+                'is_active' => $validated['status'] === 'active',
+            ]);
+
+            $freshEmployee = $employee->fresh(['user', 'shift']);
+            $freshEmployee->formatted_employee_number = $this->formatEmployeeNumber($freshEmployee->department, $freshEmployee->user_id, $freshEmployee->employee_number);
+
+            return $freshEmployee;
+        });
 
         return response()->json([
             'success' => true,
             'message' => 'Employee updated successfully',
-            'data' => $employee->load(['user', 'shift']),
+            'data' => $result,
         ]);
     }
 
-    /**
-     * Remove the specified employee.
-     */
-    public function destroy(Employee $employee): JsonResponse
+    public function destroy(string $id): JsonResponse
     {
-        $employee->delete();
+        $employee = Employee::with('user')->findOrFail($id);
+
+        DB::transaction(function () use ($employee) {
+            if ($employee->user) {
+                $employee->user->delete();
+            }
+
+            $employee->delete();
+        });
 
         return response()->json([
             'success' => true,
@@ -116,23 +178,22 @@ class EmployeeController extends Controller
         ]);
     }
 
-    /**
-     * Get current user's employee profile.
-     */
-    public function profile(Request $request): JsonResponse
+    private function generateEmployeeNumber(): string
     {
-        $employee = $request->user()->employee()->with('shift')->first();
+        do {
+            $employeeNumber = str_pad((string) random_int(0, 99999), 5, '0', STR_PAD_LEFT);
+        } while (Employee::where('employee_number', $employeeNumber)->exists());
 
-        if (!$employee) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Employee profile not found',
-            ], 404);
-        }
+        return $employeeNumber;
+    }
 
-        return response()->json([
-            'success' => true,
-            'data' => $employee,
-        ]);
+    private function formatEmployeeNumber(?string $department, ?int $userId, ?string $employeeNumber): string
+    {
+        $prefix = strtoupper(substr(preg_replace('/[^A-Za-z]/', '', (string) $department), 0, 2));
+        $prefix = $prefix !== '' ? $prefix : 'EM';
+        $userIdPart = $userId ? (string) $userId : '';
+        $employeeNumberPart = $employeeNumber ? str_pad((string) $employeeNumber, 5, '0', STR_PAD_LEFT) : '00000';
+
+        return $prefix . '-' . $userIdPart . $employeeNumberPart;
     }
 }
