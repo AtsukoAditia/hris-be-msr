@@ -31,7 +31,8 @@ class AttendanceController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $attendances,
+            'message' => 'Data absensi berhasil diambil.',
+            'data'    => $attendances,
         ]);
     }
 
@@ -42,8 +43,8 @@ class AttendanceController extends Controller
         if (!$employee) {
             return response()->json([
                 'success' => false,
-                'message' => 'Employee profile not found for authenticated user',
-                'data' => [],
+                'message' => 'Profil karyawan tidak ditemukan untuk akun ini.',
+                'data'    => [],
             ], 404);
         }
 
@@ -60,7 +61,8 @@ class AttendanceController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $attendances,
+            'message' => 'Riwayat absensi berhasil diambil.',
+            'data'    => $attendances,
         ]);
     }
 
@@ -71,8 +73,8 @@ class AttendanceController extends Controller
         if (!$employee) {
             return response()->json([
                 'success' => false,
-                'message' => 'Employee profile not found for authenticated user',
-                'data' => null,
+                'message' => 'Profil karyawan tidak ditemukan untuk akun ini.',
+                'data'    => null,
             ], 404);
         }
 
@@ -83,7 +85,8 @@ class AttendanceController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $attendance ? $this->transformAttendance($attendance) : null,
+            'message' => $attendance ? 'Absensi hari ini ditemukan.' : 'Belum ada absensi hari ini.',
+            'data'    => $attendance ? $this->transformAttendance($attendance) : null,
         ]);
     }
 
@@ -93,7 +96,8 @@ class AttendanceController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $this->transformAttendance($attendance),
+            'message' => 'Detail absensi berhasil diambil.',
+            'data'    => $this->transformAttendance($attendance),
         ]);
     }
 
@@ -104,14 +108,14 @@ class AttendanceController extends Controller
         if (!$employee) {
             return response()->json([
                 'success' => false,
-                'message' => 'Employee profile not found for authenticated user',
+                'message' => 'Profil karyawan tidak ditemukan untuk akun ini.',
             ], 404);
         }
 
         $validated = $request->validate([
-            'latitude' => 'nullable|numeric',
+            'latitude'  => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
-            'notes' => 'nullable|string',
+            'notes'     => 'nullable|string|max:500',
         ]);
 
         $existingAttendance = Attendance::where('employee_id', $employee->id)
@@ -121,28 +125,28 @@ class AttendanceController extends Controller
         if ($existingAttendance && $existingAttendance->check_in_time) {
             return response()->json([
                 'success' => false,
-                'message' => 'You have already checked in today',
-                'data' => $this->transformAttendance($existingAttendance),
+                'message' => 'Anda sudah melakukan check-in hari ini.',
+                'data'    => $this->transformAttendance($existingAttendance),
             ], 422);
         }
 
-        $attendance = $existingAttendance ?: new Attendance();
-        $attendance->employee_id = $employee->id;
-        $attendance->shift_id = $employee->shift?->id;
-        $attendance->attendance_date = today();
-        $attendance->check_in_time = now();
-        $attendance->check_in_latitude = $validated['latitude'] ?? null;
+        $attendance                     = $existingAttendance ?: new Attendance();
+        $attendance->employee_id        = $employee->id;
+        $attendance->shift_id           = $employee->shift?->id;
+        $attendance->attendance_date    = today();
+        $attendance->check_in_time      = now();
+        $attendance->check_in_latitude  = $validated['latitude'] ?? null;
         $attendance->check_in_longitude = $validated['longitude'] ?? null;
-        $attendance->status = 'present';
-        $attendance->note = $validated['notes'] ?? $attendance->note;
+        $attendance->status             = 'present';
+        $attendance->note               = $validated['notes'] ?? $attendance->note;
         $attendance->save();
 
         $attendance->load(['shift']);
 
         return response()->json([
             'success' => true,
-            'message' => 'Check-in successful',
-            'data' => $this->transformAttendance($attendance),
+            'message' => 'Check-in berhasil.',
+            'data'    => $this->transformAttendance($attendance),
         ]);
     }
 
@@ -153,14 +157,14 @@ class AttendanceController extends Controller
         if (!$employee) {
             return response()->json([
                 'success' => false,
-                'message' => 'Employee profile not found for authenticated user',
+                'message' => 'Profil karyawan tidak ditemukan untuk akun ini.',
             ], 404);
         }
 
         $validated = $request->validate([
-            'latitude' => 'nullable|numeric',
+            'latitude'  => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
-            'notes' => 'nullable|string',
+            'notes'     => 'nullable|string|max:500',
         ]);
 
         $attendance = Attendance::where('employee_id', $employee->id)
@@ -170,30 +174,30 @@ class AttendanceController extends Controller
         if (!$attendance || !$attendance->check_in_time) {
             return response()->json([
                 'success' => false,
-                'message' => 'You must check in before checking out',
+                'message' => 'Anda harus check-in terlebih dahulu sebelum check-out.',
             ], 422);
         }
 
         if ($attendance->check_out_time) {
             return response()->json([
                 'success' => false,
-                'message' => 'You have already checked out today',
-                'data' => $this->transformAttendance($attendance),
+                'message' => 'Anda sudah melakukan check-out hari ini.',
+                'data'    => $this->transformAttendance($attendance),
             ], 422);
         }
 
-        $attendance->check_out_time = now();
-        $attendance->check_out_latitude = $validated['latitude'] ?? null;
+        $attendance->check_out_time      = now();
+        $attendance->check_out_latitude  = $validated['latitude'] ?? null;
         $attendance->check_out_longitude = $validated['longitude'] ?? null;
-        $attendance->note = $validated['notes'] ?? $attendance->note;
+        $attendance->note                = $validated['notes'] ?? $attendance->note;
         $attendance->save();
 
         $attendance->load(['shift']);
 
         return response()->json([
             'success' => true,
-            'message' => 'Check-out successful',
-            'data' => $this->transformAttendance($attendance),
+            'message' => 'Check-out berhasil.',
+            'data'    => $this->transformAttendance($attendance),
         ]);
     }
 
@@ -226,7 +230,8 @@ class AttendanceController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $attendances,
+            'message' => 'Data absensi karyawan berhasil diambil.',
+            'data'    => $attendances,
         ]);
     }
 
@@ -234,7 +239,7 @@ class AttendanceController extends Controller
     {
         return response()->json([
             'success' => false,
-            'message' => 'Attendance export is not implemented yet',
+            'message' => 'Fitur export absensi belum tersedia.',
         ], 501);
     }
 
@@ -252,30 +257,30 @@ class AttendanceController extends Controller
     private function transformAttendance(Attendance $attendance): array
     {
         return [
-            'id' => $attendance->id,
-            'employee_id' => $attendance->employee_id,
-            'shift_id' => $attendance->shift_id,
-            'attendance_date' => optional($attendance->attendance_date)->format('Y-m-d'),
-            'date' => optional($attendance->attendance_date)->format('Y-m-d'),
-            'check_in' => optional($attendance->check_in_time)?->toDateTimeString(),
-            'check_out' => optional($attendance->check_out_time)?->toDateTimeString(),
-            'check_in_time' => optional($attendance->check_in_time)?->format('H:i:s'),
-            'check_out_time' => optional($attendance->check_out_time)?->format('H:i:s'),
-            'check_in_lat' => $attendance->check_in_latitude,
-            'check_in_lng' => $attendance->check_in_longitude,
-            'check_out_lat' => $attendance->check_out_latitude,
-            'check_out_lng' => $attendance->check_out_longitude,
-            'status' => $attendance->status,
-            'notes' => $attendance->note,
-            'overtime_hours' => $attendance->overtime_minutes,
-            'employee' => $attendance->relationLoaded('employee') && $attendance->employee ? [
-                'id' => $attendance->employee->id,
-                'name' => $attendance->employee->user->name ?? null,
+            'id'               => $attendance->id,
+            'employee_id'      => $attendance->employee_id,
+            'shift_id'         => $attendance->shift_id,
+            'attendance_date'  => optional($attendance->attendance_date)->format('Y-m-d'),
+            'date'             => optional($attendance->attendance_date)->format('Y-m-d'),
+            'check_in'         => optional($attendance->check_in_time)?->toDateTimeString(),
+            'check_out'        => optional($attendance->check_out_time)?->toDateTimeString(),
+            'check_in_time'    => optional($attendance->check_in_time)?->format('H:i:s'),
+            'check_out_time'   => optional($attendance->check_out_time)?->format('H:i:s'),
+            'check_in_lat'     => $attendance->check_in_latitude,
+            'check_in_lng'     => $attendance->check_in_longitude,
+            'check_out_lat'    => $attendance->check_out_latitude,
+            'check_out_lng'    => $attendance->check_out_longitude,
+            'status'           => $attendance->status,
+            'notes'            => $attendance->note,
+            'overtime_hours'   => $attendance->overtime_minutes,
+            'employee'         => $attendance->relationLoaded('employee') && $attendance->employee ? [
+                'id'         => $attendance->employee->id,
+                'name'       => $attendance->employee->user->name ?? null,
                 'department' => $attendance->employee->department,
-                'position' => $attendance->employee->position,
+                'position'   => $attendance->employee->position,
             ] : null,
-            'shift' => $attendance->relationLoaded('shift') && $attendance->shift ? [
-                'id' => $attendance->shift->id,
+            'shift'            => $attendance->relationLoaded('shift') && $attendance->shift ? [
+                'id'   => $attendance->shift->id,
                 'name' => $attendance->shift->name ?? null,
             ] : null,
         ];
