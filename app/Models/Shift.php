@@ -11,6 +11,7 @@ class Shift extends Model
 
     protected $fillable = [
         'name',
+            'code',
         'start_time',
         'end_time',
         'break_duration',
