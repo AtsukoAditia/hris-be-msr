@@ -31,73 +31,62 @@ Route::prefix('v1')->group(function () {
         // Dashboard summary
         Route::get('/dashboard/summary', function () {
             return response()->json([
-                'success'             => true,
-                'total_employees'     => \App\Models\Employee::where('is_active', true)->count(),
-                'present_today'       => \App\Models\Attendance::whereDate('attendance_date', today())
-                    ->where('status', 'present')->count(),
-                'active_leaves'       => \App\Models\Leave::where('status', 'approved')
-                    ->whereDate('start_date', '<=', today())
-                    ->whereDate('end_date', '>=', today())->count(),
-                'pending_approvals'   => \App\Models\Leave::where('status', 'pending')->count(),
+                'success' => true,
+                'data' => [
+                    'total_employees'  => \App\Models\Employee::where('is_active', true)->count(),
+                    'present_today'    => \App\Models\Attendance::whereDate('attendance_date', today())
+                        ->where('status', 'present')->count(),
+                    'active_leaves'    => \App\Models\Leave::where('status', 'approved')
+                        ->whereDate('start_date', '<=', today())
+                        ->whereDate('end_date', '>=', today())->count(),
+                    'pending_approval' => \App\Models\Leave::where('status', 'pending')->count(),
+                ],
             ]);
         });
 
-        // -------------------------------------------------------
-        // Employees
-        // -------------------------------------------------------
-        // Hanya admin & hr yang boleh list/show/create/update
-        Route::middleware('role:admin,hr')->group(function () {
-            Route::apiResource('/employees', EmployeeController::class)->except(['destroy']);
-        });
+        // ==================== ATTENDANCE ====================
+        // Employee self-service
+        Route::get('/attendance/my',          [AttendanceController::class, 'myAttendance']);
+        Route::get('/attendance/today',       [AttendanceController::class, 'todayAttendance']);
+        Route::post('/attendance/check-in',   [AttendanceController::class, 'checkIn']);
+        Route::post('/attendance/check-out',  [AttendanceController::class, 'checkOut']);
+        Route::post('/attendance/check-in/qr',  [AttendanceController::class, 'checkInQR']);
+        Route::post('/attendance/check-out/qr', [AttendanceController::class, 'checkOutQR']);
 
-        // Hanya admin yang boleh delete employee
-        Route::middleware('role:admin')->group(function () {
-            Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy'])
-                ->name('employees.destroy');
-        });
+        // Admin/HR
+        Route::get('/attendance',                          [AttendanceController::class, 'index']);
+        Route::get('/attendance/{attendance}',             [AttendanceController::class, 'show']);
+        Route::get('/attendance/employee/{employeeId}',    [AttendanceController::class, 'byEmployee']);
+        Route::get('/attendance/export',                   [AttendanceController::class, 'export']);
 
-        // -------------------------------------------------------
-        // Attendance - self service (semua role yang punya profil employee)
-        // -------------------------------------------------------
-        Route::middleware('role:admin,hr,manager,employee')->group(function () {
-            Route::get('/attendance/my',             [AttendanceController::class, 'my']);
-            Route::get('/attendance/today',          [AttendanceController::class, 'today']);
-            Route::post('/attendance/check-in',      [AttendanceController::class, 'checkIn']);
-            Route::post('/attendance/check-out',     [AttendanceController::class, 'checkOut']);
-            Route::post('/attendance/check-in/qr',   [AttendanceController::class, 'checkInQr']);
-            Route::post('/attendance/check-out/qr',  [AttendanceController::class, 'checkOutQr']);
-        });
-
-        // Attendance - monitoring dan manajemen untuk admin/hr
-        Route::middleware('role:admin,hr')->group(function () {
-            Route::get('/attendance',                    [AttendanceController::class, 'index']);
-            Route::get('/attendance/{attendance}',       [AttendanceController::class, 'show']);
-            Route::get('/attendance/employee/{employeeId}', [AttendanceController::class, 'getByEmployee']);
-            Route::get('/attendance/export',             [AttendanceController::class, 'export']);
-        });
-
-        // -------------------------------------------------------
-        // Shifts
-        // -------------------------------------------------------
+        // ==================== SHIFTS ====================
+        // Shift types CRUD (admin)
         Route::apiResource('/shifts', ShiftController::class);
 
-        // -------------------------------------------------------
-        // Leaves
-        // -------------------------------------------------------
-        Route::get('/leaves/my',                    [LeaveController::class, 'my']);
-        Route::post('/leaves',                      [LeaveController::class, 'store']);
-        Route::get('/leaves',                       [LeaveController::class, 'index']);
-        Route::get('/leaves/{leave}',               [LeaveController::class, 'show']);
-        Route::post('/leaves/{leave}/approve',      [LeaveController::class, 'approve']);
-        Route::post('/leaves/{leave}/reject',       [LeaveController::class, 'reject']);
-        Route::delete('/leaves/{leave}',            [LeaveController::class, 'destroy']);
+        // Shift schedules (assign per date)
+        Route::get('/shift-schedules',              [ShiftController::class, 'getSchedules']);
+        Route::get('/shift-schedules/my',           [ShiftController::class, 'getMySchedule']);
+        Route::post('/shift-schedules',             [ShiftController::class, 'assignShift']);
+        Route::delete('/shift-schedules/{schedule}', [ShiftController::class, 'removeSchedule']);
 
-        // -------------------------------------------------------
-        // Reports
-        // -------------------------------------------------------
-        Route::get('/reports/attendance',   [ReportController::class, 'attendance']);
-        Route::get('/reports/leave',        [ReportController::class, 'leave']);
-        Route::get('/reports/payroll',      [ReportController::class, 'payroll']);
-        Route::get('/reports/dashboard',    [ReportController::class, 'dashboard']);
+        // ==================== LEAVES ====================
+        Route::get('/leaves/my',               [LeaveController::class, 'myLeaves']);
+        Route::get('/leaves',                  [LeaveController::class, 'index']);
+        Route::post('/leaves',                 [LeaveController::class, 'store']);
+        Route::get('/leaves/{leave}',          [LeaveController::class, 'show']);
+        Route::post('/leaves/{leave}/approve', [LeaveController::class, 'approve']);
+        Route::post('/leaves/{leave}/reject',  [LeaveController::class, 'reject']);
+        Route::delete('/leaves/{leave}',       [LeaveController::class, 'destroy']);
+
+        // ==================== EMPLOYEES ====================
+        Route::apiResource('/employees', EmployeeController::class)->except(['destroy']);
+        Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy']);
+        Route::get('/employees/{employee}/profile', [EmployeeController::class, 'profile']);
+
+        // ==================== REPORTS ====================
+        Route::get('/reports/attendance', [ReportController::class, 'attendance']);
+        Route::get('/reports/leave',      [ReportController::class, 'leave']);
+        Route::get('/reports/employee',   [ReportController::class, 'employee']);
+        Route::get('/reports/export',     [ReportController::class, 'export']);
     });
 });
