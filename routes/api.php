@@ -6,6 +6,7 @@ use App\Http\Controllers\API\ShiftController;
 use App\Http\Controllers\API\LeaveController;
 use App\Http\Controllers\API\EmployeeController;
 use App\Http\Controllers\API\ReportController;
+use App\Http\Controllers\API\ShiftScheduleController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -63,12 +64,12 @@ Route::prefix('v1')->group(function () {
         // Shift types CRUD (admin)
         Route::apiResource('/shifts', ShiftController::class);
 
-        // Shift schedules (assign per date)
-        Route::get('/shift-schedules',              [ShiftController::class, 'getSchedules']);
-        Route::get('/shift-schedules/my',           [ShiftController::class, 'getMySchedule']);
-        Route::post('/shift-schedules',             [ShiftController::class, 'assignShift']);
-        Route::delete('/shift-schedules/{schedule}', [ShiftController::class, 'removeSchedule']);
 
+    // Shift schedules (assign shift to employee per date)
+    Route::apiResource('/shift-schedules', ShiftScheduleController::class);
+    Route::get('/shift-schedules/employee/{employeeId}', [ShiftScheduleController::class, 'getByEmployee']);
+    Route::get('/shift-schedules/date/{date}', [ShiftScheduleController::class, 'getByDate']);
+    Route::post('/shift-schedules/bulk', [ShiftScheduleController::class, 'bulkStore']);
         // ==================== LEAVES ====================
         Route::get('/leaves/my',               [LeaveController::class, 'myLeaves']);
         Route::get('/leaves',                  [LeaveController::class, 'index']);
