@@ -27,6 +27,7 @@ class ShiftController extends Controller
     {
         $validated = $request->validate([
             'name'           => 'required|string|max:100|unique:shifts,name',
+            'code'           => 'required|string|max:2|unique:shifts,code',
             'start_time'     => 'required|date_format:H:i',
             'end_time'       => 'required|date_format:H:i',
             'break_duration' => 'nullable|integer|min:0',
@@ -46,6 +47,7 @@ class ShiftController extends Controller
     {
         $validated = $request->validate([
             'name'           => 'sometimes|string|max:100|unique:shifts,name,' . $shift->id,
+            'code'           => 'sometimes|string|max:2|unique:shifts,code,' . $shift->id,
             'start_time'     => 'sometimes|date_format:H:i',
             'end_time'       => 'sometimes|date_format:H:i',
             'break_duration' => 'nullable|integer|min:0',
