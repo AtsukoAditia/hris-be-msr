@@ -11,6 +11,7 @@
 |---|---|
 | Framework | Laravel 13 |
 | Authentication | Laravel Sanctum (API Token) |
+| Authorization | Role Middleware |
 | Realtime | Laravel Broadcasting + Pusher |
 | Database | MySQL 8 |
 | Cache & Queue | Redis / Database Queue |
@@ -25,8 +26,9 @@
 
 - [x] Struktur project Laravel
 - [x] Auth API (Login, Logout, Change Password - Sanctum)
+- [x] Role-Based API Access
+- [x] Demo User Seeder
 - [ ] Management Pegawai (CRUD)
-- [ ] Management Role & Permission
 - [ ] Shift Mapping per tanggal
 - [ ] Absensi (Selfie + Foto + Geolocation)
 - [ ] Absensi QR Code
@@ -38,9 +40,37 @@
 
 ---
 
+## Demo Accounts
+
+| Role | Email | Password |
+|---|---|---|
+| Admin | `admin@hris.test` | `password123` |
+| HR | `hr@hris.test` | `password123` |
+| Manager | `manager@hris.test` | `password123` |
+| Employee | `employee@hris.test` | `password123` |
+
+---
+
+## Role Access
+
+| Module | Admin | HR | Manager | Employee |
+|---|---:|---:|---:|---:|
+| Dashboard Summary | ✅ | ✅ | ✅ | ✅ |
+| Own Attendance | ✅ | ✅ | ✅ | ✅ |
+| Check-in / Check-out | ✅ | ✅ | ✅ | ✅ |
+| Attendance List & Detail | ✅ | ✅ | ✅ | ❌ |
+| Employee Management | ✅ | ✅ | ❌ | ❌ |
+| Shift Management | ✅ | ✅ | ❌ | ❌ |
+| Shift Schedule Management | ✅ | ✅ | ❌ | ❌ |
+| Own Leave Request | ✅ | ✅ | ✅ | ✅ |
+| Leave Approval | ✅ | ✅ | ✅ | ❌ |
+| Reports | ✅ | ✅ | ✅ | ❌ |
+
+---
+
 ## Struktur Folder
 
-```
+```txt
 app/
 ├── Http/
 │   ├── Controllers/
@@ -86,36 +116,36 @@ POST   /auth/change-password
 
 GET    /dashboard/summary
 
-GET    /employees
-POST   /employees
-GET    /employees/{employee}
-PUT    /employees/{employee}
-DELETE /employees/{employee}
+GET    /employees                 # admin, hr
+POST   /employees                 # admin, hr
+GET    /employees/{employee}      # admin, hr
+PUT    /employees/{employee}      # admin, hr
+DELETE /employees/{employee}      # admin, hr
 
 GET    /attendance/my
 GET    /attendance/today
-GET    /attendance
-GET    /attendance/{attendance}
 POST   /attendance/check-in
 POST   /attendance/check-out
 POST   /attendance/check-in/qr
 POST   /attendance/check-out/qr
+GET    /attendance                # admin, hr, manager
+GET    /attendance/{attendance}   # admin, hr, manager
 
-GET    /shifts
-POST   /shifts
-GET    /shift-schedules
-POST   /shift-schedules
-POST   /shift-schedules/bulk
+GET    /shifts                    # admin, hr
+POST   /shifts                    # admin, hr
+GET    /shift-schedules           # admin, hr
+POST   /shift-schedules           # admin, hr
+POST   /shift-schedules/bulk      # admin, hr
 
-GET    /leaves
 GET    /leaves/my
 POST   /leaves
-POST   /leaves/{leave}/approve
-POST   /leaves/{leave}/reject
+GET    /leaves                    # admin, hr, manager
+POST   /leaves/{leave}/approve    # admin, hr, manager
+POST   /leaves/{leave}/reject     # admin, hr, manager
 
-GET    /reports/attendance
-GET    /reports/leave
-GET    /reports/employee
+GET    /reports/attendance        # admin, hr, manager
+GET    /reports/leave             # admin, hr, manager
+GET    /reports/employee          # admin, hr, manager
 ```
 
 ---
@@ -131,7 +161,7 @@ cp .env.example .env
 php artisan key:generate
 
 # Migrate & seed
-php artisan migrate --seed
+php artisan migrate:fresh --seed
 
 # Jalankan server
 php artisan serve
