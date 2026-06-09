@@ -98,8 +98,8 @@ class ShiftController extends Controller
     private function validateShift(Request $request, ?Shift $shift = null): array
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:100', Rule::unique('shifts', 'name')->ignore($shift?->id)->whereNull('deleted_at')],
-            'code' => ['required', 'string', 'max:10', Rule::unique('shifts', 'code')->ignore($shift?->id)->whereNull('deleted_at')],
+            'name' => ['required', 'string', 'max:100', Rule::unique('shifts', 'name')->ignore($shift?->id)->withoutTrashed()],
+            'code' => ['required', 'string', 'max:10', Rule::unique('shifts', 'code')->ignore($shift?->id)->withoutTrashed()],
             'start_time' => 'required|date_format:H:i',
             'end_time' => 'required|date_format:H:i',
             'late_tolerance' => 'nullable|integer|min:0|max:240',
