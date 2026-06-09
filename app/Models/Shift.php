@@ -24,8 +24,6 @@ class Shift extends Model
     protected $casts = [
         'is_active' => 'boolean',
         'is_overnight' => 'boolean',
-        'start_time' => 'datetime:H:i',
-        'end_time' => 'datetime:H:i',
     ];
 
     public function shiftSchedules()
