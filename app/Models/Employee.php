@@ -51,9 +51,14 @@ class Employee extends Model
         return $this->hasMany(Leave::class);
     }
 
-    public function shift()
+    public function shiftSchedules()
     {
-        return $this->belongsTo(Shift::class);
+        return $this->hasMany(ShiftSchedule::class);
+    }
+
+    public function todayShiftSchedule()
+    {
+        return $this->hasOne(ShiftSchedule::class)->whereDate('schedule_date', today());
     }
 
     public function getFullNameAttribute(): string
