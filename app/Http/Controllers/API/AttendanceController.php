@@ -5,17 +5,17 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\Employee;
+use App\Models\ShiftSchedule;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 
 class AttendanceController extends Controller
 {
-    /**
-     * Admin/HR: Semua data absensi dengan filter
-     */
     public function index(Request $request): JsonResponse
     {
-        $query = Attendance::with(['employee.user', 'shift'])->latest('attendance_date');
+        $query = Attendance::with(['employee.user', 'shift'])->latest('attendance_date')->latest('created_at');
 
         if ($request->filled('employee_id')) {
             $query->where('employee_id', $request->employee_id);
@@ -29,7 +29,8 @@ class AttendanceController extends Controller
             $query->whereBetween('attendance_date', [$request->date_from, $request->date_to]);
         }
 
-        $attendances = $query->paginate($request->get('per_page', 15));
+        $perPage = min(max((int) $request->get('per_page', 15), 1), 100);
+        $attendances = $query->paginate($perPage);
         $attendances->getCollection()->transform(fn ($attendance) => $this->transformAttendance($attendance));
 
         return response()->json([
@@ -39,9 +40,6 @@ class AttendanceController extends Controller
         ]);
     }
 
-    /**
-     * Employee: Riwayat absensi milik sendiri
-     */
     public function my(Request $request): JsonResponse
     {
         $employee = $this->getAuthenticatedEmployee();
@@ -56,7 +54,8 @@ class AttendanceController extends Controller
 
         $query = Attendance::with(['shift'])
             ->where('employee_id', $employee->id)
-            ->latest('attendance_date');
+            ->latest('attendance_date')
+            ->latest('created_at');
 
         if ($request->filled('date_from') && $request->filled('date_to')) {
             $query->whereBetween('attendance_date', [$request->date_from, $request->date_to]);
@@ -66,7 +65,8 @@ class AttendanceController extends Controller
             $query->where('status', $request->status);
         }
 
-        $attendances = $query->paginate($request->get('per_page', 15));
+        $perPage = min(max((int) $request->get('per_page', 15), 1), 100);
+        $attendances = $query->paginate($perPage);
         $attendances->getCollection()->transform(fn ($attendance) => $this->transformAttendance($attendance));
 
         return response()->json([
@@ -76,9 +76,6 @@ class AttendanceController extends Controller
         ]);
     }
 
-    /**
-     * Absensi hari ini milik user yang login
-     */
     public function today(): JsonResponse
     {
         $employee = $this->getAuthenticatedEmployee();
@@ -96,16 +93,22 @@ class AttendanceController extends Controller
             ->whereDate('attendance_date', today())
             ->first();
 
+        $shiftSchedule = ShiftSchedule::with('shift')
+            ->where('employee_id', $employee->id)
+            ->whereDate('schedule_date', today())
+            ->first();
+
         return response()->json([
             'success' => true,
             'message' => 'Data absensi hari ini.',
-            'data'    => $attendance ? $this->transformAttendance($attendance) : null,
+            'data'    => [
+                'attendance' => $attendance ? $this->transformAttendance($attendance) : null,
+                'shift_schedule' => $shiftSchedule,
+                'shift' => $shiftSchedule?->shift,
+            ],
         ]);
     }
 
-    /**
-     * Detail data absensi.
-     */
     public function show(Attendance $attendance): JsonResponse
     {
         $attendance->load(['employee.user', 'shift']);
@@ -117,9 +120,6 @@ class AttendanceController extends Controller
         ]);
     }
 
-    /**
-     * Check-in
-     */
     public function checkIn(Request $request): JsonResponse
     {
         $employee = $this->getAuthenticatedEmployee();
@@ -139,32 +139,44 @@ class AttendanceController extends Controller
         $validated = $request->validate([
             'latitude'  => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
+            'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'note' => 'nullable|string|max:500',
         ]);
 
-        if ($existing) {
-            $attendance = $existing;
-        } else {
-            $attendance = new Attendance();
-            $attendance->employee_id     = $employee->id;
-            $attendance->attendance_date = today();
-            $attendance->status          = 'present';
+        $shiftSchedule = ShiftSchedule::with('shift')
+            ->where('employee_id', $employee->id)
+            ->whereDate('schedule_date', today())
+            ->first();
+
+        $shift = $shiftSchedule?->shift;
+        $now = now();
+        $lateMinutes = $this->calculateLateMinutes($shift?->start_time, (int) ($shift?->late_tolerance ?? 15), $now);
+
+        $attendance = $existing ?: new Attendance();
+        $attendance->employee_id = $employee->id;
+        $attendance->shift_id = $shift?->id;
+        $attendance->attendance_date = today();
+        $attendance->status = $lateMinutes > 0 ? 'late' : 'present';
+        $attendance->late_minutes = $lateMinutes;
+        $attendance->check_in_time = $now;
+        $attendance->check_in_latitude = $validated['latitude'] ?? null;
+        $attendance->check_in_longitude = $validated['longitude'] ?? null;
+        $attendance->note = $validated['note'] ?? $attendance->note;
+
+        if ($request->hasFile('photo')) {
+            $attendance->check_in_photo = $request->file('photo')->store('attendance/check-in', 'public');
         }
 
-        $attendance->check_in_time      = now();
-        $attendance->check_in_latitude  = $validated['latitude'] ?? null;
-        $attendance->check_in_longitude = $validated['longitude'] ?? null;
         $attendance->save();
+        $attendance->load(['employee.user', 'shift']);
 
         return response()->json([
             'success' => true,
-            'message' => 'Check-in berhasil.',
+            'message' => $lateMinutes > 0 ? 'Check-in berhasil, status terlambat.' : 'Check-in berhasil.',
             'data'    => $this->transformAttendance($attendance),
         ]);
     }
 
-    /**
-     * Check-out
-     */
     public function checkOut(Request $request): JsonResponse
     {
         $employee = $this->getAuthenticatedEmployee();
@@ -173,7 +185,8 @@ class AttendanceController extends Controller
             return response()->json(['success' => false, 'message' => 'Profil karyawan tidak ditemukan.'], 404);
         }
 
-        $attendance = Attendance::where('employee_id', $employee->id)
+        $attendance = Attendance::with('shift')
+            ->where('employee_id', $employee->id)
             ->whereDate('attendance_date', today())
             ->first();
 
@@ -188,12 +201,22 @@ class AttendanceController extends Controller
         $validated = $request->validate([
             'latitude'  => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
+            'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'note' => 'nullable|string|max:500',
         ]);
 
-        $attendance->check_out_time      = now();
-        $attendance->check_out_latitude  = $validated['latitude'] ?? null;
+        $attendance->check_out_time = now();
+        $attendance->check_out_latitude = $validated['latitude'] ?? null;
         $attendance->check_out_longitude = $validated['longitude'] ?? null;
+        $attendance->note = $validated['note'] ?? $attendance->note;
+
+        if ($request->hasFile('photo')) {
+            $attendance->check_out_photo = $request->file('photo')->store('attendance/check-out', 'public');
+        }
+
+        $attendance->overtime_minutes = $this->calculateOvertimeMinutes($attendance);
         $attendance->save();
+        $attendance->load(['employee.user', 'shift']);
 
         return response()->json([
             'success' => true,
@@ -202,30 +225,22 @@ class AttendanceController extends Controller
         ]);
     }
 
-    /**
-     * Check-in via QR code
-     */
     public function checkInQr(Request $request): JsonResponse
     {
         return $this->checkIn($request);
     }
 
-    /**
-     * Check-out via QR code
-     */
     public function checkOutQr(Request $request): JsonResponse
     {
         return $this->checkOut($request);
     }
 
-    /**
-     * Data absensi satu karyawan tertentu (admin/hr)
-     */
     public function getByEmployee(int $employeeId, Request $request): JsonResponse
     {
         $query = Attendance::with(['shift'])
             ->where('employee_id', $employeeId)
-            ->latest('attendance_date');
+            ->latest('attendance_date')
+            ->latest('created_at');
 
         if ($request->filled('date_from') && $request->filled('date_to')) {
             $query->whereBetween('attendance_date', [$request->date_from, $request->date_to]);
@@ -241,9 +256,6 @@ class AttendanceController extends Controller
         ]);
     }
 
-    /**
-     * Export absensi (placeholder)
-     */
     public function export(Request $request): JsonResponse
     {
         return response()->json([
@@ -252,9 +264,6 @@ class AttendanceController extends Controller
         ], 501);
     }
 
-    /**
-     * Ambil employee berdasarkan user yang sedang login
-     */
     private function getAuthenticatedEmployee(): ?Employee
     {
         $user = request()->user();
@@ -266,9 +275,37 @@ class AttendanceController extends Controller
         return Employee::with(['user'])->where('user_id', $user->id)->first();
     }
 
-    /**
-     * Transform attendance model ke array response
-     */
+    private function calculateLateMinutes(?string $shiftStartTime, int $toleranceMinutes, Carbon $checkInTime): int
+    {
+        if (!$shiftStartTime) {
+            return 0;
+        }
+
+        $scheduledStart = Carbon::parse(today()->format('Y-m-d') . ' ' . substr($shiftStartTime, 0, 5));
+        $allowedTime = $scheduledStart->copy()->addMinutes($toleranceMinutes);
+
+        return $checkInTime->greaterThan($allowedTime)
+            ? $allowedTime->diffInMinutes($checkInTime)
+            : 0;
+    }
+
+    private function calculateOvertimeMinutes(Attendance $attendance): int
+    {
+        if (!$attendance->shift || !$attendance->shift->end_time || !$attendance->check_out_time) {
+            return 0;
+        }
+
+        $shiftEnd = Carbon::parse($attendance->attendance_date->format('Y-m-d') . ' ' . substr($attendance->shift->end_time, 0, 5));
+
+        if ($attendance->shift->is_overnight && $shiftEnd->lessThanOrEqualTo(Carbon::parse($attendance->check_in_time))) {
+            $shiftEnd->addDay();
+        }
+
+        return $attendance->check_out_time->greaterThan($shiftEnd)
+            ? $shiftEnd->diffInMinutes($attendance->check_out_time)
+            : 0;
+    }
+
     private function transformAttendance(Attendance $attendance): array
     {
         return [
@@ -282,6 +319,10 @@ class AttendanceController extends Controller
             'check_in_lng'     => $attendance->check_in_longitude,
             'check_out_lat'    => $attendance->check_out_latitude,
             'check_out_lng'    => $attendance->check_out_longitude,
+            'check_in_photo'   => $attendance->check_in_photo,
+            'check_out_photo'  => $attendance->check_out_photo,
+            'check_in_photo_url' => $attendance->check_in_photo ? asset('storage/' . $attendance->check_in_photo) : null,
+            'check_out_photo_url' => $attendance->check_out_photo ? asset('storage/' . $attendance->check_out_photo) : null,
             'status'           => $attendance->status,
             'note'             => $attendance->note,
             'notes'            => $attendance->note,
@@ -296,6 +337,11 @@ class AttendanceController extends Controller
             'shift' => $attendance->relationLoaded('shift') && $attendance->shift ? [
                 'id'   => $attendance->shift->id,
                 'name' => $attendance->shift->name ?? null,
+                'code' => $attendance->shift->code ?? null,
+                'start_time' => $attendance->shift->start_time ?? null,
+                'end_time' => $attendance->shift->end_time ?? null,
+                'late_tolerance' => $attendance->shift->late_tolerance ?? null,
+                'is_overnight' => $attendance->shift->is_overnight ?? false,
             ] : null,
         ];
     }
