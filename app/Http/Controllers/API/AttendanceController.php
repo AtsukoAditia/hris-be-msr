@@ -139,7 +139,7 @@ class AttendanceController extends Controller
         $validated = $request->validate([
             'latitude'  => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
-            'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:8192',
             'note' => 'nullable|string|max:500',
         ]);
 
@@ -201,7 +201,7 @@ class AttendanceController extends Controller
         $validated = $request->validate([
             'latitude'  => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
-            'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:8192',
             'note' => 'nullable|string|max:500',
         ]);
 
