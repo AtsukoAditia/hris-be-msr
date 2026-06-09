@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\AttendanceController;
+use App\Http\Controllers\API\DashboardController;
 use App\Http\Controllers\API\ShiftController;
 use App\Http\Controllers\API\LeaveController;
 use App\Http\Controllers\API\EmployeeController;
@@ -23,22 +24,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
 
-        Route::get('/dashboard/summary', function () {
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'total_employees' => \App\Models\Employee::where('is_active', true)->count(),
-                    'present_today' => \App\Models\Attendance::whereDate('attendance_date', today())
-                        ->where('status', 'present')
-                        ->count(),
-                    'active_leaves' => \App\Models\Leave::where('status', 'approved')
-                        ->whereDate('start_date', '<=', today())
-                        ->whereDate('end_date', '>=', today())
-                        ->count(),
-                    'pending_approval' => \App\Models\Leave::where('status', 'pending')->count(),
-                ],
-            ]);
-        });
+        Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
 
         Route::get('/attendance/my', [AttendanceController::class, 'my']);
         Route::get('/attendance/today', [AttendanceController::class, 'today']);
