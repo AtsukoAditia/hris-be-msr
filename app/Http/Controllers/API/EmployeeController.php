@@ -15,7 +15,7 @@ class EmployeeController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Employee::with(['user', 'shift']);
+        $query = Employee::with(['user']);
 
         if ($request->filled('department')) {
             $query->where('department', $request->department);
@@ -99,7 +99,7 @@ class EmployeeController extends Controller
             ]);
         });
 
-        $employee->load(['user', 'shift']);
+        $employee->load(['user']);
 
         return response()->json([
             'success' => true,
@@ -110,7 +110,7 @@ class EmployeeController extends Controller
 
     public function show(Employee $employee): JsonResponse
     {
-        $employee->load(['user', 'shift']);
+        $employee->load(['user']);
 
         return response()->json([
             'success' => true,
@@ -121,7 +121,7 @@ class EmployeeController extends Controller
 
     public function profile(Employee $employee): JsonResponse
     {
-        $employee->load(['user', 'shift']);
+        $employee->load(['user']);
 
         return response()->json([
             'success' => true,
@@ -177,7 +177,7 @@ class EmployeeController extends Controller
             ]);
         });
 
-        $employee->refresh()->load(['user', 'shift']);
+        $employee->refresh()->load(['user']);
 
         return response()->json([
             'success' => true,
