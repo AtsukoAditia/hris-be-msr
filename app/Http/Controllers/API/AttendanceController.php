@@ -104,6 +104,20 @@ class AttendanceController extends Controller
     }
 
     /**
+     * Detail data absensi.
+     */
+    public function show(Attendance $attendance): JsonResponse
+    {
+        $attendance->load(['employee.user', 'shift']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Detail absensi berhasil diambil.',
+            'data'    => $this->transformAttendance($attendance),
+        ]);
+    }
+
+    /**
      * Check-in
      */
     public function checkIn(Request $request): JsonResponse
