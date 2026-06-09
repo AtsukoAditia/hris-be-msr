@@ -7,6 +7,7 @@ use App\Models\Shift;
 use App\Models\ShiftSchedule;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Validation\Rule;
 
 class ShiftController extends Controller
 {
@@ -18,24 +19,31 @@ class ShiftController extends Controller
             $query->active();
         }
 
-        $shifts = $query->orderBy('name')->get();
+        if ($request->filled('status')) {
+            $query->where('is_active', $request->status === 'active');
+        }
 
-        return response()->json(['success' => true, 'data' => $shifts]);
+        if ($request->filled('search')) {
+            $search = trim((string) $request->search);
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', '%' . $search . '%')
+                  ->orWhere('code', 'like', '%' . $search . '%')
+                  ->orWhere('description', 'like', '%' . $search . '%');
+            });
+        }
+
+        $shifts = $query->orderBy('start_time')->orderBy('name')->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data shift berhasil diambil.',
+            'data' => $shifts,
+        ]);
     }
 
     public function store(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:100|unique:shifts,name',
-            'code' => 'required|string|max:10|unique:shifts,code',
-            'start_time' => 'required|date_format:H:i',
-            'end_time' => 'required|date_format:H:i',
-            'late_tolerance' => 'nullable|integer|min:0',
-            'is_overnight' => 'nullable|boolean',
-            'description' => 'nullable|string|max:500',
-            'is_active' => 'nullable|boolean',
-        ]);
-
+        $validated = $this->validateShift($request);
         $shift = Shift::create($validated);
 
         return response()->json([
@@ -47,38 +55,35 @@ class ShiftController extends Controller
 
     public function show(Shift $shift): JsonResponse
     {
-        return response()->json(['success' => true, 'data' => $shift]);
+        return response()->json([
+            'success' => true,
+            'message' => 'Detail shift berhasil diambil.',
+            'data' => $shift,
+        ]);
     }
 
     public function update(Request $request, Shift $shift): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'sometimes|string|max:100|unique:shifts,name,' . $shift->id,
-            'code' => 'sometimes|string|max:10|unique:shifts,code,' . $shift->id,
-            'start_time' => 'sometimes|date_format:H:i',
-            'end_time' => 'sometimes|date_format:H:i',
-            'late_tolerance' => 'nullable|integer|min:0',
-            'is_overnight' => 'nullable|boolean',
-            'description' => 'nullable|string|max:500',
-            'is_active' => 'nullable|boolean',
-        ]);
-
+        $validated = $this->validateShift($request, $shift);
         $shift->update($validated);
 
         return response()->json([
             'success' => true,
-            'message' => 'Shift berhasil diupdate.',
-            'data' => $shift,
+            'message' => 'Shift berhasil diperbarui.',
+            'data' => $shift->refresh(),
         ]);
     }
 
     public function destroy(Shift $shift): JsonResponse
     {
         if (ShiftSchedule::where('shift_id', $shift->id)->exists()) {
+            $shift->update(['is_active' => false]);
+
             return response()->json([
-                'success' => false,
-                'message' => 'Shift masih digunakan dalam jadwal, tidak bisa dihapus.',
-            ], 422);
+                'success' => true,
+                'message' => 'Shift masih digunakan dalam jadwal, sehingga dinonaktifkan.',
+                'data' => $shift->refresh(),
+            ]);
         }
 
         $shift->delete();
@@ -86,6 +91,36 @@ class ShiftController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Shift berhasil dihapus.',
+            'data' => null,
         ]);
+    }
+
+    private function validateShift(Request $request, ?Shift $shift = null): array
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:100', Rule::unique('shifts', 'name')->ignore($shift?->id)->whereNull('deleted_at')],
+            'code' => ['required', 'string', 'max:10', Rule::unique('shifts', 'code')->ignore($shift?->id)->whereNull('deleted_at')],
+            'start_time' => 'required|date_format:H:i',
+            'end_time' => 'required|date_format:H:i',
+            'late_tolerance' => 'nullable|integer|min:0|max:240',
+            'is_overnight' => 'nullable|boolean',
+            'description' => 'nullable|string|max:500',
+            'is_active' => 'nullable|boolean',
+        ]);
+
+        $validated['code'] = strtoupper(trim($validated['code']));
+        $validated['name'] = trim($validated['name']);
+        $validated['late_tolerance'] = $validated['late_tolerance'] ?? 15;
+        $validated['is_overnight'] = $validated['is_overnight'] ?? false;
+        $validated['is_active'] = $validated['is_active'] ?? true;
+
+        if (!$validated['is_overnight'] && $validated['end_time'] <= $validated['start_time']) {
+            abort(response()->json([
+                'success' => false,
+                'message' => 'Jam selesai harus lebih besar dari jam mulai untuk shift non-overnight.',
+            ], 422));
+        }
+
+        return $validated;
     }
 }
