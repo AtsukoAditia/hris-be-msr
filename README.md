@@ -1,25 +1,25 @@
-# HRIS Backend — hris-be-msr
+# HRIS Frontend — hris-fe-msr
 
-> **Smart Attendance HRIS** — Laravel REST API  
-> Backend untuk sistem HRIS berbasis role yang menangani autentikasi, dashboard, employee management, shift management, attendance dengan geolocation + photo evidence, leave, approval, dan report.
+> **Smart Attendance HRIS** — React + Vite + PWA  
+> Frontend untuk sistem HRIS berbasis role yang menangani dashboard, employee management, shift management, attendance dengan GPS + mobile camera photo evidence, leave, approval, dan report.
 
 ---
 
 ## Status Project
 
-Project ini sedang dibangun bertahap sebagai portfolio / TA-style HRIS web app dengan fokus backend API yang stabil dan mudah diintegrasikan dengan frontend PWA.
+Project ini dibangun bertahap sebagai HRIS web app yang dapat dijalankan sebagai PWA dan diuji melalui browser desktop maupun mobile Android.
 
 | Modul | Status | Keterangan |
 |---|---:|---|
-| Modul 1 — Foundation / API Sync | ✅ Done | Struktur API v1, route alignment, response dasar |
-| Modul 2 — Auth & Role Access | ✅ Done | Login, logout, `/auth/me`, Sanctum token, role middleware |
-| Modul 3 — Dashboard Summary | ✅ Done | Ringkasan dashboard berdasarkan role |
-| Modul 4 — Employee Management | ✅ Done | CRUD employee, user mapping, face enrollment image |
-| Modul 5 — Shift Management | ✅ Done | CRUD shift, active/inactive, overnight shift, late tolerance |
-| Modul 6 — Attendance | ✅ Done | Check-in/out, GPS, mobile camera photo evidence, late/overtime calculation |
-| Modul 7 — Leave Request + Approval | ⏳ Next | Pengajuan cuti/izin dan approval flow |
-| Modul 8 — Attendance Report + Export | ⏳ Planned | Filter report dan export CSV/Excel |
-| Modul 9 — Radius + QR | ⏳ Planned | Validasi radius lokasi dan QR attendance |
+| Modul 1 — Foundation / API Sync | ✅ Done | API base URL, route sync, protected layout |
+| Modul 2 — Auth & Role Access | ✅ Done | Login, logout, auth hydration, role-based sidebar/routes |
+| Modul 3 — Dashboard Summary | ✅ Done | Dashboard role-aware dari API `/dashboard/summary` |
+| Modul 4 — Employee Management | ✅ Done | CRUD employee, detail modal, face enrollment upload |
+| Modul 5 — Shift Management | ✅ Done | CRUD shift, search/filter, overnight, late tolerance |
+| Modul 6 — Attendance | ✅ Done | Check-in/out, GPS, mobile camera photo evidence |
+| Modul 7 — Leave Request + Approval | ⏳ Next | Form cuti/izin dan approval flow |
+| Modul 8 — Attendance Report + Export | ⏳ Planned | Report filter dan export |
+| Modul 9 — Radius + QR | ⏳ Planned | QR attendance dan radius validation |
 | Modul 10 — Docs / Deploy | ⏳ Planned | Dokumentasi final dan deployment |
 
 ---
@@ -28,15 +28,16 @@ Project ini sedang dibangun bertahap sebagai portfolio / TA-style HRIS web app d
 
 | Layer | Technology |
 |---|---|
-| Framework | Laravel 13 |
-| Language | PHP ^8.3 |
-| Authentication | Laravel Sanctum API Token |
-| Authorization | Custom Role Middleware |
-| Database | MySQL 8 |
-| ORM | Eloquent |
-| Storage | Laravel Storage public disk |
-| File Upload | Image upload for face enrollment and attendance evidence |
-| API Format | REST JSON API |
+| Framework | React 18 + Vite |
+| Styling | Tailwind CSS |
+| Routing | React Router v6 |
+| State Management | Zustand |
+| HTTP Client | Axios |
+| Icons | Lucide React |
+| PWA | vite-plugin-pwa + Workbox |
+| Camera Upload | Browser file input with `capture` |
+| Geolocation | Browser Geolocation API |
+| Mobile Testing | ngrok tunnel |
 
 ---
 
@@ -44,50 +45,61 @@ Project ini sedang dibangun bertahap sebagai portfolio / TA-style HRIS web app d
 
 ### Auth & Role Access
 
-- Login with Sanctum token.
+- Login with API token.
 - Logout.
-- Authenticated user profile via `/auth/me`.
-- Role-based API route protection.
-- Standardized auth payload with nested employee data.
-- Demo users for Admin, HR, Manager, and Employee.
+- Auth state persistence with Zustand.
+- Sync user data via `/auth/me`.
+- Protected route hydration.
+- Role-based sidebar menu.
+- Role-based page access.
+- ngrok API request support with `ngrok-skip-browser-warning` header.
 
 ### Dashboard Summary
 
-- Role-aware dashboard summary.
-- Admin/HR/Manager summary includes employee count, attendance status, pending leave, shift count, recent attendance, and recent leave.
-- Employee dashboard includes personal attendance today, leave balance, today shift, and personal recent records.
+- Dashboard data from backend API.
+- Role-aware dashboard cards.
+- Employee personal summary.
+- Admin/HR/Manager operational summary.
 
 ### Employee Management
 
-- Employee CRUD for Admin/HR.
-- Search and filters by department, status, keyword.
-- User + employee data synchronization.
-- Employee soft delete.
+- Employee list with search/filter.
+- Add employee.
+- Edit employee.
+- Delete employee.
+- Detail employee modal.
 - Face enrollment upload.
-- Face image URL and registration status in API response.
+- Face registration status and photo preview.
 
 ### Shift Management
 
-- Shift CRUD for Admin/HR.
-- Search by name, code, and description.
-- Filter active/inactive shifts.
+- Shift list.
+- Add shift.
+- Edit shift.
+- Delete/nonaktif shift.
+- Search by name/code/description.
+- Filter active/inactive.
+- Summary cards: total, active, overnight.
 - Support regular and overnight shift.
-- Late tolerance in minutes.
-- Auto uppercase shift code.
-- Used shift is deactivated instead of hard-deleted.
+- Late tolerance field.
 
 ### Attendance
 
 - Employee check-in.
 - Employee check-out.
-- Check-in/check-out with GPS latitude and longitude.
-- Optional photo evidence for check-in and check-out.
-- Mobile camera upload support.
-- Attendance photo URL response.
-- Auto status `present` or `late` based on shift start time + late tolerance.
-- Late minute calculation.
-- Overtime minute calculation.
+- Check-in with GPS.
+- Check-out with GPS.
+- Check-in + photo evidence.
+- Check-out + photo evidence.
+- Android mobile camera support.
+- Camera photo normalization:
+  - convert to JPEG
+  - resize max 1280px
+  - compress before upload
+- Evidence links for check-in/check-out photo.
 - Admin/HR/Manager attendance monitoring.
+- Attendance status badge.
+- Late minutes display.
 
 ---
 
@@ -104,241 +116,194 @@ Project ini sedang dibangun bertahap sebagai portfolio / TA-style HRIS web app d
 
 ## Role Access
 
-| Module / API Area | Admin | HR | Manager | Employee |
+| Menu / Page | Admin | HR | Manager | Employee |
 |---|---:|---:|---:|---:|
-| Dashboard Summary | ✅ | ✅ | ✅ | ✅ |
-| Auth Profile | ✅ | ✅ | ✅ | ✅ |
-| Employee Management | ✅ | ✅ | ❌ | ❌ |
-| Face Enrollment | ✅ | ✅ | ❌ | ❌ |
-| Shift Management | ✅ | ✅ | ❌ | ❌ |
-| Shift Schedule Management | ✅ | ✅ | ❌ | ❌ |
-| Own Attendance | ✅ | ✅ | ✅ | ✅ |
-| Check-in / Check-out | ✅ | ✅ | ✅ | ✅ |
-| Attendance Monitoring | ✅ | ✅ | ✅ | ❌ |
-| Own Leave Request | ✅ | ✅ | ✅ | ✅ |
-| Leave Approval | ✅ | ✅ | ✅ | ❌ |
-| Reports | ✅ | ✅ | ✅ | ❌ |
-
----
-
-## API Endpoint Overview
-
-Base URL local:
-
-```txt
-http://localhost:8000/api/v1
-```
-
-### Auth
-
-```txt
-POST   /auth/login
-GET    /auth/me
-POST   /auth/logout
-POST   /auth/change-password
-```
-
-### Dashboard
-
-```txt
-GET    /dashboard/summary
-```
-
-### Employee
-
-```txt
-GET    /employees
-POST   /employees
-GET    /employees/profile
-GET    /employees/{employee}
-PUT    /employees/{employee}
-DELETE /employees/{employee}
-POST   /employees/{employee}/face-enrollment
-```
-
-### Shift
-
-```txt
-GET    /shifts
-POST   /shifts
-GET    /shifts/{shift}
-PUT    /shifts/{shift}
-DELETE /shifts/{shift}
-```
-
-### Shift Schedule
-
-```txt
-GET    /shift-schedules
-POST   /shift-schedules
-GET    /shift-schedules/my
-DELETE /shift-schedules/{shiftSchedule}
-```
-
-### Attendance
-
-```txt
-GET    /attendance/my
-GET    /attendance/today
-POST   /attendance/check-in
-POST   /attendance/check-out
-POST   /attendance/check-in/qr
-POST   /attendance/check-out/qr
-GET    /attendance
-GET    /attendance/{attendance}
-GET    /attendance/employee/{employeeId}
-GET    /attendance/export
-```
-
-### Leave & Approval
-
-```txt
-GET    /leaves/my
-GET    /leaves/balance
-POST   /leaves
-GET    /leaves
-GET    /leaves/{leave}
-PUT    /leaves/{leave}
-DELETE /leaves/{leave}
-POST   /leaves/{leave}/approve
-POST   /leaves/{leave}/reject
-```
-
-### Reports
-
-```txt
-GET    /reports/attendance
-GET    /reports/leave
-GET    /reports/employee
-```
-
----
-
-## Attendance Request Example
-
-### Check-in JSON
-
-```http
-POST /api/v1/attendance/check-in
-Authorization: Bearer <token>
-Accept: application/json
-Content-Type: application/json
-
-{
-  "latitude": -6.200000,
-  "longitude": 106.816666,
-  "note": "Check-in dari kantor"
-}
-```
-
-### Check-in with Photo Evidence
-
-Use `multipart/form-data`:
-
-```txt
-latitude: -6.200000
-longitude: 106.816666
-note: Check-in dari kantor
-photo: attendance.jpg
-```
-
-Photo validation:
-
-```txt
-jpg, jpeg, png, webp
-max 8192 KB
-```
+| Dashboard | ✅ | ✅ | ✅ | ✅ |
+| Attendance | ✅ | ✅ | ✅ | ✅ |
+| Leave | ✅ | ✅ | ✅ | ✅ |
+| Approval | ✅ | ✅ | ✅ | ❌ |
+| Report | ✅ | ✅ | ✅ | ❌ |
+| Employee | ✅ | ✅ | ❌ | ❌ |
+| Shift | ✅ | ✅ | ❌ | ❌ |
+| Shift Schedule | ✅ | ✅ | ❌ | ❌ |
 
 ---
 
 ## Struktur Folder
 
 ```txt
-app/
-├── Http/
-│   ├── Controllers/API/       # Auth, Dashboard, Employee, Shift, Attendance, Leave, Report
-│   └── Middleware/            # Role middleware
-├── Models/                    # User, Employee, Shift, ShiftSchedule, Attendance, Leave
-└── Services/                  # Business logic layer, jika dibutuhkan
-
-database/
-├── migrations/                # Table schema
-└── seeders/                   # Demo data and user seeder
-
-routes/
-└── api.php                    # API v1 routes
-```
-
----
-
-## Cara Menjalankan Lokal
-
-```bash
-composer install
-cp .env.example .env
-php artisan key:generate
-php artisan migrate:fresh --seed
-php artisan storage:link
-php artisan serve
-```
-
-Untuk development dengan mobile/ngrok:
-
-```bash
-php artisan optimize:clear
-php artisan config:clear
-php artisan route:clear
-php artisan serve --host=0.0.0.0 --port=8000
+src/
+├── assets/                    # Static assets
+├── components/
+│   ├── layout/                # Sidebar, layout shell
+│   ├── shift/                 # Shift list and form modal
+│   └── ui/                    # Reusable UI components
+├── hooks/                     # Custom hooks
+├── lib/
+│   ├── axios.js               # Axios instance + interceptor
+│   └── utils.js               # Utility functions
+├── pages/
+│   ├── auth/                  # Login page
+│   ├── dashboard/             # Dashboard summary
+│   ├── employee/              # Employee management
+│   ├── shift/                 # Shift management
+│   ├── attendance/            # Check-in/out, GPS, photo evidence
+│   ├── leave/                 # Leave request
+│   ├── approval/              # Approval page
+│   └── report/                # Reports
+├── routes/                    # React Router config + ProtectedRoute
+├── services/                  # API services per module
+└── store/                     # Zustand stores
 ```
 
 ---
 
 ## Environment Variables
 
-```env
-APP_URL=http://localhost:8000
-
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=hris_msr
-DB_USERNAME=root
-DB_PASSWORD=
-```
-
-Jika menggunakan ngrok untuk test HP:
+Buat file `.env` di root project:
 
 ```env
-APP_URL=https://your-backend-ngrok-url.ngrok-free.app
+VITE_API_BASE_URL=http://localhost:8000/api/v1
 ```
 
-Lalu jalankan:
-
-```bash
-php artisan optimize:clear
-```
-
----
-
-## Mobile Testing Notes
-
-Untuk test fitur kamera dan GPS di HP:
-
-1. Jalankan backend Laravel dengan `--host=0.0.0.0`.
-2. Expose backend menggunakan ngrok.
-3. Pastikan frontend `.env` mengarah ke backend ngrok:
+Untuk test HP via ngrok:
 
 ```env
 VITE_API_BASE_URL=https://your-backend-ngrok-url.ngrok-free.app/api/v1
 ```
 
-4. Jalankan `php artisan storage:link` agar evidence photo bisa dibuka.
+Setelah mengubah `.env`, restart Vite.
+
+---
+
+## Cara Menjalankan Lokal
+
+```bash
+npm install
+npm run dev
+```
+
+Jika ingin diakses dari HP dalam jaringan lokal atau ngrok:
+
+```bash
+npm run dev -- --host 0.0.0.0
+```
+
+Default dev server:
+
+```txt
+http://localhost:3000
+```
+
+---
+
+## Mobile Testing with ngrok
+
+### 1. Jalankan backend Laravel
+
+```bash
+cd hris-be-msr
+php artisan serve --host=0.0.0.0 --port=8000
+```
+
+### 2. Jalankan frontend Vite
+
+```bash
+cd hris-fe-msr
+npm run dev -- --host 0.0.0.0
+```
+
+### 3. Expose backend dan frontend dengan ngrok
+
+```bash
+ngrok http 8000
+ngrok http 3000
+```
+
+### 4. Update `.env` frontend
+
+```env
+VITE_API_BASE_URL=https://your-backend-ngrok-url.ngrok-free.app/api/v1
+```
+
+### 5. Restart Vite
+
+```bash
+npm run dev -- --host 0.0.0.0
+```
+
+### 6. Buka frontend ngrok di HP
+
+```txt
+https://your-frontend-ngrok-url.ngrok-free.app
+```
+
+---
+
+## PWA / Cache Troubleshooting
+
+Karena project menggunakan PWA + Workbox, browser bisa menyimpan service worker lama saat development.
+
+Jika perubahan frontend tidak muncul, jalankan di browser console:
+
+```js
+navigator.serviceWorker.getRegistrations().then((regs) => {
+  regs.forEach((reg) => reg.unregister())
+})
+
+caches.keys().then((keys) => {
+  keys.forEach((key) => caches.delete(key))
+})
+
+localStorage.removeItem('hris-auth-storage')
+location.reload()
+```
+
+---
+
+## ngrok Notes
+
+Vite sudah dikonfigurasi untuk mengizinkan host ngrok:
+
+```js
+server: {
+  host: true,
+  allowedHosts: [
+    '.ngrok-free.app',
+    '.ngrok.app',
+    '.ngrok.io',
+  ],
+}
+```
+
+Axios juga mengirim header ini untuk melewati browser warning ngrok:
+
+```txt
+ngrok-skip-browser-warning: true
+```
+
+---
+
+## Attendance Photo Notes
+
+Untuk mendukung kamera Android, file foto dari input kamera akan diproses di frontend sebelum upload:
+
+```txt
+1. Validasi file kamera tidak kosong
+2. Load image dari object URL
+3. Resize max 1280px
+4. Convert ke JPEG
+5. Compress quality 0.82
+6. Upload sebagai multipart/form-data
+```
+
+Ini membuat upload camera dari HP lebih stabil dibanding mengirim file kamera mentah.
 
 ---
 
 ## Pair Repository
 
-Frontend PWA: [hris-fe-msr](https://github.com/AtsukoAditia/hris-fe-msr)
+Backend API: [hris-be-msr](https://github.com/AtsukoAditia/hris-be-msr)
 
 ---
 
