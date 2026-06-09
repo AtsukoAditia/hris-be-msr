@@ -64,6 +64,7 @@ Route::prefix('v1')->group(function () {
         });
 
         Route::get('/leaves/my', [LeaveController::class, 'my']);
+        Route::get('/leaves/balance', [LeaveController::class, 'balance']);
         Route::post('/leaves', [LeaveController::class, 'store']);
         Route::get('/leaves/{leave}', [LeaveController::class, 'show']);
         Route::delete('/leaves/{leave}', [LeaveController::class, 'destroy']);
