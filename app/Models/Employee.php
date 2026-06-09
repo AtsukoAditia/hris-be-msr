@@ -26,12 +26,15 @@ class Employee extends Model
         'bank_name',
         'bank_account',
         'photo',
+        'face_image',
+        'face_registered_at',
         'is_active',
     ];
 
     protected $casts = [
         'birth_date' => 'date',
         'join_date' => 'date',
+        'face_registered_at' => 'datetime',
         'basic_salary' => 'decimal:2',
         'is_active' => 'boolean',
     ];
