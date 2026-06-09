@@ -106,7 +106,7 @@ class ReportController extends Controller
      */
     public function employee(Request $request): JsonResponse
     {
-        $query = Employee::with(['user', 'shift']);
+        $query = Employee::with(['user']);
 
         if ($request->filled('department')) {
             $query->where('department', $request->department);
