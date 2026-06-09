@@ -263,7 +263,7 @@ class AttendanceController extends Controller
             return null;
         }
 
-        return Employee::with(['user', 'shift'])->where('user_id', $user->id)->first();
+        return Employee::with(['user'])->where('user_id', $user->id)->first();
     }
 
     /**
