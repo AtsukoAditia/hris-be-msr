@@ -119,6 +119,17 @@ class EmployeeController extends Controller
         ]);
     }
 
+    public function profile(Employee $employee): JsonResponse
+    {
+        $employee->load(['user', 'shift']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Profil karyawan berhasil diambil.',
+            'data' => $this->transformEmployee($employee),
+        ]);
+    }
+
     public function update(Request $request, Employee $employee): JsonResponse
     {
         $validated = $request->validate([
