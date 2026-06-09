@@ -46,32 +46,38 @@ Route::prefix('v1')->group(function () {
         Route::post('/attendance/check-out', [AttendanceController::class, 'checkOut']);
         Route::post('/attendance/check-in/qr', [AttendanceController::class, 'checkInQr']);
         Route::post('/attendance/check-out/qr', [AttendanceController::class, 'checkOutQr']);
-        Route::get('/attendance', [AttendanceController::class, 'index']);
-        Route::get('/attendance/export', [AttendanceController::class, 'export']);
-        Route::get('/attendance/employee/{employeeId}', [AttendanceController::class, 'getByEmployee']);
-        Route::get('/attendance/{attendance}', [AttendanceController::class, 'show']);
 
-        Route::apiResource('/shifts', ShiftController::class);
-        Route::apiResource('/shift-schedules', ShiftScheduleController::class);
-        Route::get('/shift-schedules/employee/{employeeId}', [ShiftScheduleController::class, 'getByEmployee']);
-        Route::get('/shift-schedules/date/{date}', [ShiftScheduleController::class, 'getByDate']);
-        Route::post('/shift-schedules/bulk', [ShiftScheduleController::class, 'bulkStore']);
+        Route::middleware('role:admin,hr,manager')->group(function () {
+            Route::get('/attendance', [AttendanceController::class, 'index']);
+            Route::get('/attendance/export', [AttendanceController::class, 'export']);
+            Route::get('/attendance/employee/{employeeId}', [AttendanceController::class, 'getByEmployee']);
+            Route::get('/attendance/{attendance}', [AttendanceController::class, 'show']);
+
+            Route::get('/leaves', [LeaveController::class, 'index']);
+            Route::post('/leaves/{leave}/approve', [LeaveController::class, 'approve']);
+            Route::post('/leaves/{leave}/reject', [LeaveController::class, 'reject']);
+
+            Route::get('/reports/attendance', [ReportController::class, 'attendance']);
+            Route::get('/reports/leave', [ReportController::class, 'leave']);
+            Route::get('/reports/employee', [ReportController::class, 'employee']);
+            Route::get('/reports/export', [ReportController::class, 'export']);
+        });
 
         Route::get('/leaves/my', [LeaveController::class, 'my']);
-        Route::get('/leaves', [LeaveController::class, 'index']);
         Route::post('/leaves', [LeaveController::class, 'store']);
         Route::get('/leaves/{leave}', [LeaveController::class, 'show']);
-        Route::post('/leaves/{leave}/approve', [LeaveController::class, 'approve']);
-        Route::post('/leaves/{leave}/reject', [LeaveController::class, 'reject']);
         Route::delete('/leaves/{leave}', [LeaveController::class, 'destroy']);
 
-        Route::apiResource('/employees', EmployeeController::class)->except(['destroy']);
-        Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy']);
-        Route::get('/employees/{employee}/profile', [EmployeeController::class, 'profile']);
+        Route::middleware('role:admin,hr')->group(function () {
+            Route::apiResource('/shifts', ShiftController::class);
+            Route::apiResource('/shift-schedules', ShiftScheduleController::class);
+            Route::get('/shift-schedules/employee/{employeeId}', [ShiftScheduleController::class, 'getByEmployee']);
+            Route::get('/shift-schedules/date/{date}', [ShiftScheduleController::class, 'getByDate']);
+            Route::post('/shift-schedules/bulk', [ShiftScheduleController::class, 'bulkStore']);
 
-        Route::get('/reports/attendance', [ReportController::class, 'attendance']);
-        Route::get('/reports/leave', [ReportController::class, 'leave']);
-        Route::get('/reports/employee', [ReportController::class, 'employee']);
-        Route::get('/reports/export', [ReportController::class, 'export']);
+            Route::apiResource('/employees', EmployeeController::class)->except(['destroy']);
+            Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy']);
+            Route::get('/employees/{employee}/profile', [EmployeeController::class, 'profile']);
+        });
     });
 });
