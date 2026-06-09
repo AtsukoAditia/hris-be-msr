@@ -26,12 +26,13 @@ class EmployeeController extends Controller
         }
 
         if ($request->filled('search')) {
-            $search = $request->search;
+            $search = trim((string) $request->search);
             $query->where(function ($q) use ($search) {
                 $q->where('employee_number', 'like', '%' . $search . '%')
                   ->orWhere('nik', 'like', '%' . $search . '%')
                   ->orWhere('department', 'like', '%' . $search . '%')
                   ->orWhere('position', 'like', '%' . $search . '%')
+                  ->orWhere('employment_type', 'like', '%' . $search . '%')
                   ->orWhereHas('user', function ($userQuery) use ($search) {
                       $userQuery->where('name', 'like', '%' . $search . '%')
                                 ->orWhere('email', 'like', '%' . $search . '%');
@@ -39,7 +40,8 @@ class EmployeeController extends Controller
             });
         }
 
-        $employees = $query->latest()->paginate($request->get('per_page', 15));
+        $perPage = min(max((int) $request->get('per_page', 15), 1), 100);
+        $employees = $query->latest()->paginate($perPage);
         $employees->getCollection()->transform(function ($employee) {
             return $this->transformEmployee($employee);
         });
@@ -53,29 +55,7 @@ class EmployeeController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => [
-                'required',
-                'email',
-                'max:255',
-                Rule::unique('users', 'email'),
-            ],
-            'role' => 'required|string|in:admin,hr,manager,employee',
-            'nik' => [
-                'required',
-                'string',
-                'max:50',
-                Rule::unique('employees', 'nik')->whereNull('deleted_at'),
-            ],
-            'phone' => 'nullable|string|max:30',
-            'address' => 'nullable|string',
-            'department' => 'required|string|max:100',
-            'position' => 'required|string|max:100',
-            'join_date' => 'required|date',
-            'status' => 'nullable|string|in:active,inactive',
-            'is_active' => 'nullable|boolean',
-        ]);
+        $validated = $this->validateEmployee($request);
 
         $employee = DB::transaction(function () use ($validated) {
             $user = User::create([
@@ -92,9 +72,12 @@ class EmployeeController extends Controller
                 'nik' => $validated['nik'],
                 'phone' => $validated['phone'] ?? null,
                 'address' => $validated['address'] ?? null,
+                'birth_date' => $validated['birth_date'] ?? null,
+                'gender' => $validated['gender'] ?? null,
                 'department' => $validated['department'],
                 'position' => $validated['position'],
                 'join_date' => $validated['join_date'],
+                'employment_type' => $validated['employment_type'] ?? 'permanent',
                 'is_active' => $this->resolveIsActive($validated),
             ]);
         });
@@ -132,31 +115,7 @@ class EmployeeController extends Controller
 
     public function update(Request $request, Employee $employee): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => [
-                'required',
-                'email',
-                'max:255',
-                Rule::unique('users', 'email')->ignore($employee->user_id),
-            ],
-            'role' => 'required|string|in:admin,hr,manager,employee',
-            'nik' => [
-                'required',
-                'string',
-                'max:50',
-                Rule::unique('employees', 'nik')
-                    ->ignore($employee->id)
-                    ->whereNull('deleted_at'),
-            ],
-            'phone' => 'nullable|string|max:30',
-            'address' => 'nullable|string',
-            'department' => 'required|string|max:100',
-            'position' => 'required|string|max:100',
-            'join_date' => 'required|date',
-            'status' => 'nullable|string|in:active,inactive',
-            'is_active' => 'nullable|boolean',
-        ]);
+        $validated = $this->validateEmployee($request, $employee);
 
         DB::transaction(function () use ($validated, $employee) {
             $employee->user->update([
@@ -170,9 +129,12 @@ class EmployeeController extends Controller
                 'nik' => $validated['nik'],
                 'phone' => $validated['phone'] ?? null,
                 'address' => $validated['address'] ?? null,
+                'birth_date' => $validated['birth_date'] ?? null,
+                'gender' => $validated['gender'] ?? null,
                 'department' => $validated['department'],
                 'position' => $validated['position'],
                 'join_date' => $validated['join_date'],
+                'employment_type' => $validated['employment_type'] ?? 'permanent',
                 'is_active' => $this->resolveIsActive($validated),
             ]);
         });
@@ -186,8 +148,15 @@ class EmployeeController extends Controller
         ]);
     }
 
-    public function destroy(Employee $employee): JsonResponse
+    public function destroy(Request $request, Employee $employee): JsonResponse
     {
+        if ((int) $employee->user_id === (int) $request->user()->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akun yang sedang digunakan tidak dapat dihapus.',
+            ], 422);
+        }
+
         DB::transaction(function () use ($employee) {
             $user = $employee->user;
             $employee->delete();
@@ -201,6 +170,26 @@ class EmployeeController extends Controller
             'success' => true,
             'message' => 'Data karyawan berhasil dihapus.',
             'data' => null,
+        ]);
+    }
+
+    private function validateEmployee(Request $request, ?Employee $employee = null): array
+    {
+        return $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($employee?->user_id)],
+            'role' => 'required|string|in:admin,hr,manager,employee',
+            'nik' => ['required', 'string', 'max:50', Rule::unique('employees', 'nik')->ignore($employee?->id)->whereNull('deleted_at')],
+            'phone' => 'nullable|string|max:30',
+            'address' => 'nullable|string',
+            'birth_date' => 'nullable|date',
+            'gender' => 'nullable|string|in:male,female',
+            'department' => 'required|string|max:100',
+            'position' => 'required|string|max:100',
+            'join_date' => 'required|date',
+            'employment_type' => 'nullable|string|in:permanent,contract,internship',
+            'status' => 'nullable|string|in:active,inactive',
+            'is_active' => 'nullable|boolean',
         ]);
     }
 
@@ -219,12 +208,7 @@ class EmployeeController extends Controller
 
     private function transformEmployee(Employee $employee): Employee
     {
-        $employee->formatted_employee_number = $this->formatEmployeeNumber(
-            $employee->department,
-            $employee->user_id,
-            $employee->employee_number
-        );
-
+        $employee->formatted_employee_number = $this->formatEmployeeNumber($employee->department, $employee->user_id, $employee->employee_number);
         return $employee;
     }
 
