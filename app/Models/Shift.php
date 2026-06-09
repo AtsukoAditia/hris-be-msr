@@ -4,40 +4,40 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Shift extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'name',
-            'code',
+        'code',
         'start_time',
         'end_time',
-        'break_duration',
+        'late_tolerance',
+        'is_overnight',
         'description',
         'is_active',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_overnight' => 'boolean',
         'start_time' => 'datetime:H:i',
         'end_time' => 'datetime:H:i',
     ];
 
-    // Relationship: shift has many employees
-    public function employees()
+    public function shiftSchedules()
     {
-        return $this->hasMany(Employee::class);
+        return $this->hasMany(ShiftSchedule::class);
     }
 
-    // Relationship: shift has many attendances
     public function attendances()
     {
         return $this->hasMany(Attendance::class);
     }
 
-    // Scope: active shifts only
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
