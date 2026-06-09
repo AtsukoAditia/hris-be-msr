@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Employee;
 use App\Models\Shift;
+use App\Models\ShiftSchedule;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
@@ -85,19 +86,33 @@ class EmployeeSeeder extends Seeder
             ],
         ];
 
-        foreach ($employees as $employee) {
-            $user = User::where('email', $employee['email'])->first();
+        foreach ($employees as $employeeData) {
+            $user = User::where('email', $employeeData['email'])->first();
 
             if (!$user) {
                 continue;
             }
 
-            unset($employee['email']);
+            unset($employeeData['email']);
 
-            Employee::updateOrCreate(
+            $employee = Employee::updateOrCreate(
                 ['user_id' => $user->id],
-                array_merge($employee, ['shift_id' => $defaultShiftId])
+                $employeeData
             );
+
+            if ($defaultShiftId) {
+                ShiftSchedule::updateOrCreate(
+                    [
+                        'employee_id' => $employee->id,
+                        'schedule_date' => now()->toDateString(),
+                    ],
+                    [
+                        'shift_id' => $defaultShiftId,
+                        'created_by' => $user->id,
+                        'notes' => 'Default demo shift schedule',
+                    ]
+                );
+            }
         }
     }
 }
