@@ -63,6 +63,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/shift-schedules/bulk', [ShiftScheduleController::class, 'bulkStore']);
 
             Route::apiResource('/employees', EmployeeController::class)->except(['destroy']);
+            Route::post('/employees/{employee}/face-enrollment', [EmployeeController::class, 'enrollFace']);
             Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy']);
             Route::get('/employees/{employee}/profile', [EmployeeController::class, 'profile']);
         });
