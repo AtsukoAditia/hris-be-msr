@@ -283,7 +283,8 @@ class AttendanceController extends Controller
             'check_out_lat'    => $attendance->check_out_latitude,
             'check_out_lng'    => $attendance->check_out_longitude,
             'status'           => $attendance->status,
-            'notes'            => $attendance->notes,
+            'note'             => $attendance->note,
+            'notes'            => $attendance->note,
             'late_minutes'     => $attendance->late_minutes,
             'overtime_minutes' => $attendance->overtime_minutes,
             'employee'         => $attendance->relationLoaded('employee') && $attendance->employee ? [
