@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class EmployeeController extends Controller
@@ -148,6 +149,32 @@ class EmployeeController extends Controller
         ]);
     }
 
+    public function enrollFace(Request $request, Employee $employee): JsonResponse
+    {
+        $validated = $request->validate([
+            'face_image' => 'required|image|mimes:jpg,jpeg,png,webp|max:2048',
+        ]);
+
+        if ($employee->face_image) {
+            Storage::disk('public')->delete($employee->face_image);
+        }
+
+        $path = $validated['face_image']->store('face-enrollments', 'public');
+
+        $employee->update([
+            'face_image' => $path,
+            'face_registered_at' => now(),
+        ]);
+
+        $employee->refresh()->load(['user']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Foto wajah absensi berhasil disimpan.',
+            'data' => $this->transformEmployee($employee),
+        ]);
+    }
+
     public function destroy(Request $request, Employee $employee): JsonResponse
     {
         if ((int) $employee->user_id === (int) $request->user()->id) {
@@ -159,6 +186,9 @@ class EmployeeController extends Controller
 
         DB::transaction(function () use ($employee) {
             $user = $employee->user;
+            if ($employee->face_image) {
+                Storage::disk('public')->delete($employee->face_image);
+            }
             $employee->delete();
 
             if ($user) {
@@ -209,6 +239,8 @@ class EmployeeController extends Controller
     private function transformEmployee(Employee $employee): Employee
     {
         $employee->formatted_employee_number = $this->formatEmployeeNumber($employee->department, $employee->user_id, $employee->employee_number);
+        $employee->face_image_url = $employee->face_image ? asset('storage/' . $employee->face_image) : null;
+        $employee->is_face_registered = !empty($employee->face_image);
         return $employee;
     }
 
