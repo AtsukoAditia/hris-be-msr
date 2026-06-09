@@ -23,7 +23,7 @@ class Attendance extends Model
         'check_out_latitude',
         'check_out_longitude',
         'status',
-        'notes',
+        'note',
         'late_minutes',
         'overtime_minutes',
     ];
