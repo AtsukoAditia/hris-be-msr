@@ -65,8 +65,10 @@ class AttendanceSettingController extends Controller
             ->update(['is_active' => false]);
 
         $expiryMinutes = (int) ($validated['expiry_minutes'] ?? $setting->qr_expiry_minutes ?? 5);
-        $token = AttendanceQrToken::create([
-            'token' => Str::random(64),
+        $qrCode = 'HRIS-ATT-' . Str::upper(Str::random(32));
+
+        $qr = AttendanceQrToken::create([
+            'token' => $qrCode,
             'type' => $validated['type'] ?? 'both',
             'expires_at' => now()->addMinutes($expiryMinutes),
             'is_active' => true,
@@ -75,7 +77,7 @@ class AttendanceSettingController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'QR attendance berhasil dibuat.',
-            'data' => $this->transformQrToken($token),
+            'data' => $this->transformQrCode($qr),
         ], 201);
     }
 
@@ -95,14 +97,25 @@ class AttendanceSettingController extends Controller
         ];
     }
 
-    private function transformQrToken(AttendanceQrToken $token): array
+    private function transformQrCode(AttendanceQrToken $qr): array
     {
+        $expiresAt = optional($qr->expires_at)->format('Y-m-d H:i:s');
+        $payload = [
+            'app' => 'hris-msr',
+            'feature' => 'attendance',
+            'version' => 1,
+            'qr_code' => $qr->token,
+            'type' => $qr->type,
+            'expires_at' => $expiresAt,
+        ];
+
         return [
-            'id' => $token->id,
-            'token' => $token->token,
-            'type' => $token->type,
-            'expires_at' => optional($token->expires_at)->format('Y-m-d H:i:s'),
-            'is_active' => $token->is_active,
+            'id' => $qr->id,
+            'qr_code' => $qr->token,
+            'qr_payload' => json_encode($payload),
+            'type' => $qr->type,
+            'expires_at' => $expiresAt,
+            'is_active' => $qr->is_active,
         ];
     }
 }
