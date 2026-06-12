@@ -33,7 +33,7 @@ class AttendanceSetting extends Model
         return self::firstOrCreate([], [
             'office_name' => 'Main Office',
             'radius_meters' => 100,
-            'is_radius_enabled' => true,
+            'is_radius_enabled' => false,
             'is_qr_enabled' => true,
             'qr_expiry_minutes' => 5,
         ]);
