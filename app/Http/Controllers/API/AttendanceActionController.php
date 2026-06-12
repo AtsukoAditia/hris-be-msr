@@ -53,8 +53,8 @@ class AttendanceActionController extends Controller
 
         $validated = $request->validate($this->rules($isQr));
 
-        $qrToken = $isQr ? $this->validateQr($validated['qr_token'], 'check_in') : null;
-        if ($qrToken instanceof JsonResponse) return $qrToken;
+        $qr = $isQr ? $this->validateQr($validated['qr_code'], 'check_in') : null;
+        if ($qr instanceof JsonResponse) return $qr;
 
         $radius = $this->validateRadius($request, $isQr ? 'check_in_qr' : 'check_in');
         if (!$radius['allowed']) {
@@ -91,7 +91,7 @@ class AttendanceActionController extends Controller
             'data' => array_merge($this->transform($attendance), [
                 'attendance_method' => $attendance->check_in_method,
                 'radius_validation' => $radius,
-                'qr' => $isQr ? $this->transformQr($qrToken) : null,
+                'qr' => $isQr ? $this->transformQr($qr) : null,
             ]),
         ]);
     }
@@ -116,8 +116,8 @@ class AttendanceActionController extends Controller
 
         $validated = $request->validate($this->rules($isQr));
 
-        $qrToken = $isQr ? $this->validateQr($validated['qr_token'], 'check_out') : null;
-        if ($qrToken instanceof JsonResponse) return $qrToken;
+        $qr = $isQr ? $this->validateQr($validated['qr_code'], 'check_out') : null;
+        if ($qr instanceof JsonResponse) return $qr;
 
         $radius = $this->validateRadius($request, $isQr ? 'check_out_qr' : 'check_out');
         if (!$radius['allowed']) {
@@ -144,7 +144,7 @@ class AttendanceActionController extends Controller
             'data' => array_merge($this->transform($attendance), [
                 'attendance_method' => $attendance->check_out_method,
                 'radius_validation' => $radius,
-                'qr' => $isQr ? $this->transformQr($qrToken) : null,
+                'qr' => $isQr ? $this->transformQr($qr) : null,
             ]),
         ]);
     }
@@ -156,8 +156,46 @@ class AttendanceActionController extends Controller
             'longitude' => 'required|numeric|between:-180,180',
             'photo' => $isQr ? 'nullable|image|mimes:jpg,jpeg,png,webp|max:12000' : 'required|image|mimes:jpg,jpeg,png,webp|max:12000',
             'note' => 'nullable|string|max:500',
-            'qr_token' => $isQr ? 'required|string' : 'nullable|string',
+            'qr_code' => $isQr ? 'required|string' : 'nullable|string',
         ];
+    }
+
+    private function validateQr(string $scannedValue, string $type): AttendanceQrToken|JsonResponse
+    {
+        $setting = AttendanceSetting::current();
+
+        if (!$setting->is_qr_enabled) {
+            return response()->json(['success' => false, 'message' => 'QR attendance sedang dinonaktifkan.'], 422);
+        }
+
+        $qrCode = $this->extractQrCode($scannedValue);
+        $qr = AttendanceQrToken::where('token', $qrCode)->first();
+
+        if (!$qr) {
+            return response()->json(['success' => false, 'message' => 'QR code tidak valid.'], 422);
+        }
+
+        if (!$qr->is_active || $qr->isExpired()) {
+            return response()->json(['success' => false, 'message' => 'QR code sudah tidak aktif atau sudah expired.'], 422);
+        }
+
+        if (!in_array($qr->type, [$type, 'both'], true)) {
+            return response()->json(['success' => false, 'message' => 'QR code tidak sesuai dengan tipe absensi.'], 422);
+        }
+
+        return $qr;
+    }
+
+    private function extractQrCode(string $scannedValue): string
+    {
+        $value = trim($scannedValue);
+        $decoded = json_decode($value, true);
+
+        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+            return (string) ($decoded['qr_code'] ?? $decoded['code'] ?? $value);
+        }
+
+        return $value;
     }
 
     private function validateRadius(Request $request, string $action): array
@@ -186,31 +224,6 @@ class AttendanceActionController extends Controller
             'office_latitude' => $setting->office_latitude,
             'office_longitude' => $setting->office_longitude,
         ];
-    }
-
-    private function validateQr(string $token, string $type): AttendanceQrToken|JsonResponse
-    {
-        $setting = AttendanceSetting::current();
-
-        if (!$setting->is_qr_enabled) {
-            return response()->json(['success' => false, 'message' => 'QR attendance sedang dinonaktifkan.'], 422);
-        }
-
-        $qr = AttendanceQrToken::where('token', $token)->first();
-
-        if (!$qr) {
-            return response()->json(['success' => false, 'message' => 'QR token tidak valid.'], 422);
-        }
-
-        if (!$qr->is_active || $qr->isExpired()) {
-            return response()->json(['success' => false, 'message' => 'QR token sudah tidak aktif atau sudah expired.'], 422);
-        }
-
-        if (!in_array($qr->type, [$type, 'both'], true)) {
-            return response()->json(['success' => false, 'message' => 'QR token tidak sesuai dengan tipe absensi.'], 422);
-        }
-
-        return $qr;
     }
 
     private function employee(): ?Employee
@@ -285,6 +298,6 @@ class AttendanceActionController extends Controller
 
     private function transformQr(?AttendanceQrToken $qr): ?array
     {
-        return $qr ? ['id' => $qr->id, 'type' => $qr->type, 'expires_at' => optional($qr->expires_at)->format('Y-m-d H:i:s')] : null;
+        return $qr ? ['id' => $qr->id, 'qr_code' => $qr->token, 'type' => $qr->type, 'expires_at' => optional($qr->expires_at)->format('Y-m-d H:i:s')] : null;
     }
 }
