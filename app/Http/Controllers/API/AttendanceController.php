@@ -4,12 +4,13 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
+use App\Models\AttendanceQrToken;
+use App\Models\AttendanceSetting;
 use App\Models\Employee;
 use App\Models\ShiftSchedule;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Storage;
 
 class AttendanceController extends Controller
 {
@@ -36,7 +37,7 @@ class AttendanceController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Data absensi berhasil diambil.',
-            'data'    => $attendances,
+            'data' => $attendances,
         ]);
     }
 
@@ -48,7 +49,7 @@ class AttendanceController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Profil karyawan tidak ditemukan untuk akun ini.',
-                'data'    => [],
+                'data' => [],
             ], 404);
         }
 
@@ -72,7 +73,7 @@ class AttendanceController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Data absensi karyawan berhasil diambil.',
-            'data'    => $attendances,
+            'data' => $attendances,
         ]);
     }
 
@@ -84,7 +85,7 @@ class AttendanceController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Profil karyawan tidak ditemukan.',
-                'data'    => null,
+                'data' => null,
             ], 404);
         }
 
@@ -101,7 +102,7 @@ class AttendanceController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Data absensi hari ini.',
-            'data'    => [
+            'data' => [
                 'attendance' => $attendance ? $this->transformAttendance($attendance) : null,
                 'shift_schedule' => $shiftSchedule,
                 'shift' => $shiftSchedule?->shift,
@@ -116,11 +117,31 @@ class AttendanceController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Detail absensi berhasil diambil.',
-            'data'    => $this->transformAttendance($attendance),
+            'data' => $this->transformAttendance($attendance),
         ]);
     }
 
     public function checkIn(Request $request): JsonResponse
+    {
+        return $this->handleCheckIn($request, false);
+    }
+
+    public function checkOut(Request $request): JsonResponse
+    {
+        return $this->handleCheckOut($request, false);
+    }
+
+    public function checkInQr(Request $request): JsonResponse
+    {
+        return $this->handleCheckIn($request, true);
+    }
+
+    public function checkOutQr(Request $request): JsonResponse
+    {
+        return $this->handleCheckOut($request, true);
+    }
+
+    private function handleCheckIn(Request $request, bool $requiresQr): JsonResponse
     {
         $employee = $this->getAuthenticatedEmployee();
 
@@ -137,11 +158,29 @@ class AttendanceController extends Controller
         }
 
         $validated = $request->validate([
-            'latitude'  => 'nullable|numeric',
-            'longitude' => 'nullable|numeric',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
             'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:12000',
             'note' => 'nullable|string|max:500',
+            'qr_token' => $requiresQr ? 'required|string' : 'nullable|string',
         ]);
+
+        $qrToken = null;
+        if ($requiresQr) {
+            $qrToken = $this->validateQrToken($validated['qr_token'], 'check_in');
+            if ($qrToken instanceof JsonResponse) {
+                return $qrToken;
+            }
+        }
+
+        $radiusValidation = $this->validateRadius($request, 'check_in');
+        if (!$radiusValidation['allowed']) {
+            return response()->json([
+                'success' => false,
+                'message' => $radiusValidation['message'],
+                'data' => $radiusValidation,
+            ], 422);
+        }
 
         $shiftSchedule = ShiftSchedule::with('shift')
             ->where('employee_id', $employee->id)
@@ -173,11 +212,14 @@ class AttendanceController extends Controller
         return response()->json([
             'success' => true,
             'message' => $lateMinutes > 0 ? 'Check-in berhasil, status terlambat.' : 'Check-in berhasil.',
-            'data'    => $this->transformAttendance($attendance),
+            'data' => array_merge($this->transformAttendance($attendance), [
+                'radius_validation' => $radiusValidation,
+                'qr' => $requiresQr ? $this->transformQrToken($qrToken) : null,
+            ]),
         ]);
     }
 
-    public function checkOut(Request $request): JsonResponse
+    private function handleCheckOut(Request $request, bool $requiresQr): JsonResponse
     {
         $employee = $this->getAuthenticatedEmployee();
 
@@ -199,11 +241,29 @@ class AttendanceController extends Controller
         }
 
         $validated = $request->validate([
-            'latitude'  => 'nullable|numeric',
-            'longitude' => 'nullable|numeric',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
             'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:12000',
             'note' => 'nullable|string|max:500',
+            'qr_token' => $requiresQr ? 'required|string' : 'nullable|string',
         ]);
+
+        $qrToken = null;
+        if ($requiresQr) {
+            $qrToken = $this->validateQrToken($validated['qr_token'], 'check_out');
+            if ($qrToken instanceof JsonResponse) {
+                return $qrToken;
+            }
+        }
+
+        $radiusValidation = $this->validateRadius($request, 'check_out');
+        if (!$radiusValidation['allowed']) {
+            return response()->json([
+                'success' => false,
+                'message' => $radiusValidation['message'],
+                'data' => $radiusValidation,
+            ], 422);
+        }
 
         $attendance->check_out_time = now();
         $attendance->check_out_latitude = $validated['latitude'] ?? null;
@@ -221,18 +281,11 @@ class AttendanceController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Check-out berhasil.',
-            'data'    => $this->transformAttendance($attendance),
+            'data' => array_merge($this->transformAttendance($attendance), [
+                'radius_validation' => $radiusValidation,
+                'qr' => $requiresQr ? $this->transformQrToken($qrToken) : null,
+            ]),
         ]);
-    }
-
-    public function checkInQr(Request $request): JsonResponse
-    {
-        return $this->checkIn($request);
-    }
-
-    public function checkOutQr(Request $request): JsonResponse
-    {
-        return $this->checkOut($request);
     }
 
     public function getByEmployee(int $employeeId, Request $request): JsonResponse
@@ -252,7 +305,7 @@ class AttendanceController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Data absensi karyawan berhasil diambil.',
-            'data'    => $attendances,
+            'data' => $attendances,
         ]);
     }
 
@@ -260,7 +313,7 @@ class AttendanceController extends Controller
     {
         return response()->json([
             'success' => false,
-            'message' => 'Fitur export absensi belum tersedia.',
+            'message' => 'Fitur export absensi belum tersedia. Gunakan endpoint /reports/export untuk export laporan.',
         ], 501);
     }
 
@@ -273,6 +326,118 @@ class AttendanceController extends Controller
         }
 
         return Employee::with(['user'])->where('user_id', $user->id)->first();
+    }
+
+    private function validateRadius(Request $request, string $action): array
+    {
+        $setting = AttendanceSetting::current();
+
+        if (!$setting->is_radius_enabled) {
+            return [
+                'allowed' => true,
+                'enabled' => false,
+                'message' => 'Validasi radius tidak aktif.',
+                'distance_meters' => null,
+                'radius_meters' => $setting->radius_meters,
+            ];
+        }
+
+        if (!$setting->hasOfficeCoordinate()) {
+            return [
+                'allowed' => false,
+                'enabled' => true,
+                'message' => 'Koordinat kantor belum diatur.',
+                'distance_meters' => null,
+                'radius_meters' => $setting->radius_meters,
+            ];
+        }
+
+        if (!$request->filled('latitude') || !$request->filled('longitude')) {
+            return [
+                'allowed' => false,
+                'enabled' => true,
+                'message' => 'Lokasi GPS wajib dikirim untuk absensi.',
+                'distance_meters' => null,
+                'radius_meters' => $setting->radius_meters,
+            ];
+        }
+
+        $distance = $this->calculateDistanceMeters(
+            (float) $request->latitude,
+            (float) $request->longitude,
+            (float) $setting->office_latitude,
+            (float) $setting->office_longitude
+        );
+
+        $allowed = $distance <= $setting->radius_meters;
+
+        return [
+            'allowed' => $allowed,
+            'enabled' => true,
+            'action' => $action,
+            'message' => $allowed ? 'Lokasi berada dalam radius kantor.' : 'Lokasi berada di luar radius kantor.',
+            'distance_meters' => $distance,
+            'radius_meters' => $setting->radius_meters,
+            'office_name' => $setting->office_name,
+            'office_latitude' => $setting->office_latitude,
+            'office_longitude' => $setting->office_longitude,
+        ];
+    }
+
+    private function validateQrToken(string $token, string $type): AttendanceQrToken|JsonResponse
+    {
+        $setting = AttendanceSetting::current();
+
+        if (!$setting->is_qr_enabled) {
+            return response()->json([
+                'success' => false,
+                'message' => 'QR attendance sedang dinonaktifkan.',
+            ], 422);
+        }
+
+        $qrToken = AttendanceQrToken::where('token', $token)->first();
+
+        if (!$qrToken) {
+            return response()->json([
+                'success' => false,
+                'message' => 'QR token tidak valid.',
+            ], 422);
+        }
+
+        if (!$qrToken->is_active || $qrToken->isExpired()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'QR token sudah tidak aktif atau sudah expired.',
+            ], 422);
+        }
+
+        if (!in_array($qrToken->type, [$type, 'both'], true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'QR token tidak sesuai dengan tipe absensi.',
+            ], 422);
+        }
+
+        return $qrToken;
+    }
+
+    private function calculateDistanceMeters(float $lat1, float $lng1, float $lat2, float $lng2): int
+    {
+        $earthRadius = 6371000;
+        $latFrom = deg2rad($lat1);
+        $lngFrom = deg2rad($lng1);
+        $latTo = deg2rad($lat2);
+        $lngTo = deg2rad($lng2);
+
+        $latDelta = $latTo - $latFrom;
+        $lngDelta = $lngTo - $lngFrom;
+
+        $angle = 2 * asin(sqrt(
+            pow(sin($latDelta / 2), 2) +
+            cos($latFrom) * cos($latTo) * pow(sin($lngDelta / 2), 2)
+        ));
+
+        return (int) round($angle * $earthRadius);
     }
 
     private function calculateLateMinutes(?string $shiftStartTime, int $toleranceMinutes, Carbon $checkInTime): int
@@ -308,34 +473,41 @@ class AttendanceController extends Controller
 
     private function transformAttendance(Attendance $attendance): array
     {
+        $checkInRadius = $this->transformRadiusInfo($attendance->check_in_latitude, $attendance->check_in_longitude);
+        $checkOutRadius = $this->transformRadiusInfo($attendance->check_out_latitude, $attendance->check_out_longitude);
+
         return [
-            'id'               => $attendance->id,
-            'employee_id'      => $attendance->employee_id,
-            'shift_id'         => $attendance->shift_id,
-            'attendance_date'  => optional($attendance->attendance_date)->format('Y-m-d'),
-            'check_in_time'    => optional($attendance->check_in_time)->format('H:i:s'),
-            'check_out_time'   => optional($attendance->check_out_time)->format('H:i:s'),
-            'check_in_lat'     => $attendance->check_in_latitude,
-            'check_in_lng'     => $attendance->check_in_longitude,
-            'check_out_lat'    => $attendance->check_out_latitude,
-            'check_out_lng'    => $attendance->check_out_longitude,
-            'check_in_photo'   => $attendance->check_in_photo,
-            'check_out_photo'  => $attendance->check_out_photo,
+            'id' => $attendance->id,
+            'employee_id' => $attendance->employee_id,
+            'shift_id' => $attendance->shift_id,
+            'attendance_date' => optional($attendance->attendance_date)->format('Y-m-d'),
+            'check_in_time' => optional($attendance->check_in_time)->format('H:i:s'),
+            'check_out_time' => optional($attendance->check_out_time)->format('H:i:s'),
+            'check_in_lat' => $attendance->check_in_latitude,
+            'check_in_lng' => $attendance->check_in_longitude,
+            'check_out_lat' => $attendance->check_out_latitude,
+            'check_out_lng' => $attendance->check_out_longitude,
+            'check_in_distance_meters' => $checkInRadius['distance_meters'],
+            'check_out_distance_meters' => $checkOutRadius['distance_meters'],
+            'is_check_in_within_radius' => $checkInRadius['is_within_radius'],
+            'is_check_out_within_radius' => $checkOutRadius['is_within_radius'],
+            'check_in_photo' => $attendance->check_in_photo,
+            'check_out_photo' => $attendance->check_out_photo,
             'check_in_photo_url' => $attendance->check_in_photo ? asset('storage/' . $attendance->check_in_photo) : null,
             'check_out_photo_url' => $attendance->check_out_photo ? asset('storage/' . $attendance->check_out_photo) : null,
-            'status'           => $attendance->status,
-            'note'             => $attendance->note,
-            'notes'            => $attendance->note,
-            'late_minutes'     => $attendance->late_minutes,
+            'status' => $attendance->status,
+            'note' => $attendance->note,
+            'notes' => $attendance->note,
+            'late_minutes' => $attendance->late_minutes,
             'overtime_minutes' => $attendance->overtime_minutes,
-            'employee'         => $attendance->relationLoaded('employee') && $attendance->employee ? [
-                'id'         => $attendance->employee->id,
-                'name'       => $attendance->employee->user->name ?? null,
+            'employee' => $attendance->relationLoaded('employee') && $attendance->employee ? [
+                'id' => $attendance->employee->id,
+                'name' => $attendance->employee->user->name ?? null,
                 'department' => $attendance->employee->department ?? null,
-                'position'   => $attendance->employee->position ?? null,
+                'position' => $attendance->employee->position ?? null,
             ] : null,
             'shift' => $attendance->relationLoaded('shift') && $attendance->shift ? [
-                'id'   => $attendance->shift->id,
+                'id' => $attendance->shift->id,
                 'name' => $attendance->shift->name ?? null,
                 'code' => $attendance->shift->code ?? null,
                 'start_time' => $attendance->shift->start_time ?? null,
@@ -343,6 +515,43 @@ class AttendanceController extends Controller
                 'late_tolerance' => $attendance->shift->late_tolerance ?? null,
                 'is_overnight' => $attendance->shift->is_overnight ?? false,
             ] : null,
+        ];
+    }
+
+    private function transformRadiusInfo($latitude, $longitude): array
+    {
+        $setting = AttendanceSetting::current();
+
+        if (!$setting->is_radius_enabled || !$setting->hasOfficeCoordinate() || is_null($latitude) || is_null($longitude)) {
+            return [
+                'distance_meters' => null,
+                'is_within_radius' => null,
+            ];
+        }
+
+        $distance = $this->calculateDistanceMeters(
+            (float) $latitude,
+            (float) $longitude,
+            (float) $setting->office_latitude,
+            (float) $setting->office_longitude
+        );
+
+        return [
+            'distance_meters' => $distance,
+            'is_within_radius' => $distance <= $setting->radius_meters,
+        ];
+    }
+
+    private function transformQrToken(?AttendanceQrToken $token): ?array
+    {
+        if (!$token) {
+            return null;
+        }
+
+        return [
+            'id' => $token->id,
+            'type' => $token->type,
+            'expires_at' => optional($token->expires_at)->format('Y-m-d H:i:s'),
         ];
     }
 }
