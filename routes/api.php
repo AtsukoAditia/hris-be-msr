@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\API\AuthController;
+use App\Http\Controllers\API\AttendanceActionController;
 use App\Http\Controllers\API\AttendanceController;
 use App\Http\Controllers\API\AttendanceSettingController;
 use App\Http\Controllers\API\DashboardController;
@@ -23,10 +24,10 @@ Route::prefix('v1')->group(function () {
 
         Route::get('/attendance/my', [AttendanceController::class, 'my']);
         Route::get('/attendance/today', [AttendanceController::class, 'today']);
-        Route::post('/attendance/check-in', [AttendanceController::class, 'checkIn']);
-        Route::post('/attendance/check-out', [AttendanceController::class, 'checkOut']);
-        Route::post('/attendance/check-in/qr', [AttendanceController::class, 'checkInQr']);
-        Route::post('/attendance/check-out/qr', [AttendanceController::class, 'checkOutQr']);
+        Route::post('/attendance/check-in', [AttendanceActionController::class, 'checkIn']);
+        Route::post('/attendance/check-out', [AttendanceActionController::class, 'checkOut']);
+        Route::post('/attendance/check-in/qr', [AttendanceActionController::class, 'checkInQr']);
+        Route::post('/attendance/check-out/qr', [AttendanceActionController::class, 'checkOutQr']);
 
         Route::middleware('role:admin,hr,manager')->group(function () {
             Route::get('/attendance', [AttendanceController::class, 'index']);
