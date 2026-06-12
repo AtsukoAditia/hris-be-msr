@@ -48,31 +48,9 @@ class ReportController extends Controller
 
     public function employee(Request $request): JsonResponse
     {
-        $query = Employee::with(['user']);
-
-        if ($request->filled('department')) {
-            $query->where('department', $request->department);
-        }
-
-        if ($request->filled('status')) {
-            $query->where('is_active', $request->status === 'active');
-        }
-
-        if ($request->filled('search')) {
-            $search = trim((string) $request->search);
-            $query->where(function ($q) use ($search) {
-                $q->where('employee_number', 'like', '%' . $search . '%')
-                    ->orWhere('nik', 'like', '%' . $search . '%')
-                    ->orWhere('department', 'like', '%' . $search . '%')
-                    ->orWhere('position', 'like', '%' . $search . '%')
-                    ->orWhereHas('user', function ($userQuery) use ($search) {
-                        $userQuery->where('name', 'like', '%' . $search . '%')
-                            ->orWhere('email', 'like', '%' . $search . '%');
-                    });
-            });
-        }
-
+        $query = $this->buildEmployeeQuery($request);
         $summaryQuery = clone $query;
+
         $perPage = min(max((int) $request->get('per_page', 30), 1), 100);
         $employees = $query->latest()->paginate($perPage);
         $employees->getCollection()->transform(fn ($employee) => $this->transformEmployee($employee));
@@ -165,6 +143,35 @@ class ReportController extends Controller
         }
 
         $this->applyDateFilter($query, $request, 'start_date');
+
+        return $query;
+    }
+
+    private function buildEmployeeQuery(Request $request)
+    {
+        $query = Employee::with(['user']);
+
+        if ($request->filled('department')) {
+            $query->where('department', $request->department);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('is_active', $request->status === 'active');
+        }
+
+        if ($request->filled('search')) {
+            $search = trim((string) $request->search);
+            $query->where(function ($q) use ($search) {
+                $q->where('employee_number', 'like', '%' . $search . '%')
+                    ->orWhere('nik', 'like', '%' . $search . '%')
+                    ->orWhere('department', 'like', '%' . $search . '%')
+                    ->orWhere('position', 'like', '%' . $search . '%')
+                    ->orWhereHas('user', function ($userQuery) use ($search) {
+                        $userQuery->where('name', 'like', '%' . $search . '%')
+                            ->orWhere('email', 'like', '%' . $search . '%');
+                    });
+            });
+        }
 
         return $query;
     }
@@ -286,7 +293,7 @@ class ReportController extends Controller
 
     private function exportEmployeeCsv(Request $request): StreamedResponse
     {
-        $rows = Employee::with('user')->latest()->get()->map(fn ($employee) => $this->transformEmployee($employee));
+        $rows = $this->buildEmployeeQuery($request)->latest()->get()->map(fn ($employee) => $this->transformEmployee($employee));
 
         return $this->streamCsv('employee-report.csv', [
             'Employee Number', 'Nama', 'Email', 'Departemen', 'Jabatan', 'Tipe Karyawan', 'Status',
@@ -299,6 +306,7 @@ class ReportController extends Controller
     {
         return response()->streamDownload(function () use ($headers, $rows) {
             $handle = fopen('php://output', 'w');
+            fwrite($handle, "\xEF\xBB\xBF");
             fputcsv($handle, $headers);
 
             foreach ($rows as $row) {
