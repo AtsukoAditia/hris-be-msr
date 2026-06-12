@@ -14,7 +14,7 @@ return new class extends Migration
             $table->decimal('office_latitude', 11, 8)->nullable();
             $table->decimal('office_longitude', 11, 8)->nullable();
             $table->unsignedInteger('radius_meters')->default(100);
-            $table->boolean('is_radius_enabled')->default(true);
+            $table->boolean('is_radius_enabled')->default(false);
             $table->boolean('is_qr_enabled')->default(true);
             $table->unsignedInteger('qr_expiry_minutes')->default(5);
             $table->timestamps();
