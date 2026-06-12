@@ -18,6 +18,8 @@ class Attendance extends Model
         'check_out_time',
         'check_in_photo',
         'check_out_photo',
+        'check_in_method',
+        'check_out_method',
         'check_in_latitude',
         'check_in_longitude',
         'check_out_latitude',
@@ -38,25 +40,21 @@ class Attendance extends Model
         'check_out_longitude' => 'decimal:8',
     ];
 
-    // Relationship: attendance belongs to employee
     public function employee()
     {
         return $this->belongsTo(Employee::class);
     }
 
-    // Relationship: attendance belongs to shift
     public function shift()
     {
         return $this->belongsTo(Shift::class);
     }
 
-    // Scope: attendance by date range
     public function scopeDateRange($query, $start, $end)
     {
         return $query->whereBetween('attendance_date', [$start, $end]);
     }
 
-    // Scope: today's attendance
     public function scopeToday($query)
     {
         return $query->whereDate('attendance_date', today());
