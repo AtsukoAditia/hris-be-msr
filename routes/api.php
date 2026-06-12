@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\AttendanceController;
+use App\Http\Controllers\API\AttendanceSettingController;
 use App\Http\Controllers\API\DashboardController;
 use App\Http\Controllers\API\ShiftController;
 use App\Http\Controllers\API\LeaveController;
@@ -9,12 +10,6 @@ use App\Http\Controllers\API\EmployeeController;
 use App\Http\Controllers\API\ReportController;
 use App\Http\Controllers\API\ShiftScheduleController;
 use Illuminate\Support\Facades\Route;
-
-/*
-|--------------------------------------------------------------------------
-| API Routes - HRIS MSR
-|--------------------------------------------------------------------------
-*/
 
 Route::prefix('v1')->group(function () {
     Route::post('/auth/login', [AuthController::class, 'login']);
@@ -37,6 +32,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/attendance', [AttendanceController::class, 'index']);
             Route::get('/attendance/export', [AttendanceController::class, 'export']);
             Route::get('/attendance/employee/{employeeId}', [AttendanceController::class, 'getByEmployee']);
+            Route::get('/attendance/settings', [AttendanceSettingController::class, 'show']);
             Route::get('/attendance/{attendance}', [AttendanceController::class, 'show']);
 
             Route::get('/leaves', [LeaveController::class, 'index']);
@@ -56,12 +52,13 @@ Route::prefix('v1')->group(function () {
         Route::delete('/leaves/{leave}', [LeaveController::class, 'destroy']);
 
         Route::middleware('role:admin,hr')->group(function () {
+            Route::put('/attendance/settings', [AttendanceSettingController::class, 'update']);
+            Route::post('/attendance/qr/generate', [AttendanceSettingController::class, 'generateQr']);
             Route::apiResource('/shifts', ShiftController::class);
             Route::apiResource('/shift-schedules', ShiftScheduleController::class);
             Route::get('/shift-schedules/employee/{employeeId}', [ShiftScheduleController::class, 'getByEmployee']);
             Route::get('/shift-schedules/date/{date}', [ShiftScheduleController::class, 'getByDate']);
             Route::post('/shift-schedules/bulk', [ShiftScheduleController::class, 'bulkStore']);
-
             Route::apiResource('/employees', EmployeeController::class)->except(['destroy']);
             Route::post('/employees/{employee}/face-enrollment', [EmployeeController::class, 'enrollFace']);
             Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy']);
