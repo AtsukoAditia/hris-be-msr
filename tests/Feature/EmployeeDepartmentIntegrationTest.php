@@ -67,7 +67,7 @@ class EmployeeDepartmentIntegrationTest extends TestCase
 
     public function test_inactive_department_cannot_be_assigned_to_employee(): void
     {
-        $department = Department::where('code', 'MKT')->firstOrFail();
+        $department = Department::where('code', 'FIN')->firstOrFail();
         $department->update(['is_active' => false]);
 
         $this->postJson('/api/v1/employees', [
