@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Employee extends Model
@@ -19,6 +20,7 @@ class Employee extends Model
         'birth_date',
         'gender',
         'department',
+        'department_id',
         'position',
         'join_date',
         'employment_type',
@@ -39,9 +41,14 @@ class Employee extends Model
         'is_active' => 'boolean',
     ];
 
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function departmentRelation(): BelongsTo
+    {
+        return $this->belongsTo(Department::class, 'department_id');
     }
 
     public function attendances()
