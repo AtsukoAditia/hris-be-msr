@@ -5,14 +5,16 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Department extends Model
+class Position extends Model
 {
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'department_id',
         'code',
         'name',
         'description',
@@ -23,9 +25,9 @@ class Department extends Model
         'is_active' => 'boolean',
     ];
 
-    public function positions(): HasMany
+    public function department(): BelongsTo
     {
-        return $this->hasMany(Position::class);
+        return $this->belongsTo(Department::class);
     }
 
     public function employees(): HasMany
@@ -44,11 +46,16 @@ class Department extends Model
             return $query;
         }
 
-        return $query->where(function (Builder $departmentQuery) use ($keyword) {
-            $departmentQuery
+        return $query->where(function (Builder $positionQuery) use ($keyword) {
+            $positionQuery
                 ->where('code', 'like', '%'.$keyword.'%')
                 ->orWhere('name', 'like', '%'.$keyword.'%')
-                ->orWhere('description', 'like', '%'.$keyword.'%');
+                ->orWhere('description', 'like', '%'.$keyword.'%')
+                ->orWhereHas('department', function (Builder $departmentQuery) use ($keyword) {
+                    $departmentQuery
+                        ->where('code', 'like', '%'.$keyword.'%')
+                        ->orWhere('name', 'like', '%'.$keyword.'%');
+                });
         });
     }
 }

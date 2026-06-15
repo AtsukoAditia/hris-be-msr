@@ -4,9 +4,11 @@ namespace Tests\Feature;
 
 use App\Models\Department;
 use App\Models\Employee;
+use App\Models\Position;
 use App\Models\User;
 use Database\Seeders\DepartmentSeeder;
 use Database\Seeders\EmployeeDepartmentSeeder;
+use Database\Seeders\PositionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -20,6 +22,8 @@ class EmployeeDepartmentIntegrationTest extends TestCase
         parent::setUp();
 
         $this->seed(DepartmentSeeder::class);
+        $this->seed(EmployeeDepartmentSeeder::class);
+        $this->seed(PositionSeeder::class);
         $this->actingAsAdmin();
     }
 
@@ -55,6 +59,7 @@ class EmployeeDepartmentIntegrationTest extends TestCase
             ...$this->validEmployeePayload([
                 'email' => 'legacy@hris.test',
                 'nik' => '3171000000000102',
+                'position' => 'Staff Operation',
             ]),
             'department' => 'Operations',
         ])
@@ -114,6 +119,7 @@ class EmployeeDepartmentIntegrationTest extends TestCase
                 'name' => $employee->user->name,
                 'email' => $employee->user->email,
                 'nik' => $employee->nik,
+                'position' => 'Finance Staff',
             ]),
             'department_id' => $finance->id,
         ])
@@ -199,13 +205,16 @@ class EmployeeDepartmentIntegrationTest extends TestCase
             'is_active' => true,
         ]);
 
+        $position = Position::where('department_id', $department->id)->first();
+
         return Employee::create([
             'user_id' => $user->id,
             'employee_number' => $department->code.'-'.$user->id,
             'nik' => $nik,
             'department' => $department->code,
             'department_id' => $department->id,
-            'position' => 'Staff',
+            'position' => $position?->code ?? 'Staff',
+            'position_id' => $position?->id,
             'join_date' => '2026-01-01',
             'employment_type' => 'permanent',
             'is_active' => true,
