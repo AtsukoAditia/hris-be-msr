@@ -22,6 +22,7 @@ class Employee extends Model
         'department',
         'department_id',
         'position',
+        'position_id',
         'join_date',
         'employment_type',
         'basic_salary',
@@ -49,6 +50,11 @@ class Employee extends Model
     public function departmentMaster(): BelongsTo
     {
         return $this->belongsTo(Department::class, 'department_id');
+    }
+
+    public function positionMaster(): BelongsTo
+    {
+        return $this->belongsTo(Position::class, 'position_id');
     }
 
     public function attendances()
