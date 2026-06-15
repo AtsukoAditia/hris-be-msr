@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
             ShiftSeeder::class,
             UserSeeder::class,
             EmployeeSeeder::class,
+            EmployeeDepartmentSeeder::class,
         ]);
     }
 }
