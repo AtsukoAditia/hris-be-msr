@@ -1,15 +1,15 @@
 <?php
 
-use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\AttendanceActionController;
 use App\Http\Controllers\API\AttendanceController;
 use App\Http\Controllers\API\AttendanceSettingController;
+use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\DashboardController;
 use App\Http\Controllers\API\DepartmentController;
-use App\Http\Controllers\API\ShiftController;
-use App\Http\Controllers\API\LeaveController;
 use App\Http\Controllers\API\EmployeeController;
+use App\Http\Controllers\API\LeaveController;
 use App\Http\Controllers\API\ReportController;
+use App\Http\Controllers\API\ShiftController;
 use App\Http\Controllers\API\ShiftScheduleController;
 use Illuminate\Support\Facades\Route;
 
