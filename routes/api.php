@@ -8,6 +8,7 @@ use App\Http\Controllers\API\DashboardController;
 use App\Http\Controllers\API\DepartmentController;
 use App\Http\Controllers\API\EmployeeController;
 use App\Http\Controllers\API\LeaveController;
+use App\Http\Controllers\API\PositionController;
 use App\Http\Controllers\API\ReportController;
 use App\Http\Controllers\API\ShiftController;
 use App\Http\Controllers\API\ShiftScheduleController;
@@ -48,6 +49,8 @@ Route::prefix('v1')->group(function () {
 
             Route::get('/departments', [DepartmentController::class, 'index']);
             Route::get('/departments/{department}', [DepartmentController::class, 'show']);
+            Route::get('/positions', [PositionController::class, 'index']);
+            Route::get('/positions/{position}', [PositionController::class, 'show']);
         });
 
         Route::get('/leaves/my', [LeaveController::class, 'my']);
@@ -73,6 +76,11 @@ Route::prefix('v1')->group(function () {
             Route::put('/departments/{department}', [DepartmentController::class, 'update']);
             Route::patch('/departments/{department}', [DepartmentController::class, 'update']);
             Route::delete('/departments/{department}', [DepartmentController::class, 'destroy']);
+
+            Route::post('/positions', [PositionController::class, 'store']);
+            Route::put('/positions/{position}', [PositionController::class, 'update']);
+            Route::patch('/positions/{position}', [PositionController::class, 'update']);
+            Route::delete('/positions/{position}', [PositionController::class, 'destroy']);
         });
     });
 });
