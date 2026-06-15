@@ -20,8 +20,11 @@ class DepartmentController extends Controller
             'active_only' => ['nullable', 'boolean'],
         ]);
 
-        $query = Department::query()
-            ->search(isset($validated['search']) ? trim($validated['search']) : null);
+        $search = $request->filled('search')
+            ? trim((string) $request->input('search'))
+            : null;
+
+        $query = Department::query()->search($search);
 
         if ($request->boolean('active_only')) {
             $query->active();
