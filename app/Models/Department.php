@@ -23,6 +23,11 @@ class Department extends Model
         'is_active' => 'boolean',
     ];
 
+    public function positions(): HasMany
+    {
+        return $this->hasMany(Position::class);
+    }
+
     public function employees(): HasMany
     {
         return $this->hasMany(Employee::class);
