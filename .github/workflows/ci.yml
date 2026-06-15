@@ -1,0 +1,107 @@
+name: Backend CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: backend-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: PHP 8.3 / Laravel
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: hris_test
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      APP_ENV: testing
+      APP_DEBUG: false
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: hris_test
+      DB_USERNAME: root
+      DB_PASSWORD: root
+      CACHE_STORE: array
+      CACHE_DRIVER: array
+      SESSION_DRIVER: array
+      QUEUE_CONNECTION: sync
+      MAIL_MAILER: array
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_mysql, fileinfo, xml, ctype, tokenizer
+          tools: composer:v2
+          coverage: none
+
+      - name: Validate Composer files
+        run: composer validate --strict
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress --ansi
+
+      - name: Prepare Laravel environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --force
+          php artisan config:clear
+
+      - name: Run database migrations
+        run: php artisan migrate --force --no-interaction
+
+      - name: Check code style for changed PHP files
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE_SHA="${{ github.event.before }}"
+          fi
+
+          if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            mapfile -t PHP_FILES < <(git ls-files '*.php')
+          else
+            mapfile -t PHP_FILES < <(git diff --name-only --diff-filter=ACMRT "$BASE_SHA" "${{ github.sha }}" -- '*.php')
+          fi
+
+          if [ "${#PHP_FILES[@]}" -eq 0 ]; then
+            echo "No changed PHP files to check."
+            exit 0
+          fi
+
+          printf 'Checking %s\n' "${PHP_FILES[@]}"
+          vendor/bin/pint --test "${PHP_FILES[@]}"
+
+      - name: Run test suite
+        run: composer test
