@@ -185,8 +185,8 @@ class DepartmentApiTest extends TestCase
     private function actingAsRole(string $role): User
     {
         $user = User::create([
-            'name' => ucfirst($role) . ' User',
-            'email' => $role . '@hris.test',
+            'name' => ucfirst($role).' User',
+            'email' => $role.'@hris.test',
             'password' => 'password123',
             'role' => $role,
             'is_active' => true,
