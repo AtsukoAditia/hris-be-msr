@@ -35,7 +35,7 @@ class Department extends Model
 
     public function scopeSearch(Builder $query, ?string $keyword): Builder
     {
-        if (!$keyword) {
+        if (! $keyword) {
             return $query;
         }
 
