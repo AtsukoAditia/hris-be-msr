@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\Employee;
 use App\Models\User;
+use App\Services\EmployeeDepartmentResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,12 +15,28 @@ use Illuminate\Validation\Rule;
 
 class EmployeeController extends Controller
 {
+    public function __construct(
+        private readonly EmployeeDepartmentResolver $departmentResolver,
+    ) {}
+
     public function index(Request $request): JsonResponse
     {
-        $query = Employee::with(['user']);
+        $query = Employee::with(['user', 'departmentMaster']);
 
-        if ($request->filled('department')) {
-            $query->where('department', $request->department);
+        if ($request->filled('department_id')) {
+            $query->where('department_id', $request->integer('department_id'));
+        } elseif ($request->filled('department')) {
+            $department = trim((string) $request->department);
+
+            $query->where(function ($departmentQuery) use ($department) {
+                $departmentQuery
+                    ->where('department', $department)
+                    ->orWhereHas('departmentMaster', function ($masterQuery) use ($department) {
+                        $masterQuery
+                            ->where('code', $department)
+                            ->orWhere('name', $department);
+                    });
+            });
         }
 
         if ($request->filled('status')) {
@@ -29,15 +46,20 @@ class EmployeeController extends Controller
         if ($request->filled('search')) {
             $search = trim((string) $request->search);
             $query->where(function ($q) use ($search) {
-                $q->where('employee_number', 'like', '%' . $search . '%')
-                  ->orWhere('nik', 'like', '%' . $search . '%')
-                  ->orWhere('department', 'like', '%' . $search . '%')
-                  ->orWhere('position', 'like', '%' . $search . '%')
-                  ->orWhere('employment_type', 'like', '%' . $search . '%')
-                  ->orWhereHas('user', function ($userQuery) use ($search) {
-                      $userQuery->where('name', 'like', '%' . $search . '%')
-                                ->orWhere('email', 'like', '%' . $search . '%');
-                  });
+                $q->where('employee_number', 'like', '%'.$search.'%')
+                    ->orWhere('nik', 'like', '%'.$search.'%')
+                    ->orWhere('department', 'like', '%'.$search.'%')
+                    ->orWhere('position', 'like', '%'.$search.'%')
+                    ->orWhere('employment_type', 'like', '%'.$search.'%')
+                    ->orWhereHas('departmentMaster', function ($departmentQuery) use ($search) {
+                        $departmentQuery
+                            ->where('code', 'like', '%'.$search.'%')
+                            ->orWhere('name', 'like', '%'.$search.'%');
+                    })
+                    ->orWhereHas('user', function ($userQuery) use ($search) {
+                        $userQuery->where('name', 'like', '%'.$search.'%')
+                            ->orWhere('email', 'like', '%'.$search.'%');
+                    });
             });
         }
 
@@ -57,8 +79,9 @@ class EmployeeController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $this->validateEmployee($request);
+        $department = $this->departmentResolver->resolve($validated);
 
-        $employee = DB::transaction(function () use ($validated) {
+        $employee = DB::transaction(function () use ($validated, $department) {
             $user = User::create([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
@@ -69,13 +92,17 @@ class EmployeeController extends Controller
 
             return Employee::create([
                 'user_id' => $user->id,
-                'employee_number' => $this->generateEmployeeNumber($validated['department'], $user->id),
+                'employee_number' => $this->generateEmployeeNumber($department->code, $user->id),
                 'nik' => $validated['nik'],
                 'phone' => $validated['phone'] ?? null,
                 'address' => $validated['address'] ?? null,
                 'birth_date' => $validated['birth_date'] ?? null,
                 'gender' => $validated['gender'] ?? null,
-                'department' => $validated['department'],
+                'department' => $this->departmentResolver->legacyValue(
+                    $department,
+                    $validated['department'] ?? null,
+                ),
+                'department_id' => $department->id,
                 'position' => $validated['position'],
                 'join_date' => $validated['join_date'],
                 'employment_type' => $validated['employment_type'] ?? 'permanent',
@@ -83,7 +110,7 @@ class EmployeeController extends Controller
             ]);
         });
 
-        $employee->load(['user']);
+        $employee->load(['user', 'departmentMaster']);
 
         return response()->json([
             'success' => true,
@@ -94,7 +121,7 @@ class EmployeeController extends Controller
 
     public function show(Employee $employee): JsonResponse
     {
-        $employee->load(['user']);
+        $employee->load(['user', 'departmentMaster']);
 
         return response()->json([
             'success' => true,
@@ -105,7 +132,7 @@ class EmployeeController extends Controller
 
     public function profile(Employee $employee): JsonResponse
     {
-        $employee->load(['user']);
+        $employee->load(['user', 'departmentMaster']);
 
         return response()->json([
             'success' => true,
@@ -117,8 +144,9 @@ class EmployeeController extends Controller
     public function update(Request $request, Employee $employee): JsonResponse
     {
         $validated = $this->validateEmployee($request, $employee);
+        $department = $this->departmentResolver->resolve($validated);
 
-        DB::transaction(function () use ($validated, $employee) {
+        DB::transaction(function () use ($validated, $employee, $department) {
             $employee->user->update([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
@@ -132,7 +160,11 @@ class EmployeeController extends Controller
                 'address' => $validated['address'] ?? null,
                 'birth_date' => $validated['birth_date'] ?? null,
                 'gender' => $validated['gender'] ?? null,
-                'department' => $validated['department'],
+                'department' => $this->departmentResolver->legacyValue(
+                    $department,
+                    $validated['department'] ?? null,
+                ),
+                'department_id' => $department->id,
                 'position' => $validated['position'],
                 'join_date' => $validated['join_date'],
                 'employment_type' => $validated['employment_type'] ?? 'permanent',
@@ -140,7 +172,7 @@ class EmployeeController extends Controller
             ]);
         });
 
-        $employee->refresh()->load(['user']);
+        $employee->refresh()->load(['user', 'departmentMaster']);
 
         return response()->json([
             'success' => true,
@@ -166,7 +198,7 @@ class EmployeeController extends Controller
             'face_registered_at' => now(),
         ]);
 
-        $employee->refresh()->load(['user']);
+        $employee->refresh()->load(['user', 'departmentMaster']);
 
         return response()->json([
             'success' => true,
@@ -214,7 +246,15 @@ class EmployeeController extends Controller
             'address' => 'nullable|string',
             'birth_date' => 'nullable|date',
             'gender' => 'nullable|string|in:male,female',
-            'department' => 'required|string|max:100',
+            'department_id' => [
+                'nullable',
+                'integer',
+                'required_without:department',
+                Rule::exists('departments', 'id')->where(function ($query) {
+                    $query->where('is_active', true)->whereNull('deleted_at');
+                }),
+            ],
+            'department' => 'nullable|required_without:department_id|string|max:100',
             'position' => 'required|string|max:100',
             'join_date' => 'required|date',
             'employment_type' => 'nullable|string|in:permanent,contract,internship',
@@ -238,25 +278,35 @@ class EmployeeController extends Controller
 
     private function transformEmployee(Employee $employee): Employee
     {
-        $employee->formatted_employee_number = $this->formatEmployeeNumber($employee->department, $employee->user_id, $employee->employee_number);
-        $employee->face_image_url = $employee->face_image ? asset('storage/' . $employee->face_image) : null;
-        $employee->is_face_registered = !empty($employee->face_image);
+        $departmentCode = $employee->departmentMaster?->code;
+        $employee->department_code = $departmentCode;
+        $employee->department_name = $employee->departmentMaster?->name ?? $employee->department;
+        $employee->formatted_employee_number = $this->formatEmployeeNumber(
+            $departmentCode ?? $employee->department,
+            $employee->user_id,
+            $employee->employee_number,
+        );
+        $employee->face_image_url = $employee->face_image ? asset('storage/'.$employee->face_image) : null;
+        $employee->is_face_registered = ! empty($employee->face_image);
+
         return $employee;
     }
 
     private function formatEmployeeNumber(?string $department, ?int $userId, ?string $employeeNumber): string
     {
-        if (!empty($employeeNumber)) {
+        if (! empty($employeeNumber)) {
             return $employeeNumber;
         }
 
         $prefix = strtoupper(substr($department ?? 'EMP', 0, 3));
+
         return sprintf('%s-%04d', $prefix, $userId ?? 0);
     }
 
-    private function generateEmployeeNumber(string $department, int $userId): string
+    private function generateEmployeeNumber(string $departmentCode, int $userId): string
     {
-        $prefix = strtoupper(substr($department, 0, 3));
+        $prefix = strtoupper(substr($departmentCode, 0, 3));
+
         return sprintf('%s-%04d', $prefix, $userId);
     }
 }
