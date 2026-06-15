@@ -103,5 +103,24 @@ jobs:
           printf 'Checking %s\n' "${PHP_FILES[@]}"
           vendor/bin/pint --test "${PHP_FILES[@]}"
 
-      - name: Run test suite
-        run: composer test
+      - name: Capture test suite output
+        shell: bash
+        run: |
+          set +e
+          composer test 2>&1 | tee test-output.log
+          echo "${PIPESTATUS[0]}" > test-exit-code.txt
+          exit 0
+
+      - name: Upload test suite output
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-output
+          path: |
+            test-output.log
+            test-exit-code.txt
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Fail when tests fail
+        shell: bash
+        run: exit "$(cat test-exit-code.txt)"
