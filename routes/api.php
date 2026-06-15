@@ -1,14 +1,15 @@
 <?php
 
-use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\AttendanceActionController;
 use App\Http\Controllers\API\AttendanceController;
 use App\Http\Controllers\API\AttendanceSettingController;
+use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\DashboardController;
-use App\Http\Controllers\API\ShiftController;
-use App\Http\Controllers\API\LeaveController;
+use App\Http\Controllers\API\DepartmentController;
 use App\Http\Controllers\API\EmployeeController;
+use App\Http\Controllers\API\LeaveController;
 use App\Http\Controllers\API\ReportController;
+use App\Http\Controllers\API\ShiftController;
 use App\Http\Controllers\API\ShiftScheduleController;
 use Illuminate\Support\Facades\Route;
 
@@ -44,6 +45,9 @@ Route::prefix('v1')->group(function () {
             Route::get('/reports/leave', [ReportController::class, 'leave']);
             Route::get('/reports/employee', [ReportController::class, 'employee']);
             Route::get('/reports/export', [ReportController::class, 'export']);
+
+            Route::get('/departments', [DepartmentController::class, 'index']);
+            Route::get('/departments/{department}', [DepartmentController::class, 'show']);
         });
 
         Route::get('/leaves/my', [LeaveController::class, 'my']);
@@ -64,6 +68,11 @@ Route::prefix('v1')->group(function () {
             Route::post('/employees/{employee}/face-enrollment', [EmployeeController::class, 'enrollFace']);
             Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy']);
             Route::get('/employees/{employee}/profile', [EmployeeController::class, 'profile']);
+
+            Route::post('/departments', [DepartmentController::class, 'store']);
+            Route::put('/departments/{department}', [DepartmentController::class, 'update']);
+            Route::patch('/departments/{department}', [DepartmentController::class, 'update']);
+            Route::delete('/departments/{department}', [DepartmentController::class, 'destroy']);
         });
     });
 });
