@@ -50,6 +50,23 @@ class DepartmentApiTest extends TestCase
             ->assertJsonPath('data.0.code', 'IT');
     }
 
+    public function test_manager_can_view_department_detail(): void
+    {
+        $department = Department::create([
+            'code' => 'HR',
+            'name' => 'Human Resources',
+            'is_active' => true,
+        ]);
+
+        $this->actingAsRole('manager');
+
+        $this->getJson("/api/v1/departments/{$department->id}")
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.id', $department->id)
+            ->assertJsonPath('data.code', 'HR');
+    }
+
     public function test_employee_cannot_read_departments(): void
     {
         $this->actingAsRole('employee');
