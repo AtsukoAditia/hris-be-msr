@@ -30,16 +30,6 @@ class DepartmentSeeder extends Seeder
                 'name' => 'Operations',
                 'description' => 'Mengelola kegiatan operasional dan proses bisnis harian.',
             ],
-            [
-                'code' => 'MGT',
-                'name' => 'Management',
-                'description' => 'Mengelola arah strategis, tata kelola, dan pengambilan keputusan perusahaan.',
-            ],
-            [
-                'code' => 'MKT',
-                'name' => 'Marketing',
-                'description' => 'Mengelola pemasaran, komunikasi, promosi, dan pertumbuhan pasar.',
-            ],
         ];
 
         foreach ($departments as $data) {
