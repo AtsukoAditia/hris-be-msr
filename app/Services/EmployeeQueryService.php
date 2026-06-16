@@ -8,11 +8,7 @@ use Illuminate\Http\Request;
 
 class EmployeeQueryService
 {
-    public const RELATIONS = [
-        'user',
-        'departmentMaster',
-        'positionMaster.department',
-    ];
+    public const RELATIONS = ['user', 'departmentMaster', 'positionMaster.department', 'branch'];
 
     public function paginate(Request $request): LengthAwarePaginator
     {
@@ -24,9 +20,7 @@ class EmployeeQueryService
             $department = trim((string) $request->department);
             $query->where(function ($filter) use ($department) {
                 $filter->where('department', $department)
-                    ->orWhereHas('departmentMaster', fn ($master) => $master
-                        ->where('code', $department)
-                        ->orWhere('name', $department));
+                    ->orWhereHas('departmentMaster', fn ($master) => $master->where('code', $department)->orWhere('name', $department));
             });
         }
 
@@ -36,10 +30,12 @@ class EmployeeQueryService
             $position = trim((string) $request->position);
             $query->where(function ($filter) use ($position) {
                 $filter->where('position', $position)
-                    ->orWhereHas('positionMaster', fn ($master) => $master
-                        ->where('code', $position)
-                        ->orWhere('name', $position));
+                    ->orWhereHas('positionMaster', fn ($master) => $master->where('code', $position)->orWhere('name', $position));
             });
+        }
+
+        if ($request->filled('branch_id')) {
+            $query->where('branch_id', $request->integer('branch_id'));
         }
 
         if ($request->filled('status')) {
@@ -54,15 +50,10 @@ class EmployeeQueryService
                     ->orWhere('department', 'like', '%'.$search.'%')
                     ->orWhere('position', 'like', '%'.$search.'%')
                     ->orWhere('employment_type', 'like', '%'.$search.'%')
-                    ->orWhereHas('departmentMaster', fn ($master) => $master
-                        ->where('code', 'like', '%'.$search.'%')
-                        ->orWhere('name', 'like', '%'.$search.'%'))
-                    ->orWhereHas('positionMaster', fn ($master) => $master
-                        ->where('code', 'like', '%'.$search.'%')
-                        ->orWhere('name', 'like', '%'.$search.'%'))
-                    ->orWhereHas('user', fn ($user) => $user
-                        ->where('name', 'like', '%'.$search.'%')
-                        ->orWhere('email', 'like', '%'.$search.'%'));
+                    ->orWhereHas('departmentMaster', fn ($master) => $master->where('code', 'like', '%'.$search.'%')->orWhere('name', 'like', '%'.$search.'%'))
+                    ->orWhereHas('positionMaster', fn ($master) => $master->where('code', 'like', '%'.$search.'%')->orWhere('name', 'like', '%'.$search.'%'))
+                    ->orWhereHas('branch', fn ($branch) => $branch->where('code', 'like', '%'.$search.'%')->orWhere('name', 'like', '%'.$search.'%')->orWhere('address', 'like', '%'.$search.'%'))
+                    ->orWhereHas('user', fn ($user) => $user->where('name', 'like', '%'.$search.'%')->orWhere('email', 'like', '%'.$search.'%'));
             });
         }
 
@@ -87,6 +78,8 @@ class EmployeeQueryService
         $employee->department_name = $employee->departmentMaster?->name ?? $employee->department;
         $employee->position_code = $positionCode;
         $employee->position_name = $employee->positionMaster?->name ?? $employee->position;
+        $employee->branch_code = $employee->branch?->code;
+        $employee->branch_name = $employee->branch?->name;
         $employee->formatted_employee_number = $employee->employee_number
             ?: sprintf('%s-%04d', strtoupper(substr($departmentCode ?? $employee->department ?? 'EMP', 0, 3)), $employee->user_id ?? 0);
         $employee->face_image_url = $employee->face_image ? asset('storage/'.$employee->face_image) : null;

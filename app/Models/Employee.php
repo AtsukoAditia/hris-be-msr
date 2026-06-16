@@ -23,6 +23,7 @@ class Employee extends Model
         'department_id',
         'position',
         'position_id',
+        'branch_id',
         'join_date',
         'employment_type',
         'basic_salary',
@@ -55,6 +56,11 @@ class Employee extends Model
     public function positionMaster(): BelongsTo
     {
         return $this->belongsTo(Position::class, 'position_id');
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
     }
 
     public function attendances()
