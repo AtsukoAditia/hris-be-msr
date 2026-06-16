@@ -43,6 +43,7 @@ class EmployeeMutationService
                 'department_id' => $department->id,
                 'position' => $this->positionResolver->legacyValue($position, $validated),
                 'position_id' => $position->id,
+                'branch_id' => $validated['branch_id'] ?? null,
                 'join_date' => $validated['join_date'],
                 'employment_type' => $validated['employment_type'] ?? 'permanent',
                 'is_active' => $this->resolveIsActive($validated),
@@ -74,6 +75,9 @@ class EmployeeMutationService
                 'department_id' => $department->id,
                 'position' => $this->positionResolver->legacyValue($position, $validated),
                 'position_id' => $position->id,
+                'branch_id' => array_key_exists('branch_id', $validated)
+                    ? $validated['branch_id']
+                    : $employee->branch_id,
                 'join_date' => $validated['join_date'],
                 'employment_type' => $validated['employment_type'] ?? 'permanent',
                 'is_active' => $this->resolveIsActive($validated),
@@ -98,20 +102,21 @@ class EmployeeMutationService
                 'nullable',
                 'integer',
                 'required_without:department',
-                Rule::exists('departments', 'id')->where(fn ($query) => $query
-                    ->where('is_active', true)
-                    ->whereNull('deleted_at')),
+                Rule::exists('departments', 'id')->where(fn ($query) => $query->where('is_active', true)->whereNull('deleted_at')),
             ],
             'department' => ['nullable', 'required_without:department_id', 'string', 'max:100'],
             'position_id' => [
                 'nullable',
                 'integer',
                 'required_without:position',
-                Rule::exists('positions', 'id')->where(fn ($query) => $query
-                    ->where('is_active', true)
-                    ->whereNull('deleted_at')),
+                Rule::exists('positions', 'id')->where(fn ($query) => $query->where('is_active', true)->whereNull('deleted_at')),
             ],
             'position' => ['nullable', 'required_without:position_id', 'string', 'max:100'],
+            'branch_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('branches', 'id')->where(fn ($query) => $query->where('is_active', true)->whereNull('deleted_at')),
+            ],
             'join_date' => ['required', 'date'],
             'employment_type' => ['nullable', 'string', Rule::in(['permanent', 'contract', 'internship'])],
             'status' => ['nullable', 'string', Rule::in(['active', 'inactive'])],
