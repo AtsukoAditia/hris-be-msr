@@ -4,6 +4,7 @@ use App\Http\Controllers\API\AttendanceActionController;
 use App\Http\Controllers\API\AttendanceController;
 use App\Http\Controllers\API\AttendanceSettingController;
 use App\Http\Controllers\API\AuthController;
+use App\Http\Controllers\API\BranchController;
 use App\Http\Controllers\API\DashboardController;
 use App\Http\Controllers\API\DepartmentController;
 use App\Http\Controllers\API\EmployeeController;
@@ -51,6 +52,8 @@ Route::prefix('v1')->group(function () {
             Route::get('/departments/{department}', [DepartmentController::class, 'show']);
             Route::get('/positions', [PositionController::class, 'index']);
             Route::get('/positions/{position}', [PositionController::class, 'show']);
+            Route::get('/branches', [BranchController::class, 'index']);
+            Route::get('/branches/{branch}', [BranchController::class, 'show']);
         });
 
         Route::get('/leaves/my', [LeaveController::class, 'my']);
@@ -81,6 +84,11 @@ Route::prefix('v1')->group(function () {
             Route::put('/positions/{position}', [PositionController::class, 'update']);
             Route::patch('/positions/{position}', [PositionController::class, 'update']);
             Route::delete('/positions/{position}', [PositionController::class, 'destroy']);
+
+            Route::post('/branches', [BranchController::class, 'store']);
+            Route::put('/branches/{branch}', [BranchController::class, 'update']);
+            Route::patch('/branches/{branch}', [BranchController::class, 'update']);
+            Route::delete('/branches/{branch}', [BranchController::class, 'destroy']);
         });
     });
 });
