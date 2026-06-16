@@ -31,7 +31,7 @@ class BranchApiTest extends TestCase
         $this->actingAsRole('manager');
         $headOffice = Branch::where('code', 'HQ-JKT')->firstOrFail();
 
-        $this->getJson('/api/v1/branches?search=jakarta&status=active')
+        $this->getJson('/api/v1/branches?search=Head%20Office&status=active')
             ->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.code', 'HQ-JKT')
@@ -158,7 +158,13 @@ class BranchApiTest extends TestCase
     {
         $this->actingAsRole('admin');
         $branch = Branch::where('code', 'HQ-JKT')->firstOrFail();
-        $user = User::factory()->create();
+        $user = User::create([
+            'name' => 'Assigned Branch Employee',
+            'email' => 'assigned.branch@hris.test',
+            'password' => 'password123',
+            'role' => 'employee',
+            'is_active' => true,
+        ]);
 
         Employee::create([
             'user_id' => $user->id,
