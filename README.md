@@ -202,14 +202,9 @@ php artisan serve
 
 `php artisan storage:link` hanya diperlukan untuk asset public seperti face enrollment. Employee documents tetap berada pada private disk dan tidak boleh diekspos melalui symlink public.
 
-## Demo Accounts
+## Demo Data
 
-| Role | Email | Password |
-|---|---|---|
-| Admin | `admin@hris.test` | `password123` |
-| HR | `hr@hris.test` | `password123` |
-| Manager | `manager@hris.test` | `password123` |
-| Employee | `employee@hris.test` | `password123` |
+Akun dan data demo dibuat melalui database seeders. Gunakan kredensial lokal yang dikonfigurasi pada environment pengembangan; jangan menaruh password aktif di README atau source control.
 
 ## Definition of Done
 
