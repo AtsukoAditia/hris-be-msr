@@ -4,6 +4,7 @@ namespace App\Http\Requests\EmployeeDocument;
 
 use App\Models\EmployeeDocument;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
@@ -71,7 +72,7 @@ class UpdateEmployeeDocumentRequest extends FormRequest
                 $document = $this->route('employeeDocument');
                 $issueDate = $this->input('issue_date', $document?->issue_date?->format('Y-m-d'));
 
-                if ($issueDate && $this->date('expiry_date')->lt($this->date('issue_date', $issueDate))) {
+                if ($issueDate && Carbon::parse($this->input('expiry_date'))->lt(Carbon::parse($issueDate))) {
                     $validator->errors()->add('expiry_date', 'Tanggal kedaluwarsa tidak boleh sebelum tanggal terbit.');
                 }
             },
