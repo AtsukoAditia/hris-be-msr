@@ -12,6 +12,17 @@ storage/app/private/employee-documents
 
 Files do not have public URLs and are only returned through authenticated download endpoints. Download responses include private/no-store cache directives and `X-Content-Type-Options: nosniff`.
 
+For cross-origin frontend downloads, CORS exposes:
+
+```text
+Content-Disposition
+Content-Length
+Content-Type
+X-Content-Type-Options
+```
+
+This allows the frontend to preserve the server-provided filename and inspect download metadata without exposing the file through a public URL.
+
 Allowed files:
 
 ```text
@@ -125,7 +136,7 @@ expiry_date           optional, YYYY-MM-DD
 is_confidential       optional, defaults to true
 ```
 
-`expiry_date` cannot be earlier than `issue_date`.
+`issue_date` cannot be in the future. `expiry_date` cannot be earlier than `issue_date`.
 
 ## Replace Lifecycle
 
@@ -223,6 +234,7 @@ A missing `activity_logs` migration was discovered during document download test
 tests/Feature/EmployeeDocumentManagementTest.php
 tests/Feature/EmployeeDocumentAccessTest.php
 tests/Feature/EmployeeDocumentFilterCleanupTest.php
+tests/Feature/EmployeeDocumentCorsTest.php
 ```
 
 Coverage includes:
@@ -238,4 +250,4 @@ Coverage includes:
 - Category, search, expiry filters, and summaries.
 - Dry-run and real orphan cleanup.
 - Missing-file handling.
-- Secure response headers and download audit records.
+- Secure response headers, CORS-exposed download metadata, and download audit records.
