@@ -103,6 +103,6 @@ class EmployeeDocument extends Model
             return null;
         }
 
-        return Carbon::today()->diffInDays($this->expiry_date, false);
+        return (int) Carbon::today()->diffInDays($this->expiry_date, false);
     }
 }
