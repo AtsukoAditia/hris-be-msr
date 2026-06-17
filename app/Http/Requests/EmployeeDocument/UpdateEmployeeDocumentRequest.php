@@ -30,8 +30,8 @@ class UpdateEmployeeDocumentRequest extends FormRequest
                 : trim((string) $value);
         }
 
-        if ($this->has('labels')) {
-            $labels = collect((array) $this->input('labels'))
+        if ($this->has('labels') && is_array($this->input('labels'))) {
+            $labels = collect($this->input('labels'))
                 ->map(fn ($label) => trim((string) $label))
                 ->filter()
                 ->unique()
@@ -40,8 +40,16 @@ class UpdateEmployeeDocumentRequest extends FormRequest
             $values['labels'] = $labels === [] ? null : $labels;
         }
 
-        if ($this->has('is_confidential')) {
-            $values['is_confidential'] = $this->boolean('is_confidential');
+        if ($this->exists('is_confidential')) {
+            $boolean = filter_var(
+                $this->input('is_confidential'),
+                FILTER_VALIDATE_BOOLEAN,
+                FILTER_NULL_ON_FAILURE,
+            );
+
+            if ($boolean !== null) {
+                $values['is_confidential'] = $boolean;
+            }
         }
 
         $this->merge($values);
