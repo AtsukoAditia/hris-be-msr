@@ -104,4 +104,17 @@ jobs:
           vendor/bin/pint --test "${PHP_FILES[@]}"
 
       - name: Run test suite
-        run: composer test
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p test-results
+          composer test 2>&1 | tee test-results/backend-tests.log
+
+      - name: Upload backend test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-log
+          path: test-results/backend-tests.log
+          if-no-files-found: ignore
+          retention-days: 7
