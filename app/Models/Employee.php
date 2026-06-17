@@ -88,6 +88,11 @@ class Employee extends Model
             ->orderBy('name');
     }
 
+    public function documents(): HasMany
+    {
+        return $this->hasMany(EmployeeDocument::class)->latest();
+    }
+
     public function attendances()
     {
         return $this->hasMany(Attendance::class);

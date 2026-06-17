@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\ActivityLog;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Symfony\Component\HttpFoundation\Response;
 
 class AuditLogMiddleware
@@ -40,8 +41,8 @@ class AuditLogMiddleware
                 'description' => $this->buildDescription($request, $user?->name),
                 'logged_at' => now(),
             ]);
-        } catch (\Throwable $e) {
-            report($e);
+        } catch (\Throwable $exception) {
+            report($exception);
         }
 
         return $response;
@@ -58,26 +59,51 @@ class AuditLogMiddleware
             'authorization',
         ];
 
-        foreach ($sensitiveKeys as $key) {
-            if (array_key_exists($key, $payload)) {
+        foreach ($payload as $key => $value) {
+            if (in_array(strtolower((string) $key), $sensitiveKeys, true)) {
                 $payload[$key] = '[FILTERED]';
+
+                continue;
             }
+
+            $payload[$key] = $this->sanitizeValue($value);
         }
 
         return $payload;
+    }
+
+    private function sanitizeValue(mixed $value): mixed
+    {
+        if ($value instanceof UploadedFile) {
+            return [
+                'file_name' => $value->getClientOriginalName(),
+                'mime_type' => $value->getClientMimeType(),
+                'size_bytes' => $value->getSize(),
+            ];
+        }
+
+        if (is_array($value)) {
+            return $this->sanitizePayload($value);
+        }
+
+        if (is_object($value)) {
+            return '[OBJECT]';
+        }
+
+        return $value;
     }
 
     private function extractResponsePayload(Response $response): ?array
     {
         $content = $response->getContent();
 
-        if (!is_string($content) || $content === '') {
+        if (! is_string($content) || $content === '') {
             return null;
         }
 
         $decoded = json_decode($content, true);
 
-        if (!is_array($decoded)) {
+        if (! is_array($decoded)) {
             return [
                 'raw' => mb_substr($content, 0, 2000),
             ];
