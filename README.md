@@ -32,7 +32,7 @@ http://localhost:8000/api/v1
 | Department Master Data | ✅ | ✅ | Completed & Synced |
 | Position Master Data | ✅ | ✅ | Completed & Synced |
 | Branch / Work Location | ✅ | ✅ | Completed & Synced |
-| Employee Manager Relation | ✅ | ⬜ | Backend Completed |
+| Employee Manager Relation | ✅ | ✅ | Completed & Synced |
 
 ## Organization Master Data
 
@@ -231,6 +231,9 @@ Frontend coverage:
 - Employee Branch normalization dan numeric payload.
 - Active Branch dropdown dan required selection.
 - Employee Branch table/detail dan API filter.
+- Employee Manager normalization dan numeric nullable payload.
+- Active Manager dropdown dan current Employee exclusion.
+- Employee Manager table/detail serta `manager_id` dan `manager_id=none` filter.
 
 ```bash
 composer test
@@ -270,5 +273,5 @@ php artisan serve
 ## Next Module
 
 ```text
-Employee Direct Manager Relation Frontend UI
+Organization Master Data Mobile Acceptance Test
 ```
