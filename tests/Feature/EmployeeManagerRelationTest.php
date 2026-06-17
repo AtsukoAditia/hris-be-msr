@@ -19,7 +19,9 @@ class EmployeeManagerRelationTest extends TestCase
     use RefreshDatabase;
 
     private Department $department;
+
     private Position $position;
+
     private Branch $branch;
 
     protected function setUp(): void
