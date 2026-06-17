@@ -8,9 +8,11 @@ use App\Http\Controllers\API\BranchController;
 use App\Http\Controllers\API\ContactController;
 use App\Http\Controllers\API\DashboardController;
 use App\Http\Controllers\API\DepartmentController;
+use App\Http\Controllers\API\DocumentController;
 use App\Http\Controllers\API\EmployeeController;
 use App\Http\Controllers\API\LeaveController;
 use App\Http\Controllers\API\LeaveDetailController;
+use App\Http\Controllers\API\MyDocumentController;
 use App\Http\Controllers\API\PositionController;
 use App\Http\Controllers\API\ProfileController;
 use App\Http\Controllers\API\ReportController;
@@ -70,6 +72,12 @@ Route::prefix('v1')->group(function () {
         Route::patch('/profile/me/emergency-contacts/{emergencyContact}', [ContactController::class, 'myUpdate']);
         Route::delete('/profile/me/emergency-contacts/{emergencyContact}', [ContactController::class, 'myDestroy']);
 
+        Route::get('/document-categories', [DocumentController::class, 'categories']);
+        Route::get('/documents/my', [MyDocumentController::class, 'index']);
+        Route::get('/documents/my/summary', [MyDocumentController::class, 'summary']);
+        Route::get('/documents/my/{employeeDocument}/download', [MyDocumentController::class, 'download']);
+        Route::get('/documents/my/{employeeDocument}', [MyDocumentController::class, 'show']);
+
         Route::middleware('role:admin,hr')->group(function () {
             Route::put('/attendance/settings', [AttendanceSettingController::class, 'update']);
             Route::post('/attendance/qr/generate', [AttendanceSettingController::class, 'generateQr']);
@@ -78,6 +86,17 @@ Route::prefix('v1')->group(function () {
             Route::get('/shift-schedules/date/{date}', [ShiftScheduleController::class, 'getByDate']);
             Route::post('/shift-schedules/bulk', [ShiftScheduleController::class, 'bulkStore']);
             Route::apiResource('/shift-schedules', ShiftScheduleController::class);
+
+            Route::get('/employee-documents', [DocumentController::class, 'index']);
+            Route::get('/employee-documents/summary', [DocumentController::class, 'summary']);
+            Route::get('/employees/{employee}/documents', [DocumentController::class, 'employeeIndex']);
+            Route::post('/employees/{employee}/documents', [DocumentController::class, 'store']);
+            Route::get('/employees/{employee}/documents/{employeeDocument}/download', [DocumentController::class, 'download']);
+            Route::post('/employees/{employee}/documents/{employeeDocument}/replace', [DocumentController::class, 'replace']);
+            Route::get('/employees/{employee}/documents/{employeeDocument}', [DocumentController::class, 'show']);
+            Route::put('/employees/{employee}/documents/{employeeDocument}', [DocumentController::class, 'update']);
+            Route::patch('/employees/{employee}/documents/{employeeDocument}', [DocumentController::class, 'update']);
+            Route::delete('/employees/{employee}/documents/{employeeDocument}', [DocumentController::class, 'destroy']);
 
             Route::get('/employees/manager-options', [EmployeeController::class, 'managerOptions']);
             Route::get('/employees/{employee}/profile', [ProfileController::class, 'show']);
