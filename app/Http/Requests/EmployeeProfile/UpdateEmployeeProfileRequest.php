@@ -87,9 +87,27 @@ class UpdateEmployeeProfileRequest extends FormRequest
             'city' => ['sometimes', 'nullable', 'string', 'max:100'],
             'province' => ['sometimes', 'nullable', 'string', 'max:100'],
             'postal_code' => ['sometimes', 'nullable', 'string', 'max:10'],
-            'tax_number' => ['sometimes', 'nullable', 'string', 'max:50'],
-            'social_security_number' => ['sometimes', 'nullable', 'string', 'max:50'],
-            'health_insurance_number' => ['sometimes', 'nullable', 'string', 'max:50'],
+            'tax_number' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'max:50',
+                Rule::unique('employee_profiles', 'tax_number')->ignore($profileId),
+            ],
+            'social_security_number' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'max:50',
+                Rule::unique('employee_profiles', 'social_security_number')->ignore($profileId),
+            ],
+            'health_insurance_number' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'max:50',
+                Rule::unique('employee_profiles', 'health_insurance_number')->ignore($profileId),
+            ],
         ];
     }
 
