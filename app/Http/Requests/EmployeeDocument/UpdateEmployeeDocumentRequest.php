@@ -65,7 +65,11 @@ class UpdateEmployeeDocumentRequest extends FormRequest
     {
         return [
             function (Validator $validator): void {
-                if (! $this->filled('expiry_date')) {
+                if (
+                    ! $this->filled('expiry_date')
+                    || $validator->errors()->has('expiry_date')
+                    || $validator->errors()->has('issue_date')
+                ) {
                     return;
                 }
 
