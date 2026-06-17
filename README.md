@@ -1,8 +1,6 @@
 # HRIS Backend — hris-be-msr
 
-> Laravel REST API untuk Smart Attendance HRIS.
-
-Backend terintegrasi dengan frontend React PWA [`hris-fe-msr`](https://github.com/AtsukoAditia/hris-fe-msr). Modul dinyatakan selesai setelah backend, frontend, role access, tests, CI, dan dokumentasi sinkron.
+Laravel REST API untuk Smart Attendance HRIS yang terhubung dengan frontend React PWA `hris-fe-msr`.
 
 ## Tech Stack
 
@@ -31,10 +29,10 @@ http://localhost:8000/api/v1
 | Dashboard | ✅ | ✅ | Synced |
 | Employee Management | ✅ | ✅ | Synced |
 | Attendance, Leave, Shift & Report | ✅ | ✅ | Synced |
-| **Department Master Data** | ✅ | ✅ | **Completed & Synced** |
-| **Position Master Data** | ✅ | ✅ | **Completed & Synced** |
-| **Branch / Work Location** | ✅ | ⬜ | **Backend Completed** |
-| Employee Manager Relation | ⬜ | ⬜ | Planned |
+| Department Master Data | ✅ | ✅ | Completed & Synced |
+| Position Master Data | ✅ | ✅ | Completed & Synced |
+| Branch / Work Location | ✅ | ✅ | Completed & Synced |
+| Employee Manager Relation | ⬜ | ⬜ | Next Module |
 
 ## Organization Master Data
 
@@ -52,8 +50,6 @@ id, department_id, code, name, description, is_active, timestamps, deleted_at
 
 ### Branch / Work Location
 
-Table `branches`:
-
 ```text
 id
 code
@@ -69,22 +65,22 @@ updated_at
 deleted_at
 ```
 
-Karakteristik Branch:
+Branch mendukung:
 
-- Unique code dan normalisasi uppercase.
-- Search berdasarkan code, name, address, dan timezone.
-- Filter `status` dan `active_only`.
-- Latitude dan longitude harus diberikan sebagai pasangan.
-- Latitude divalidasi pada rentang `-90` sampai `90`.
-- Longitude divalidasi pada rentang `-180` sampai `180`.
-- Radius attendance `1–50000` meter.
+- Unique uppercase code.
+- Search code, name, address, dan timezone.
+- Status dan `active_only` filter.
+- Latitude dan longitude berpasangan.
+- Latitude `-90` sampai `90`.
+- Longitude `-180` sampai `180`.
+- Radius absensi `1–50000` meter.
 - IANA timezone validation.
 - Active/inactive status.
-- Soft delete untuk Branch yang belum digunakan Employee.
-- Branch yang masih digunakan Employee tidak dapat dihapus.
-- Seeder idempotent dan dapat restore Branch yang sebelumnya di-soft-delete.
+- Soft delete.
+- Assigned Branch deletion protection.
+- Seeder idempotent dan restore.
 
-Branch endpoints:
+Endpoints:
 
 ```text
 GET    /branches
@@ -95,30 +91,7 @@ PATCH  /branches/{branch}
 DELETE /branches/{branch}
 ```
 
-Query parameters:
-
-```text
-search={keyword}
-status=active|inactive|all
-active_only=true|false
-```
-
-Contoh request:
-
-```json
-{
-  "code": "HQ-JKT",
-  "name": "Head Office Jakarta",
-  "address": "Jakarta",
-  "latitude": -6.2000000,
-  "longitude": 106.8166667,
-  "radius_meters": 150,
-  "timezone": "Asia/Jakarta",
-  "is_active": true
-}
-```
-
-## Role Access Organization Master
+## Role Access
 
 | Action | Admin | HR | Manager | Employee |
 |---|:---:|:---:|:---:|:---:|
@@ -127,9 +100,9 @@ Contoh request:
 | Update | ✅ | ✅ | ❌ | ❌ |
 | Delete | ✅ | ✅ | ❌ | ❌ |
 
-Manager memiliki read-only API access. Frontend akan mengikuti matrix yang sama.
+Manager mendapatkan read-only access pada backend dan frontend.
 
-## Employee Organization Relationships
+## Employee Organization Contract
 
 Foreign keys:
 
@@ -139,7 +112,7 @@ employees.position_id   → positions.id
 employees.branch_id     → branches.id
 ```
 
-Model relationships:
+Relationships:
 
 ```php
 Employee::departmentMaster()
@@ -152,16 +125,7 @@ Position::employees()
 Branch::employees()
 ```
 
-Kolom legacy berikut masih dipertahankan selama masa transisi:
-
-```text
-employees.department
-employees.position
-```
-
-### Employee Create & Update
-
-Contract organisasi:
+Request organisasi aktif:
 
 ```json
 {
@@ -175,42 +139,30 @@ Rules:
 
 - Department harus aktif.
 - Position harus aktif dan berasal dari Department yang dipilih.
-- Branch yang dikirim harus aktif dan belum terhapus.
-- `branch_id` masih nullable selama transisi frontend.
-- Update lama yang belum mengirim `branch_id` mempertahankan Branch Employee saat ini.
+- Branch harus aktif dan belum terhapus.
+- Frontend mewajibkan Branch pada form Employee.
+- Backend mempertahankan nullable `branch_id` untuk data atau consumer transisi.
+- Update tanpa `branch_id` mempertahankan Branch Employee sebelumnya.
 
-### Employee Response
+Employee response memuat:
 
-```json
-{
-  "department_id": 1,
-  "department_code": "IT",
-  "department_name": "Information Technology",
-  "position_id": 5,
-  "position_code": "SOFTWARE-ENGINEER",
-  "position_name": "Software Engineer",
-  "branch_id": 1,
-  "branch_code": "HQ-JKT",
-  "branch_name": "Head Office Jakarta",
-  "branch": {
-    "id": 1,
-    "code": "HQ-JKT",
-    "name": "Head Office Jakarta",
-    "latitude": "-6.2000000",
-    "longitude": "106.8166667",
-    "radius_meters": 150,
-    "timezone": "Asia/Jakarta"
-  }
-}
+```text
+department_code
+department_name
+position_code
+position_name
+branch_code
+branch_name
+branch
 ```
 
-Employee list filters:
+Filter Employee:
 
 ```http
 GET /api/v1/employees?department_id=1&position_id=5&branch_id=1
 ```
 
-Employee search juga mencakup Branch code, name, dan address.
+Frontend menggunakan Branch pada Employee dropdown, list filter, table, dan detail lokasi.
 
 ## Seeders
 
@@ -223,34 +175,38 @@ BranchSeeder
 EmployeeBranchSeeder
 ```
 
-`EmployeeBranchSeeder` menghubungkan Employee lama yang belum memiliki Branch ke `HQ-JKT`.
+`EmployeeBranchSeeder` menghubungkan Employee lama tanpa Branch ke `HQ-JKT`.
 
-## Tests & CI
+## Tests and CI
 
-Backend coverage mencakup:
+Backend coverage:
 
 - Department, Position, dan Branch CRUD.
-- Authentication dan role authorization.
+- Authentication dan authorization.
 - Manager read-only behavior.
-- Branch search dan status filter.
-- Branch normalization, coordinates, timezone, dan radius validation.
-- Duplicate code validation.
-- Soft delete dan assigned-Branch deletion protection.
+- Branch search dan filters.
+- Coordinates, radius, timezone, duplicate code, dan normalization.
+- Soft delete dan assigned-Branch protection.
 - Seeder idempotency dan restore.
-- Employee assignment melalui `department_id`, `position_id`, dan `branch_id`.
-- Inactive Branch rejection.
-- Employee Branch filter, search, update, compatibility, dan backfill.
-- Forward dan reverse Eloquent relationships.
+- Employee Branch assignment, filter, search, update, compatibility, dan backfill.
 - Regression tests Department dan Position.
 
-Jalankan:
+Frontend coverage:
+
+- Branch tab dan CRUD UI.
+- Location payload normalization.
+- Manager read-only UI.
+- Validation dan delete error feedback.
+- Employee Branch normalization dan numeric payload.
+- Active Branch dropdown dan required selection.
+- Employee Branch table/detail dan API filter.
 
 ```bash
 composer test
 vendor/bin/pint --test
 ```
 
-Backend CI menjalankan Composer validation, dependency installation, MySQL migrations, Laravel Pint, dan full test suite.
+Backend CI menjalankan Composer validation, MySQL migrations, Pint, dan full tests. Frontend CI menjalankan ESLint, Vitest, dan production build.
 
 ## Local Setup
 
@@ -274,19 +230,14 @@ php artisan serve
 
 ## Definition of Done
 
-- Migration, model, API, validation, authorization, dan seeder tersedia.
-- Backend feature tests dan CI hijau.
-- Frontend service, UI, role access, dan states tersedia.
-- Request/response contract sinkron.
+- Backend migration, model, API, validation, authorization, seeder, tests, dan CI tersedia.
+- Frontend service, UI, role states, tests, dan CI tersedia.
+- Request dan response contract sinkron.
 - Dropdown master tidak hardcoded.
-- Frontend tests dan CI hijau.
 - README kedua repository diperbarui.
 
-## Next Step
+## Next Module
 
 ```text
-Branch / Work Location Frontend UI
-→ Employee branch_id dropdown dan filter
-→ Frontend tests dan CI
-→ Update kedua README
+Employee Direct Manager Relation
 ```
