@@ -44,11 +44,22 @@ class EmployeeDocumentAccessTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.file.original_name', 'own-contract.pdf');
 
-        $this->get("/api/v1/documents/my/{$document->id}/download")
+        $download = $this->get("/api/v1/documents/my/{$document->id}/download")
             ->assertOk()
             ->assertDownload('own-contract.pdf')
-            ->assertHeader('cache-control', 'private, no-store, max-age=0')
             ->assertHeader('x-content-type-options', 'nosniff');
+        $cacheControl = (string) $download->headers->get('cache-control');
+        $this->assertStringContainsString('private', $cacheControl);
+        $this->assertStringContainsString('no-store', $cacheControl);
+        $this->assertStringContainsString('max-age=0', $cacheControl);
+
+        $this->assertDatabaseHas('activity_logs', [
+            'user_id' => $user->id,
+            'module' => 'documents',
+            'action' => 'view',
+            'endpoint' => "api/v1/documents/my/{$document->id}/download",
+            'response_status' => 200,
+        ]);
     }
 
     public function test_employee_cannot_access_another_employees_document(): void
