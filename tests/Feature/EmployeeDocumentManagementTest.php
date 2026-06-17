@@ -66,7 +66,7 @@ class EmployeeDocumentManagementTest extends TestCase
             'file' => UploadedFile::fake()->create('payload.exe', 100, 'application/octet-stream'),
             'category' => 'unknown',
             'title' => '',
-            'labels' => array_fill(0, 11, 'label'),
+            'labels' => array_map(fn (int $number) => "label-{$number}", range(1, 11)),
             'issue_date' => today()->format('Y-m-d'),
             'expiry_date' => today()->subDay()->format('Y-m-d'),
         ])
@@ -90,7 +90,7 @@ class EmployeeDocumentManagementTest extends TestCase
         Sanctum::actingAs($admin);
 
         $documentId = $this->postJson("/api/v1/employees/{$employee->id}/documents", [
-            'file' => UploadedFile::fake()->createWithContent('old.pdf', 'old file contents'),
+            'file' => UploadedFile::fake()->createWithContent('old.pdf', "%PDF-1.4\nold file contents"),
             'category' => 'employment',
             'title' => 'Old Contract',
             'issue_date' => today()->subYear()->format('Y-m-d'),
@@ -113,7 +113,7 @@ class EmployeeDocumentManagementTest extends TestCase
             ->assertJsonPath('data.is_confidential', false);
 
         $this->postJson("/api/v1/employees/{$employee->id}/documents/{$document->id}/replace", [
-            'file' => UploadedFile::fake()->createWithContent('new.pdf', 'new file contents'),
+            'file' => UploadedFile::fake()->createWithContent('new.pdf', "%PDF-1.4\nnew file contents"),
         ])
             ->assertOk()
             ->assertJsonPath('data.file.original_name', 'new.pdf')
