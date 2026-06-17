@@ -70,6 +70,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/shift-schedules/employee/{employeeId}', [ShiftScheduleController::class, 'getByEmployee']);
             Route::get('/shift-schedules/date/{date}', [ShiftScheduleController::class, 'getByDate']);
             Route::post('/shift-schedules/bulk', [ShiftScheduleController::class, 'bulkStore']);
+            Route::get('/employees/manager-options', [EmployeeController::class, 'managerOptions']);
             Route::apiResource('/employees', EmployeeController::class)->except(['destroy']);
             Route::post('/employees/{employee}/face-enrollment', [EmployeeController::class, 'enrollFace']);
             Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy']);

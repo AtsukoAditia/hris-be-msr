@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Employee;
 use App\Models\User;
+use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -44,6 +45,7 @@ class EmployeeMutationService
                 'position' => $this->positionResolver->legacyValue($position, $validated),
                 'position_id' => $position->id,
                 'branch_id' => $validated['branch_id'] ?? null,
+                'manager_id' => $validated['manager_id'] ?? null,
                 'join_date' => $validated['join_date'],
                 'employment_type' => $validated['employment_type'] ?? 'permanent',
                 'is_active' => $this->resolveIsActive($validated),
@@ -78,6 +80,9 @@ class EmployeeMutationService
                 'branch_id' => array_key_exists('branch_id', $validated)
                     ? $validated['branch_id']
                     : $employee->branch_id,
+                'manager_id' => array_key_exists('manager_id', $validated)
+                    ? $validated['manager_id']
+                    : $employee->manager_id,
                 'join_date' => $validated['join_date'],
                 'employment_type' => $validated['employment_type'] ?? 'permanent',
                 'is_active' => $this->resolveIsActive($validated),
@@ -117,11 +122,48 @@ class EmployeeMutationService
                 'integer',
                 Rule::exists('branches', 'id')->where(fn ($query) => $query->where('is_active', true)->whereNull('deleted_at')),
             ],
+            'manager_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('employees', 'id')->where(fn ($query) => $query->where('is_active', true)->whereNull('deleted_at')),
+                function (string $attribute, mixed $value, Closure $fail) use ($employee): void {
+                    if ($value === null || $employee === null) {
+                        return;
+                    }
+
+                    if ((int) $value === (int) $employee->id) {
+                        $fail('Karyawan tidak dapat menjadi manager untuk dirinya sendiri.');
+
+                        return;
+                    }
+
+                    if ($this->wouldCreateManagerCycle($employee, (int) $value)) {
+                        $fail('Manager yang dipilih akan membuat siklus pada struktur organisasi.');
+                    }
+                },
+            ],
             'join_date' => ['required', 'date'],
             'employment_type' => ['nullable', 'string', Rule::in(['permanent', 'contract', 'internship'])],
             'status' => ['nullable', 'string', Rule::in(['active', 'inactive'])],
             'is_active' => ['nullable', 'boolean'],
         ]);
+    }
+
+    private function wouldCreateManagerCycle(Employee $employee, int $managerId): bool
+    {
+        $visited = [];
+        $currentId = $managerId;
+
+        while ($currentId > 0) {
+            if ($currentId === (int) $employee->id || isset($visited[$currentId])) {
+                return true;
+            }
+
+            $visited[$currentId] = true;
+            $currentId = (int) (Employee::query()->whereKey($currentId)->value('manager_id') ?? 0);
+        }
+
+        return false;
     }
 
     private function resolveIsActive(array $validated): bool

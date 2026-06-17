@@ -27,6 +27,15 @@ class EmployeeController extends Controller
         ]);
     }
 
+    public function managerOptions(Request $request): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'message' => 'Pilihan manager berhasil diambil.',
+            'data' => $this->queryService->managerOptions($request),
+        ]);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $employee = $this->mutationService->create($request);
@@ -109,6 +118,8 @@ class EmployeeController extends Controller
 
         DB::transaction(function () use ($employee) {
             $user = $employee->user;
+
+            $employee->directReports()->update(['manager_id' => null]);
 
             if ($employee->face_image) {
                 Storage::disk('public')->delete($employee->face_image);
