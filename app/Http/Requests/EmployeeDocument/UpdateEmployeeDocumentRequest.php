@@ -74,7 +74,7 @@ class UpdateEmployeeDocumentRequest extends FormRequest
         return [
             function (Validator $validator): void {
                 if (
-                    ! $this->filled('expiry_date')
+                    (! $this->exists('issue_date') && ! $this->exists('expiry_date'))
                     || $validator->errors()->has('expiry_date')
                     || $validator->errors()->has('issue_date')
                 ) {
@@ -82,9 +82,18 @@ class UpdateEmployeeDocumentRequest extends FormRequest
                 }
 
                 $document = $this->route('employeeDocument');
-                $issueDate = $this->input('issue_date', $document?->issue_date?->format('Y-m-d'));
+                $issueDate = $this->exists('issue_date')
+                    ? $this->input('issue_date')
+                    : $document?->issue_date?->format('Y-m-d');
+                $expiryDate = $this->exists('expiry_date')
+                    ? $this->input('expiry_date')
+                    : $document?->expiry_date?->format('Y-m-d');
 
-                if ($issueDate && Carbon::parse($this->input('expiry_date'))->lt(Carbon::parse($issueDate))) {
+                if (
+                    $issueDate
+                    && $expiryDate
+                    && Carbon::parse($expiryDate)->lt(Carbon::parse($issueDate))
+                ) {
                     $validator->errors()->add('expiry_date', 'Tanggal kedaluwarsa tidak boleh sebelum tanggal terbit.');
                 }
             },
