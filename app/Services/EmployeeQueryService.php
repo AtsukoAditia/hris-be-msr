@@ -9,7 +9,7 @@ use Illuminate\Support\Collection;
 
 class EmployeeQueryService
 {
-    public const RELATIONS = ['user', 'departmentMaster', 'positionMaster.department', 'branch', 'manager.user'];
+    public const RELATIONS = ['user', 'departmentMaster', 'positionMaster.department', 'branch', 'manager.user', 'manager.positionMaster'];
 
     public function paginate(Request $request): LengthAwarePaginator
     {
@@ -87,7 +87,7 @@ class EmployeeQueryService
             ->whereHas('user', fn ($user) => $user->where('is_active', true));
 
         if ($request->filled('exclude_employee_id')) {
-            $query->whereKeyNot($request->integer('exclude_employee_id'));
+            $query->where('id', '!=', $request->integer('exclude_employee_id'));
         }
 
         if ($request->filled('department_id')) {
