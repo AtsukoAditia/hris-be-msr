@@ -119,6 +119,7 @@ class EmployeeController extends Controller
         DB::transaction(function () use ($employee) {
             $user = $employee->user;
 
+            $employee->documents()->get()->each->delete();
             $employee->directReports()->update(['manager_id' => null]);
 
             if ($employee->face_image) {
