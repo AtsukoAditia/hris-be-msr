@@ -26,8 +26,8 @@ class StoreEmployeeDocumentRequest extends FormRequest
             }
         }
 
-        if ($this->has('labels')) {
-            $labels = collect((array) $this->input('labels'))
+        if ($this->has('labels') && is_array($this->input('labels'))) {
+            $labels = collect($this->input('labels'))
                 ->map(fn ($label) => trim((string) $label))
                 ->filter()
                 ->unique()
@@ -36,9 +36,19 @@ class StoreEmployeeDocumentRequest extends FormRequest
             $values['labels'] = $labels === [] ? null : $labels;
         }
 
-        $values['is_confidential'] = $this->has('is_confidential')
-            ? $this->boolean('is_confidential')
-            : true;
+        if (! $this->exists('is_confidential')) {
+            $values['is_confidential'] = true;
+        } else {
+            $boolean = filter_var(
+                $this->input('is_confidential'),
+                FILTER_VALIDATE_BOOLEAN,
+                FILTER_NULL_ON_FAILURE,
+            );
+
+            if ($boolean !== null) {
+                $values['is_confidential'] = $boolean;
+            }
+        }
 
         $this->merge($values);
     }
