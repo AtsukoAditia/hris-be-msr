@@ -1,0 +1,50 @@
+name: Pint Diagnostic
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  pint:
+    name: Capture Pint output
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, fileinfo, xml, ctype, tokenizer
+          tools: composer:v2
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress --quiet
+
+      - name: Capture Pint output
+        shell: bash
+        run: |
+          vendor/bin/pint --test \
+            app/Http/Controllers/API/EmployeeController.php \
+            app/Models/Employee.php \
+            app/Services/EmployeeMutationService.php \
+            app/Services/EmployeeQueryService.php \
+            database/migrations/2026_06_17_000007_add_manager_id_to_employees_table.php \
+            routes/api.php \
+            tests/Feature/EmployeeManagerRelationTest.php \
+            > pint-diagnostic.txt 2>&1 || true
+
+      - name: Upload Pint output
+        uses: actions/upload-artifact@v4
+        with:
+          name: pint-diagnostic
+          path: pint-diagnostic.txt
+          retention-days: 1
