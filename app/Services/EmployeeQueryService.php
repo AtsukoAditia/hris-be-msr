@@ -5,10 +5,11 @@ namespace App\Services;
 use App\Models\Employee;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 
 class EmployeeQueryService
 {
-    public const RELATIONS = ['user', 'departmentMaster', 'positionMaster.department', 'branch'];
+    public const RELATIONS = ['user', 'departmentMaster', 'positionMaster.department', 'branch', 'manager.user'];
 
     public function paginate(Request $request): LengthAwarePaginator
     {
@@ -38,6 +39,16 @@ class EmployeeQueryService
             $query->where('branch_id', $request->integer('branch_id'));
         }
 
+        if ($request->filled('manager_id')) {
+            $managerId = strtolower(trim((string) $request->manager_id));
+
+            if (in_array($managerId, ['none', 'null', 'unassigned'], true)) {
+                $query->whereNull('manager_id');
+            } else {
+                $query->where('manager_id', (int) $managerId);
+            }
+        }
+
         if ($request->filled('status')) {
             $query->where('is_active', $request->status === 'active');
         }
@@ -53,6 +64,10 @@ class EmployeeQueryService
                     ->orWhereHas('departmentMaster', fn ($master) => $master->where('code', 'like', '%'.$search.'%')->orWhere('name', 'like', '%'.$search.'%'))
                     ->orWhereHas('positionMaster', fn ($master) => $master->where('code', 'like', '%'.$search.'%')->orWhere('name', 'like', '%'.$search.'%'))
                     ->orWhereHas('branch', fn ($branch) => $branch->where('code', 'like', '%'.$search.'%')->orWhere('name', 'like', '%'.$search.'%')->orWhere('address', 'like', '%'.$search.'%'))
+                    ->orWhereHas('manager', function ($manager) use ($search) {
+                        $manager->where('employee_number', 'like', '%'.$search.'%')
+                            ->orWhereHas('user', fn ($user) => $user->where('name', 'like', '%'.$search.'%')->orWhere('email', 'like', '%'.$search.'%'));
+                    })
                     ->orWhereHas('user', fn ($user) => $user->where('name', 'like', '%'.$search.'%')->orWhere('email', 'like', '%'.$search.'%'));
             });
         }
@@ -62,6 +77,62 @@ class EmployeeQueryService
         $employees->getCollection()->transform(fn (Employee $employee) => $this->transform($employee));
 
         return $employees;
+    }
+
+    public function managerOptions(Request $request): Collection
+    {
+        $query = Employee::query()
+            ->with(['user:id,name,email,role,is_active', 'departmentMaster:id,code,name', 'positionMaster:id,code,name', 'branch:id,code,name'])
+            ->where('is_active', true)
+            ->whereHas('user', fn ($user) => $user->where('is_active', true));
+
+        if ($request->filled('exclude_employee_id')) {
+            $query->whereKeyNot($request->integer('exclude_employee_id'));
+        }
+
+        if ($request->filled('department_id')) {
+            $query->where('department_id', $request->integer('department_id'));
+        }
+
+        if ($request->filled('branch_id')) {
+            $query->where('branch_id', $request->integer('branch_id'));
+        }
+
+        if ($request->filled('search')) {
+            $search = trim((string) $request->search);
+            $query->where(function ($filter) use ($search) {
+                $filter->where('employee_number', 'like', '%'.$search.'%')
+                    ->orWhereHas('user', fn ($user) => $user->where('name', 'like', '%'.$search.'%')->orWhere('email', 'like', '%'.$search.'%'))
+                    ->orWhereHas('positionMaster', fn ($position) => $position->where('code', 'like', '%'.$search.'%')->orWhere('name', 'like', '%'.$search.'%'));
+            });
+        }
+
+        return $query->limit(100)
+            ->get()
+            ->sortBy(fn (Employee $employee) => strtolower($employee->user?->name ?? $employee->employee_number))
+            ->values()
+            ->map(fn (Employee $employee) => [
+                'id' => $employee->id,
+                'employee_number' => $employee->employee_number,
+                'name' => $employee->user?->name,
+                'email' => $employee->user?->email,
+                'role' => $employee->user?->role,
+                'department_id' => $employee->department_id,
+                'department_code' => $employee->departmentMaster?->code,
+                'department_name' => $employee->departmentMaster?->name ?? $employee->department,
+                'position_id' => $employee->position_id,
+                'position_code' => $employee->positionMaster?->code,
+                'position_name' => $employee->positionMaster?->name ?? $employee->position,
+                'branch_id' => $employee->branch_id,
+                'branch_code' => $employee->branch?->code,
+                'branch_name' => $employee->branch?->name,
+                'label' => sprintf(
+                    '%s — %s (%s)',
+                    $employee->user?->name ?? 'Unnamed Employee',
+                    $employee->positionMaster?->name ?? $employee->position ?? 'No Position',
+                    $employee->employee_number,
+                ),
+            ]);
     }
 
     public function load(Employee $employee): Employee
@@ -80,6 +151,9 @@ class EmployeeQueryService
         $employee->position_name = $employee->positionMaster?->name ?? $employee->position;
         $employee->branch_code = $employee->branch?->code;
         $employee->branch_name = $employee->branch?->name;
+        $employee->manager_name = $employee->manager?->user?->name;
+        $employee->manager_employee_number = $employee->manager?->employee_number;
+        $employee->manager_position_name = $employee->manager?->positionMaster?->name ?? $employee->manager?->position;
         $employee->formatted_employee_number = $employee->employee_number
             ?: sprintf('%s-%04d', strtoupper(substr($departmentCode ?? $employee->department ?? 'EMP', 0, 3)), $employee->user_id ?? 0);
         $employee->face_image_url = $employee->face_image ? asset('storage/'.$employee->face_image) : null;
