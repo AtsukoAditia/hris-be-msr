@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('employee_profiles', function (Blueprint $table) {
             $table->id();
             $table->foreignId('employee_id')->unique()->constrained()->cascadeOnDelete();
-            $table->string('personal_email')->nullable()->index();
+            $table->string('personal_email')->nullable()->unique();
             $table->string('alternate_phone', 30)->nullable();
             $table->string('place_of_birth', 100)->nullable();
             $table->string('marital_status', 20)->nullable();
@@ -23,9 +23,9 @@ return new class extends Migration
             $table->string('city', 100)->nullable();
             $table->string('province', 100)->nullable();
             $table->string('postal_code', 10)->nullable();
-            $table->string('tax_number', 50)->nullable()->index();
-            $table->string('social_security_number', 50)->nullable();
-            $table->string('health_insurance_number', 50)->nullable();
+            $table->string('tax_number', 50)->nullable()->unique();
+            $table->string('social_security_number', 50)->nullable()->unique();
+            $table->string('health_insurance_number', 50)->nullable()->unique();
             $table->timestamps();
         });
     }
