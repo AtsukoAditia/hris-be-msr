@@ -5,12 +5,14 @@ use App\Http\Controllers\API\AttendanceController;
 use App\Http\Controllers\API\AttendanceSettingController;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\BranchController;
+use App\Http\Controllers\API\ContactController;
 use App\Http\Controllers\API\DashboardController;
 use App\Http\Controllers\API\DepartmentController;
 use App\Http\Controllers\API\EmployeeController;
 use App\Http\Controllers\API\LeaveController;
 use App\Http\Controllers\API\LeaveDetailController;
 use App\Http\Controllers\API\PositionController;
+use App\Http\Controllers\API\ProfileController;
 use App\Http\Controllers\API\ReportController;
 use App\Http\Controllers\API\ShiftController;
 use App\Http\Controllers\API\ShiftScheduleController;
@@ -59,6 +61,15 @@ Route::prefix('v1')->group(function () {
         Route::get('/leaves/{leave}', LeaveDetailController::class);
         Route::delete('/leaves/{leave}', [LeaveController::class, 'destroy']);
 
+        Route::get('/profile/me', [ProfileController::class, 'me']);
+        Route::put('/profile/me', [ProfileController::class, 'updateMe']);
+        Route::patch('/profile/me', [ProfileController::class, 'updateMe']);
+        Route::get('/profile/me/emergency-contacts', [ContactController::class, 'myIndex']);
+        Route::post('/profile/me/emergency-contacts', [ContactController::class, 'myStore']);
+        Route::put('/profile/me/emergency-contacts/{emergencyContact}', [ContactController::class, 'myUpdate']);
+        Route::patch('/profile/me/emergency-contacts/{emergencyContact}', [ContactController::class, 'myUpdate']);
+        Route::delete('/profile/me/emergency-contacts/{emergencyContact}', [ContactController::class, 'myDestroy']);
+
         Route::middleware('role:admin,hr')->group(function () {
             Route::put('/attendance/settings', [AttendanceSettingController::class, 'update']);
             Route::post('/attendance/qr/generate', [AttendanceSettingController::class, 'generateQr']);
@@ -67,11 +78,20 @@ Route::prefix('v1')->group(function () {
             Route::get('/shift-schedules/date/{date}', [ShiftScheduleController::class, 'getByDate']);
             Route::post('/shift-schedules/bulk', [ShiftScheduleController::class, 'bulkStore']);
             Route::apiResource('/shift-schedules', ShiftScheduleController::class);
+
             Route::get('/employees/manager-options', [EmployeeController::class, 'managerOptions']);
+            Route::get('/employees/{employee}/profile', [ProfileController::class, 'show']);
+            Route::put('/employees/{employee}/profile', [ProfileController::class, 'update']);
+            Route::patch('/employees/{employee}/profile', [ProfileController::class, 'update']);
+            Route::get('/employees/{employee}/emergency-contacts', [ContactController::class, 'index']);
+            Route::post('/employees/{employee}/emergency-contacts', [ContactController::class, 'store']);
+            Route::put('/employees/{employee}/emergency-contacts/{emergencyContact}', [ContactController::class, 'update']);
+            Route::patch('/employees/{employee}/emergency-contacts/{emergencyContact}', [ContactController::class, 'update']);
+            Route::delete('/employees/{employee}/emergency-contacts/{emergencyContact}', [ContactController::class, 'destroy']);
             Route::apiResource('/employees', EmployeeController::class)->except(['destroy']);
             Route::post('/employees/{employee}/face-enrollment', [EmployeeController::class, 'enrollFace']);
             Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy']);
-            Route::get('/employees/{employee}/profile', [EmployeeController::class, 'profile']);
+
             Route::post('/departments', [DepartmentController::class, 'store']);
             Route::put('/departments/{department}', [DepartmentController::class, 'update']);
             Route::patch('/departments/{department}', [DepartmentController::class, 'update']);
