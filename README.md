@@ -32,7 +32,7 @@ http://localhost:8000/api/v1
 | Department Master Data | ✅ | ✅ | Completed & Synced |
 | Position Master Data | ✅ | ✅ | Completed & Synced |
 | Branch / Work Location | ✅ | ✅ | Completed & Synced |
-| Employee Manager Relation | ⬜ | ⬜ | Next Module |
+| Employee Manager Relation | ✅ | ⬜ | Backend Completed |
 
 ## Organization Master Data
 
@@ -110,6 +110,7 @@ Foreign keys:
 employees.department_id → departments.id
 employees.position_id   → positions.id
 employees.branch_id     → branches.id
+employees.manager_id    → employees.id
 ```
 
 Relationships:
@@ -118,6 +119,8 @@ Relationships:
 Employee::departmentMaster()
 Employee::positionMaster()
 Employee::branch()
+Employee::manager()
+Employee::directReports()
 Department::employees()
 Department::positions()
 Position::department()
@@ -131,7 +134,8 @@ Request organisasi aktif:
 {
   "department_id": 1,
   "position_id": 5,
-  "branch_id": 1
+  "branch_id": 1,
+  "manager_id": 8
 }
 ```
 
@@ -140,6 +144,13 @@ Rules:
 - Department harus aktif.
 - Position harus aktif dan berasal dari Department yang dipilih.
 - Branch harus aktif dan belum terhapus.
+- Manager harus merupakan Employee aktif dan belum terhapus.
+- Employee tidak dapat menjadi manager untuk dirinya sendiri.
+- Relasi manager yang membuat circular hierarchy ditolak.
+- `manager_id` nullable untuk pimpinan tertinggi atau Employee tanpa direct manager.
+- Update tanpa `manager_id` mempertahankan manager sebelumnya.
+- Update dengan `manager_id: null` menghapus relasi manager.
+- Saat manager dihapus, `manager_id` seluruh direct report diubah menjadi `null`.
 - Frontend mewajibkan Branch pada form Employee.
 - Backend mempertahankan nullable `branch_id` untuk data atau consumer transisi.
 - Update tanpa `branch_id` mempertahankan Branch Employee sebelumnya.
@@ -154,15 +165,29 @@ position_name
 branch_code
 branch_name
 branch
+manager_id
+manager
+manager_name
+manager_employee_number
+manager_position_name
 ```
 
 Filter Employee:
 
 ```http
-GET /api/v1/employees?department_id=1&position_id=5&branch_id=1
+GET /api/v1/employees?department_id=1&position_id=5&branch_id=1&manager_id=8
+GET /api/v1/employees?manager_id=none
 ```
 
-Frontend menggunakan Branch pada Employee dropdown, list filter, table, dan detail lokasi.
+Manager dropdown endpoint:
+
+```http
+GET /api/v1/employees/manager-options
+GET /api/v1/employees/manager-options?exclude_employee_id=10
+GET /api/v1/employees/manager-options?search=engineering&department_id=1&branch_id=1
+```
+
+Manager options hanya mengembalikan Employee dan akun aktif, maksimal 100 data, dengan identitas Department, Position, Branch, dan label siap pakai untuk dropdown.
 
 ## Seeders
 
@@ -189,6 +214,12 @@ Backend coverage:
 - Soft delete dan assigned-Branch protection.
 - Seeder idempotency dan restore.
 - Employee Branch assignment, filter, search, update, compatibility, dan backfill.
+- Employee manager assignment dan response summary.
+- Self-reference dan circular hierarchy protection.
+- Manager preserve, change, dan clear update flow.
+- Employee filter dan search berdasarkan manager.
+- Active manager options dan current Employee exclusion.
+- Direct report cleanup ketika manager dihapus.
 - Regression tests Department dan Position.
 
 Frontend coverage:
@@ -239,5 +270,5 @@ php artisan serve
 ## Next Module
 
 ```text
-Employee Direct Manager Relation
+Employee Direct Manager Relation Frontend UI
 ```
