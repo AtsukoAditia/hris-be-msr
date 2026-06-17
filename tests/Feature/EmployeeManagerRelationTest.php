@@ -103,8 +103,10 @@ class EmployeeManagerRelationTest extends TestCase
 
         $this->getJson('/api/v1/employees?search=Jakarta Lead')
             ->assertOk()
-            ->assertJsonCount(1, 'data.data')
-            ->assertJsonPath('data.data.0.id', $report->id);
+            ->assertJsonFragment([
+                'id' => $report->id,
+                'manager_name' => 'Jakarta Lead',
+            ]);
     }
 
     public function test_manager_options_only_return_active_candidates_and_support_exclusion(): void
