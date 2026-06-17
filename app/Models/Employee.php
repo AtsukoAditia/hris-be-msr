@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Employee extends Model
@@ -73,6 +74,18 @@ class Employee extends Model
     public function directReports(): HasMany
     {
         return $this->hasMany(Employee::class, 'manager_id');
+    }
+
+    public function profile(): HasOne
+    {
+        return $this->hasOne(EmployeeProfile::class);
+    }
+
+    public function emergencyContacts(): HasMany
+    {
+        return $this->hasMany(EmergencyContact::class)
+            ->orderByDesc('is_primary')
+            ->orderBy('name');
     }
 
     public function attendances()
