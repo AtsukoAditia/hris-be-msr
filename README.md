@@ -10,8 +10,9 @@ Laravel REST API untuk Smart Attendance HRIS yang terhubung dengan frontend Reac
 | Language | PHP 8.3+ |
 | Database | MySQL 8 |
 | Authentication | Laravel Sanctum |
-| Authorization | Role middleware |
+| Authorization | Role middleware dan ownership checks |
 | ORM | Eloquent |
+| File Storage | Laravel Filesystem private disk |
 | Testing | Laravel Feature Tests |
 | Code Style | Laravel Pint |
 
@@ -21,226 +22,173 @@ Laravel REST API untuk Smart Attendance HRIS yang terhubung dengan frontend Reac
 http://localhost:8000/api/v1
 ```
 
-## Current Status
+## Module Status
 
 | Module | Backend | Frontend | Status |
-|---|:---:|:---:|:---:|
+|---|:---:|:---:|---|
 | Authentication & Role Access | ✅ | ✅ | Synced |
 | Dashboard | ✅ | ✅ | Synced |
 | Employee Management | ✅ | ✅ | Synced |
 | Attendance, Leave, Shift & Report | ✅ | ✅ | Synced |
-| Department Master Data | ✅ | ✅ | Completed & Synced |
-| Position Master Data | ✅ | ✅ | Completed & Synced |
-| Branch / Work Location | ✅ | ✅ | Completed & Synced |
-| Employee Manager Relation | ✅ | ✅ | Completed & Synced |
+| Department, Position & Branch | ✅ | ✅ | Completed |
+| Employee Manager Relation | ✅ | ✅ | Completed |
+| Employee Profile & Emergency Contact | ✅ | ✅ | Completed |
+| **Employee Document Management** | ✅ | ✅ | **Completed** |
 
-## Organization Master Data
+## Employee Document Management
 
-### Department
-
-```text
-id, code, name, description, is_active, timestamps, deleted_at
-```
-
-### Position
+Dokumen Employee disimpan pada private disk:
 
 ```text
-id, department_id, code, name, description, is_active, timestamps, deleted_at
+storage/app/private/employee-documents
 ```
 
-### Branch / Work Location
+File tidak mempunyai public URL. Download hanya dilakukan melalui endpoint terautentikasi yang memeriksa role atau ownership.
+
+Format yang didukung:
 
 ```text
-id
-code
-name
-address
-latitude
-longitude
-radius_meters
-timezone
-is_active
-created_at
-updated_at
-deleted_at
+PDF
+JPG / JPEG
+PNG
+WEBP
 ```
 
-Branch mendukung:
+Ukuran maksimal: **10 MB**.
 
-- Unique uppercase code.
-- Search code, name, address, dan timezone.
-- Status dan `active_only` filter.
-- Latitude dan longitude berpasangan.
-- Latitude `-90` sampai `90`.
-- Longitude `-180` sampai `180`.
-- Radius absensi `1–50000` meter.
-- IANA timezone validation.
-- Active/inactive status.
-- Soft delete.
-- Assigned Branch deletion protection.
-- Seeder idempotent dan restore.
-
-Endpoints:
+Metadata yang disimpan:
 
 ```text
-GET    /branches
-POST   /branches
-GET    /branches/{branch}
-PUT    /branches/{branch}
-PATCH  /branches/{branch}
-DELETE /branches/{branch}
+category
+title
+description
+labels
+original_name
+stored_name
+mime_type
+extension
+size_bytes
+checksum_sha256
+version
+issue_date
+expiry_date
+is_confidential
 ```
 
-## Role Access
-
-| Action | Admin | HR | Manager | Employee |
-|---|:---:|:---:|:---:|:---:|
-| List & Detail | ✅ | ✅ | ✅ | ❌ |
-| Create | ✅ | ✅ | ❌ | ❌ |
-| Update | ✅ | ✅ | ❌ | ❌ |
-| Delete | ✅ | ✅ | ❌ | ❌ |
-
-Manager mendapatkan read-only access pada backend dan frontend.
-
-## Employee Organization Contract
-
-Foreign keys:
+Kategori:
 
 ```text
-employees.department_id → departments.id
-employees.position_id   → positions.id
-employees.branch_id     → branches.id
-employees.manager_id    → employees.id
+identity
+tax
+employment
+education
+certification
+medical
+payroll
+other
 ```
 
-Relationships:
-
-```php
-Employee::departmentMaster()
-Employee::positionMaster()
-Employee::branch()
-Employee::manager()
-Employee::directReports()
-Department::employees()
-Department::positions()
-Position::department()
-Position::employees()
-Branch::employees()
-```
-
-Request organisasi aktif:
-
-```json
-{
-  "department_id": 1,
-  "position_id": 5,
-  "branch_id": 1,
-  "manager_id": 8
-}
-```
-
-Rules:
-
-- Department harus aktif.
-- Position harus aktif dan berasal dari Department yang dipilih.
-- Branch harus aktif dan belum terhapus.
-- Manager harus merupakan Employee aktif dan belum terhapus.
-- Employee tidak dapat menjadi manager untuk dirinya sendiri.
-- Relasi manager yang membuat circular hierarchy ditolak.
-- `manager_id` nullable untuk pimpinan tertinggi atau Employee tanpa direct manager.
-- Update tanpa `manager_id` mempertahankan manager sebelumnya.
-- Update dengan `manager_id: null` menghapus relasi manager.
-- Saat manager dihapus, `manager_id` seluruh direct report diubah menjadi `null`.
-- Frontend mewajibkan Branch pada form Employee.
-- Backend mempertahankan nullable `branch_id` untuk data atau consumer transisi.
-- Update tanpa `branch_id` mempertahankan Branch Employee sebelumnya.
-
-Employee response memuat:
-
-```text
-department_code
-department_name
-position_code
-position_name
-branch_code
-branch_name
-branch
-manager_id
-manager
-manager_name
-manager_employee_number
-manager_position_name
-```
-
-Filter Employee:
+### Employee Self-Service
 
 ```http
-GET /api/v1/employees?department_id=1&position_id=5&branch_id=1&manager_id=8
-GET /api/v1/employees?manager_id=none
+GET /api/v1/document-categories
+GET /api/v1/documents/my
+GET /api/v1/documents/my/summary
+GET /api/v1/documents/my/{employeeDocument}
+GET /api/v1/documents/my/{employeeDocument}/download
 ```
 
-Manager dropdown endpoint:
+Employee hanya dapat melihat dan mengunduh dokumen miliknya sendiri.
+
+### Admin dan HR
 
 ```http
-GET /api/v1/employees/manager-options
-GET /api/v1/employees/manager-options?exclude_employee_id=10
-GET /api/v1/employees/manager-options?search=engineering&department_id=1&branch_id=1
+GET    /api/v1/employee-documents
+GET    /api/v1/employee-documents/summary
+GET    /api/v1/employees/{employee}/documents
+POST   /api/v1/employees/{employee}/documents
+GET    /api/v1/employees/{employee}/documents/{employeeDocument}
+PATCH  /api/v1/employees/{employee}/documents/{employeeDocument}
+POST   /api/v1/employees/{employee}/documents/{employeeDocument}/replace
+GET    /api/v1/employees/{employee}/documents/{employeeDocument}/download
+DELETE /api/v1/employees/{employee}/documents/{employeeDocument}
 ```
 
-Manager options hanya mengembalikan Employee dan akun aktif, maksimal 100 data, dengan identitas Department, Position, Branch, dan label siap pakai untuk dropdown.
+Admin dan HR dapat upload, edit metadata, replace file, download, dan delete. Manager dan Employee tidak dapat memakai management endpoints.
 
-## Seeders
+### Expiry Filters
 
 ```text
-DepartmentSeeder
-EmployeeDepartmentSeeder
-PositionSeeder
-EmployeePositionSeeder
-BranchSeeder
-EmployeeBranchSeeder
+valid
+expiring
+expired
+without_expiry
 ```
 
-`EmployeeBranchSeeder` menghubungkan Employee lama tanpa Branch ke `HQ-JKT`.
+Endpoint list mendukung category, status, search, sort, pagination, dan `expires_within_days`. Global Admin/HR list juga mendukung `employee_id`.
 
-## Tests and CI
+### File Lifecycle
 
-Backend coverage:
+- Stored filename menggunakan UUID.
+- SHA-256 checksum disimpan untuk setiap file.
+- Replace mempertahankan document ID dan menaikkan version.
+- Old file dihapus setelah database update berhasil.
+- Delete menggunakan soft-delete metadata dan menghapus file fisik.
+- Menghapus Employee juga membersihkan seluruh file dokumennya.
 
-- Department, Position, dan Branch CRUD.
-- Authentication dan authorization.
-- Manager read-only behavior.
-- Branch search dan filters.
-- Coordinates, radius, timezone, duplicate code, dan normalization.
-- Soft delete dan assigned-Branch protection.
-- Seeder idempotency dan restore.
-- Employee Branch assignment, filter, search, update, compatibility, dan backfill.
-- Employee manager assignment dan response summary.
-- Self-reference dan circular hierarchy protection.
-- Manager preserve, change, dan clear update flow.
-- Employee filter dan search berdasarkan manager.
-- Active manager options dan current Employee exclusion.
-- Direct report cleanup ketika manager dihapus.
-- Regression tests Department dan Position.
+### Cleanup
 
-Frontend coverage:
+Dry run:
 
-- Branch tab dan CRUD UI.
-- Location payload normalization.
-- Manager read-only UI.
-- Validation dan delete error feedback.
-- Employee Branch normalization dan numeric payload.
-- Active Branch dropdown dan required selection.
-- Employee Branch table/detail dan API filter.
-- Employee Manager normalization dan numeric nullable payload.
-- Active Manager dropdown dan current Employee exclusion.
-- Employee Manager table/detail serta `manager_id` dan `manager_id=none` filter.
+```bash
+php artisan documents:cleanup-orphans --dry-run
+```
+
+Delete orphan files:
+
+```bash
+php artisan documents:cleanup-orphans
+```
+
+Cleanup dijadwalkan setiap Minggu pukul 02:00 dengan overlap protection.
+
+Dokumentasi lengkap:
+
+```text
+docs/employee-document-management.md
+```
+
+## Employee Profile & Emergency Contact
+
+Backend menyediakan self-service dan Admin/HR profile management, extended personal data, completion summary, maksimal lima emergency contacts, dan satu primary contact.
+
+Dokumentasi lengkap:
+
+```text
+docs/employee-profile-emergency-contact.md
+```
+
+## Audit Logging
+
+Activity log menyimpan actor, module, action, endpoint, response status, location, serta request/response preview. Password dan token difilter. Uploaded file hanya dicatat sebagai filename, MIME type, dan ukuran—binary content tidak disimpan dalam audit payload.
+
+## Testing and CI
 
 ```bash
 composer test
 vendor/bin/pint --test
 ```
 
-Backend CI menjalankan Composer validation, MySQL migrations, Pint, dan full tests. Frontend CI menjalankan ESLint, Vitest, dan production build.
+Backend CI menjalankan:
+
+- Composer validation.
+- Dependency installation.
+- MySQL migrations.
+- Laravel Pint.
+- Full feature test suite.
+- Backend test-log artifact untuk diagnostics.
+
+Coverage Employee Document mencakup secure upload, private download, role dan ownership checks, metadata update, replace/versioning, expiry filters, summary, missing file handling, orphan cleanup, Employee deletion cleanup, secure headers, dan audit records.
 
 ## Local Setup
 
@@ -249,9 +197,10 @@ composer install
 cp .env.example .env
 php artisan key:generate
 php artisan migrate:fresh --seed
-php artisan storage:link
 php artisan serve
 ```
+
+`php artisan storage:link` hanya diperlukan untuk asset public seperti face enrollment. Employee documents tetap berada pada private disk dan tidak boleh diekspos melalui symlink public.
 
 ## Demo Accounts
 
@@ -264,14 +213,8 @@ php artisan serve
 
 ## Definition of Done
 
-- Backend migration, model, API, validation, authorization, seeder, tests, dan CI tersedia.
-- Frontend service, UI, role states, tests, dan CI tersedia.
-- Request dan response contract sinkron.
-- Dropdown master tidak hardcoded.
-- README kedua repository diperbarui.
+Sebuah modul dianggap selesai setelah migration, model, service, API, authorization, validation, storage lifecycle, tests, CI, frontend integration, mobile acceptance, dan dokumentasi sinkron.
 
 ## Next Module
 
-```text
-Organization Master Data Mobile Acceptance Test
-```
+Belum ditetapkan. Pemilihan berikutnya mengikuti roadmap proyek setelah Employee Document Management selesai.
