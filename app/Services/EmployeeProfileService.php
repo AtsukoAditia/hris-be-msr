@@ -3,36 +3,12 @@
 namespace App\Services;
 
 use App\Models\Employee;
+use App\Support\EmployeeProfileFieldPolicy;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 class EmployeeProfileService
 {
-    private const EMPLOYEE_FIELDS = [
-        'phone',
-        'address',
-        'birth_date',
-        'gender',
-    ];
-
-    private const PROFILE_FIELDS = [
-        'personal_email',
-        'alternate_phone',
-        'place_of_birth',
-        'marital_status',
-        'blood_type',
-        'religion',
-        'nationality',
-        'identity_address',
-        'domicile_address',
-        'city',
-        'province',
-        'postal_code',
-        'tax_number',
-        'social_security_number',
-        'health_insurance_number',
-    ];
-
     private const COMPLETION_FIELDS = [
         'phone',
         'address',
@@ -51,13 +27,13 @@ class EmployeeProfileService
     public function update(Employee $employee, array $validated): Employee
     {
         DB::transaction(function () use ($employee, $validated): void {
-            $employeeData = Arr::only($validated, self::EMPLOYEE_FIELDS);
+            $employeeData = Arr::only($validated, EmployeeProfileFieldPolicy::EMPLOYEE_FIELDS);
 
             if ($employeeData !== []) {
                 $employee->update($employeeData);
             }
 
-            $profileData = Arr::only($validated, self::PROFILE_FIELDS);
+            $profileData = Arr::only($validated, EmployeeProfileFieldPolicy::PROFILE_FIELDS);
 
             if ($profileData !== []) {
                 $employee->profile()->updateOrCreate([], $profileData);
@@ -83,7 +59,7 @@ class EmployeeProfileService
         $profile = $employee->profile;
         $contacts = $employee->emergencyContacts;
 
-        $profileData = collect(self::PROFILE_FIELDS)
+        $profileData = collect(EmployeeProfileFieldPolicy::PROFILE_FIELDS)
             ->mapWithKeys(fn (string $field) => [$field => $profile?->{$field}])
             ->all();
 

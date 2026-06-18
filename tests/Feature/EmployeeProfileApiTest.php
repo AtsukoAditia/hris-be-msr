@@ -58,7 +58,7 @@ class EmployeeProfileApiTest extends TestCase
             ->assertJsonPath('data.profile.city', 'Jakarta');
     }
 
-    public function test_employee_can_manage_own_profile_but_cannot_use_admin_profile_route(): void
+    public function test_employee_can_manage_direct_edit_fields_but_cannot_use_admin_profile_route(): void
     {
         $user = $this->user('Self Employee', 'self.profile@hris.test');
         $employee = $this->employee($user);
@@ -67,11 +67,11 @@ class EmployeeProfileApiTest extends TestCase
         $this->patchJson('/api/v1/profile/me', [
             'phone' => '089900001111',
             'personal_email' => 'self.personal@example.com',
-            'nationality' => 'Indonesia',
+            'domicile_address' => 'Jl. Self Service No. 1',
         ])
             ->assertOk()
             ->assertJsonPath('data.employee.id', $employee->id)
-            ->assertJsonPath('data.profile.nationality', 'Indonesia');
+            ->assertJsonPath('data.profile.domicile_address', 'Jl. Self Service No. 1');
 
         $this->getJson('/api/v1/profile/me')
             ->assertOk()

@@ -93,6 +93,11 @@ class Employee extends Model
         return $this->hasMany(EmployeeDocument::class)->latest();
     }
 
+    public function profileChangeRequests(): HasMany
+    {
+        return $this->hasMany(EmployeeProfileChangeRequest::class)->latest();
+    }
+
     public function attendances()
     {
         return $this->hasMany(Attendance::class);

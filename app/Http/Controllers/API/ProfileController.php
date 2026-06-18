@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\EmployeeProfile\UpdateEmployeeProfileRequest;
+use App\Http\Requests\EmployeeProfile\UpdateMyProfileRequest;
 use App\Models\Employee;
 use App\Services\EmployeeProfileService;
 use Illuminate\Http\JsonResponse;
@@ -48,7 +49,7 @@ class ProfileController extends Controller
         ]);
     }
 
-    public function updateMe(UpdateEmployeeProfileRequest $request): JsonResponse
+    public function updateMe(UpdateMyProfileRequest $request): JsonResponse
     {
         $employee = $request->user()->employee;
 
@@ -56,7 +57,7 @@ class ProfileController extends Controller
             return $this->notFound();
         }
 
-        $employee = $this->profileService->update($employee, $request->validated());
+        $employee = $this->profileService->update($employee, $request->directUpdates());
 
         return response()->json([
             'success' => true,
