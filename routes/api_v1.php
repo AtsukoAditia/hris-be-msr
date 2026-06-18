@@ -14,6 +14,8 @@ use App\Http\Controllers\API\LeaveController;
 use App\Http\Controllers\API\LeaveDetailController;
 use App\Http\Controllers\API\MyDocumentController;
 use App\Http\Controllers\API\PositionController;
+use App\Http\Controllers\API\ProfileChangeRequestController;
+use App\Http\Controllers\API\ProfileChangeReviewController;
 use App\Http\Controllers\API\ProfileController;
 use App\Http\Controllers\API\ReportController;
 use App\Http\Controllers\API\ShiftController;
@@ -72,6 +74,11 @@ Route::prefix('v1')->group(function () {
         Route::patch('/profile/me/emergency-contacts/{emergencyContact}', [ContactController::class, 'myUpdate']);
         Route::delete('/profile/me/emergency-contacts/{emergencyContact}', [ContactController::class, 'myDestroy']);
 
+        Route::get('/profile/change-requests', [ProfileChangeRequestController::class, 'index']);
+        Route::post('/profile/change-requests', [ProfileChangeRequestController::class, 'store']);
+        Route::get('/profile/change-requests/{profileChangeRequest}', [ProfileChangeRequestController::class, 'show']);
+        Route::delete('/profile/change-requests/{profileChangeRequest}', [ProfileChangeRequestController::class, 'destroy']);
+
         Route::get('/document-categories', [DocumentController::class, 'categories']);
         Route::get('/documents/my', [MyDocumentController::class, 'index']);
         Route::get('/documents/my/summary', [MyDocumentController::class, 'summary']);
@@ -86,6 +93,11 @@ Route::prefix('v1')->group(function () {
             Route::get('/shift-schedules/date/{date}', [ShiftScheduleController::class, 'getByDate']);
             Route::post('/shift-schedules/bulk', [ShiftScheduleController::class, 'bulkStore']);
             Route::apiResource('/shift-schedules', ShiftScheduleController::class);
+
+            Route::get('/profile-change-requests', [ProfileChangeReviewController::class, 'index']);
+            Route::post('/profile-change-requests/{profileChangeRequest}/approve', [ProfileChangeReviewController::class, 'approve']);
+            Route::post('/profile-change-requests/{profileChangeRequest}/reject', [ProfileChangeReviewController::class, 'reject']);
+            Route::get('/profile-change-requests/{profileChangeRequest}', [ProfileChangeReviewController::class, 'show']);
 
             Route::get('/employee-documents', [DocumentController::class, 'index']);
             Route::get('/employee-documents/summary', [DocumentController::class, 'summary']);
