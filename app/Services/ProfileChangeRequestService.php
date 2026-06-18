@@ -154,13 +154,16 @@ class ProfileChangeRequestService
         });
     }
 
-    public function transform(EmployeeProfileChangeRequest $changeRequest): array
+    public function transform(EmployeeProfileChangeRequest $changeRequest, ?User $actor = null): array
     {
         $changeRequest->loadMissing([
             'employee.user:id,name,email',
             'requester:id,name,email,role',
             'reviewer:id,name,email,role',
         ]);
+        $isPending = $changeRequest->isPending();
+        $isRequester = $actor && (int) $changeRequest->requested_by === (int) $actor->id;
+        $canReview = $actor && $actor->isHR() && ! $isRequester && $isPending;
 
         return [
             'id' => $changeRequest->id,
@@ -186,8 +189,8 @@ class ProfileChangeRequestService
             ],
             'requester' => $this->transformUser($changeRequest->requester),
             'reviewer' => $this->transformUser($changeRequest->reviewer),
-            'can_cancel' => $changeRequest->isPending(),
-            'can_review' => $changeRequest->isPending(),
+            'can_cancel' => (bool) ($isPending && $isRequester),
+            'can_review' => (bool) $canReview,
             'created_at' => $changeRequest->created_at?->toISOString(),
             'updated_at' => $changeRequest->updated_at?->toISOString(),
             'reviewed_at' => $changeRequest->reviewed_at?->toISOString(),
@@ -208,7 +211,7 @@ class ProfileChangeRequestService
     {
         $this->ensurePending($changeRequest);
 
-        if ($changeRequest->requested_by === $reviewer->id) {
+        if ((int) $changeRequest->requested_by === (int) $reviewer->id) {
             throw ValidationException::withMessages([
                 'reviewer' => 'Reviewer tidak dapat memproses permintaan miliknya sendiri.',
             ]);
