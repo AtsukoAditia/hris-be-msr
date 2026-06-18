@@ -53,7 +53,7 @@ class AttendanceSettingController extends Controller
 
         $setting = AttendanceSetting::current();
 
-        if (!$setting->is_qr_enabled) {
+        if (! $setting->is_qr_enabled) {
             return response()->json([
                 'success' => false,
                 'message' => 'QR attendance sedang dinonaktifkan.',
@@ -65,7 +65,7 @@ class AttendanceSettingController extends Controller
             ->update(['is_active' => false]);
 
         $expiryMinutes = (int) ($validated['expiry_minutes'] ?? $setting->qr_expiry_minutes ?? 5);
-        $qrCode = 'HRIS-ATT-' . Str::upper(Str::random(32));
+        $qrCode = 'HRIS-ATT-'.Str::upper(Str::random(32));
 
         $qr = AttendanceQrToken::create([
             'token' => $qrCode,

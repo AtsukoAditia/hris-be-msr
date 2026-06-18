@@ -108,7 +108,7 @@ class ReportController extends Controller
 
         if ($request->filled('search')) {
             $search = trim((string) $request->search);
-            $query->whereHas('employee.user', fn ($q) => $q->where('name', 'like', '%' . $search . '%')->orWhere('email', 'like', '%' . $search . '%'));
+            $query->whereHas('employee.user', fn ($q) => $q->where('name', 'like', '%'.$search.'%')->orWhere('email', 'like', '%'.$search.'%'));
         }
 
         $this->applyDateFilter($query, $request, 'attendance_date');
@@ -139,7 +139,7 @@ class ReportController extends Controller
 
         if ($request->filled('search')) {
             $search = trim((string) $request->search);
-            $query->whereHas('employee.user', fn ($q) => $q->where('name', 'like', '%' . $search . '%')->orWhere('email', 'like', '%' . $search . '%'));
+            $query->whereHas('employee.user', fn ($q) => $q->where('name', 'like', '%'.$search.'%')->orWhere('email', 'like', '%'.$search.'%'));
         }
 
         $this->applyDateFilter($query, $request, 'start_date');
@@ -162,13 +162,13 @@ class ReportController extends Controller
         if ($request->filled('search')) {
             $search = trim((string) $request->search);
             $query->where(function ($q) use ($search) {
-                $q->where('employee_number', 'like', '%' . $search . '%')
-                    ->orWhere('nik', 'like', '%' . $search . '%')
-                    ->orWhere('department', 'like', '%' . $search . '%')
-                    ->orWhere('position', 'like', '%' . $search . '%')
+                $q->where('employee_number', 'like', '%'.$search.'%')
+                    ->orWhere('nik', 'like', '%'.$search.'%')
+                    ->orWhere('department', 'like', '%'.$search.'%')
+                    ->orWhere('position', 'like', '%'.$search.'%')
                     ->orWhereHas('user', function ($userQuery) use ($search) {
-                        $userQuery->where('name', 'like', '%' . $search . '%')
-                            ->orWhere('email', 'like', '%' . $search . '%');
+                        $userQuery->where('name', 'like', '%'.$search.'%')
+                            ->orWhere('email', 'like', '%'.$search.'%');
                     });
             });
         }
@@ -180,11 +180,13 @@ class ReportController extends Controller
     {
         if ($request->filled('date_from') && $request->filled('date_to')) {
             $query->whereBetween($column, [$request->date_from, $request->date_to]);
+
             return;
         }
 
         if ($request->filled('month') && $request->filled('year')) {
             $query->whereMonth($column, $request->month)->whereYear($column, $request->year);
+
             return;
         }
 

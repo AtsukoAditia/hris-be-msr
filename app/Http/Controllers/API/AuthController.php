@@ -4,8 +4,8 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
@@ -19,14 +19,14 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (! $user || ! Hash::check($request->password, $user->password)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Email atau password salah.',
             ], 401);
         }
 
-        if (!$user->is_active) {
+        if (! $user->is_active) {
             return response()->json([
                 'success' => false,
                 'message' => 'Akun tidak aktif. Hubungi administrator.',
@@ -75,7 +75,7 @@ class AuthController extends Controller
 
         $user = $request->user();
 
-        if (!Hash::check($request->current_password, $user->password)) {
+        if (! Hash::check($request->current_password, $user->password)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Password lama tidak sesuai.',

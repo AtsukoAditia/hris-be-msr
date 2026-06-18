@@ -42,7 +42,7 @@ class DashboardController extends Controller
             return response()->json(['success' => true, 'message' => 'Ringkasan dashboard berhasil diambil.', 'data' => $data]);
         }
 
-        if (!$employee) {
+        if (! $employee) {
             return response()->json([
                 'success' => true,
                 'message' => 'Ringkasan dashboard berhasil diambil.',

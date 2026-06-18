@@ -15,6 +15,7 @@ use Illuminate\Support\Carbon;
 class AttendanceActionController extends Controller
 {
     private const METHOD_DEFAULT = 'default_photo_location';
+
     private const METHOD_QR = 'qr_radius_fallback';
 
     public function checkIn(Request $request): JsonResponse
@@ -41,7 +42,7 @@ class AttendanceActionController extends Controller
     {
         $employee = $this->employee();
 
-        if (!$employee) {
+        if (! $employee) {
             return response()->json(['success' => false, 'message' => 'Profil karyawan tidak ditemukan.'], 404);
         }
 
@@ -54,10 +55,12 @@ class AttendanceActionController extends Controller
         $validated = $request->validate($this->rules($isQr));
 
         $qr = $isQr ? $this->validateQr($validated['qr_code'], 'check_in') : null;
-        if ($qr instanceof JsonResponse) return $qr;
+        if ($qr instanceof JsonResponse) {
+            return $qr;
+        }
 
         $radius = $this->validateRadius($request, $isQr ? 'check_in_qr' : 'check_in');
-        if (!$radius['allowed']) {
+        if (! $radius['allowed']) {
             return response()->json(['success' => false, 'message' => $radius['message'], 'data' => $radius], 422);
         }
 
@@ -66,7 +69,7 @@ class AttendanceActionController extends Controller
         $now = now();
         $lateMinutes = $this->lateMinutes($shift?->start_time, (int) ($shift?->late_tolerance ?? 15), $now);
 
-        $attendance = $existing ?: new Attendance();
+        $attendance = $existing ?: new Attendance;
         $attendance->employee_id = $employee->id;
         $attendance->shift_id = $shift?->id;
         $attendance->attendance_date = today();
@@ -100,13 +103,13 @@ class AttendanceActionController extends Controller
     {
         $employee = $this->employee();
 
-        if (!$employee) {
+        if (! $employee) {
             return response()->json(['success' => false, 'message' => 'Profil karyawan tidak ditemukan.'], 404);
         }
 
         $attendance = Attendance::with('shift')->where('employee_id', $employee->id)->whereDate('attendance_date', today())->first();
 
-        if (!$attendance || !$attendance->check_in_time) {
+        if (! $attendance || ! $attendance->check_in_time) {
             return response()->json(['success' => false, 'message' => 'Anda belum melakukan check-in hari ini.'], 422);
         }
 
@@ -117,10 +120,12 @@ class AttendanceActionController extends Controller
         $validated = $request->validate($this->rules($isQr));
 
         $qr = $isQr ? $this->validateQr($validated['qr_code'], 'check_out') : null;
-        if ($qr instanceof JsonResponse) return $qr;
+        if ($qr instanceof JsonResponse) {
+            return $qr;
+        }
 
         $radius = $this->validateRadius($request, $isQr ? 'check_out_qr' : 'check_out');
-        if (!$radius['allowed']) {
+        if (! $radius['allowed']) {
             return response()->json(['success' => false, 'message' => $radius['message'], 'data' => $radius], 422);
         }
 
@@ -164,22 +169,22 @@ class AttendanceActionController extends Controller
     {
         $setting = AttendanceSetting::current();
 
-        if (!$setting->is_qr_enabled) {
+        if (! $setting->is_qr_enabled) {
             return response()->json(['success' => false, 'message' => 'QR attendance sedang dinonaktifkan.'], 422);
         }
 
         $qrCode = $this->extractQrCode($scannedValue);
         $qr = AttendanceQrToken::where('token', $qrCode)->first();
 
-        if (!$qr) {
+        if (! $qr) {
             return response()->json(['success' => false, 'message' => 'QR code tidak valid.'], 422);
         }
 
-        if (!$qr->is_active || $qr->isExpired()) {
+        if (! $qr->is_active || $qr->isExpired()) {
             return response()->json(['success' => false, 'message' => 'QR code sudah tidak aktif atau sudah expired.'], 422);
         }
 
-        if (!in_array($qr->type, [$type, 'both'], true)) {
+        if (! in_array($qr->type, [$type, 'both'], true)) {
             return response()->json(['success' => false, 'message' => 'QR code tidak sesuai dengan tipe absensi.'], 422);
         }
 
@@ -202,11 +207,11 @@ class AttendanceActionController extends Controller
     {
         $setting = AttendanceSetting::current();
 
-        if (!$setting->is_radius_enabled) {
+        if (! $setting->is_radius_enabled) {
             return ['allowed' => true, 'enabled' => false, 'action' => $action, 'message' => 'Validasi radius tidak aktif.', 'distance_meters' => null, 'radius_meters' => $setting->radius_meters];
         }
 
-        if (!$setting->hasOfficeCoordinate()) {
+        if (! $setting->hasOfficeCoordinate()) {
             return ['allowed' => false, 'enabled' => true, 'action' => $action, 'message' => 'Koordinat kantor belum diatur.', 'distance_meters' => null, 'radius_meters' => $setting->radius_meters];
         }
 
@@ -229,22 +234,31 @@ class AttendanceActionController extends Controller
     private function employee(): ?Employee
     {
         $user = request()->user();
+
         return $user ? Employee::with('user')->where('user_id', $user->id)->first() : null;
     }
 
     private function lateMinutes(?string $shiftStartTime, int $toleranceMinutes, Carbon $checkInTime): int
     {
-        if (!$shiftStartTime) return 0;
-        $scheduledStart = Carbon::parse(today()->format('Y-m-d') . ' ' . substr($shiftStartTime, 0, 5));
+        if (! $shiftStartTime) {
+            return 0;
+        }
+        $scheduledStart = Carbon::parse(today()->format('Y-m-d').' '.substr($shiftStartTime, 0, 5));
         $allowedTime = $scheduledStart->copy()->addMinutes($toleranceMinutes);
+
         return $checkInTime->greaterThan($allowedTime) ? $allowedTime->diffInMinutes($checkInTime) : 0;
     }
 
     private function overtimeMinutes(Attendance $attendance): int
     {
-        if (!$attendance->shift || !$attendance->shift->end_time || !$attendance->check_out_time) return 0;
-        $shiftEnd = Carbon::parse($attendance->attendance_date->format('Y-m-d') . ' ' . substr($attendance->shift->end_time, 0, 5));
-        if ($attendance->shift->is_overnight && $shiftEnd->lessThanOrEqualTo(Carbon::parse($attendance->check_in_time))) $shiftEnd->addDay();
+        if (! $attendance->shift || ! $attendance->shift->end_time || ! $attendance->check_out_time) {
+            return 0;
+        }
+        $shiftEnd = Carbon::parse($attendance->attendance_date->format('Y-m-d').' '.substr($attendance->shift->end_time, 0, 5));
+        if ($attendance->shift->is_overnight && $shiftEnd->lessThanOrEqualTo(Carbon::parse($attendance->check_in_time))) {
+            $shiftEnd->addDay();
+        }
+
         return $attendance->check_out_time->greaterThan($shiftEnd) ? $shiftEnd->diffInMinutes($attendance->check_out_time) : 0;
     }
 
@@ -258,12 +272,16 @@ class AttendanceActionController extends Controller
         $latDelta = $latTo - $latFrom;
         $lngDelta = $lngTo - $lngFrom;
         $angle = 2 * asin(sqrt(pow(sin($latDelta / 2), 2) + cos($latFrom) * cos($latTo) * pow(sin($lngDelta / 2), 2)));
+
         return (int) round($angle * $earthRadius);
     }
 
     private function successMessage(string $action, bool $isQr, int $lateMinutes = 0): string
     {
-        if ($isQr) return $action === 'check_in' ? ($lateMinutes > 0 ? 'Check-in via QR berhasil, status terlambat.' : 'Check-in via QR berhasil.') : 'Check-out via QR berhasil.';
+        if ($isQr) {
+            return $action === 'check_in' ? ($lateMinutes > 0 ? 'Check-in via QR berhasil, status terlambat.' : 'Check-in via QR berhasil.') : 'Check-out via QR berhasil.';
+        }
+
         return $action === 'check_in' ? ($lateMinutes > 0 ? 'Check-in berhasil dengan foto dan lokasi, status terlambat.' : 'Check-in berhasil dengan foto dan lokasi.') : 'Check-out berhasil dengan foto dan lokasi.';
     }
 
@@ -284,8 +302,8 @@ class AttendanceActionController extends Controller
             'check_out_lng' => $attendance->check_out_longitude,
             'check_in_photo' => $attendance->check_in_photo,
             'check_out_photo' => $attendance->check_out_photo,
-            'check_in_photo_url' => $attendance->check_in_photo ? asset('storage/' . $attendance->check_in_photo) : null,
-            'check_out_photo_url' => $attendance->check_out_photo ? asset('storage/' . $attendance->check_out_photo) : null,
+            'check_in_photo_url' => $attendance->check_in_photo ? asset('storage/'.$attendance->check_in_photo) : null,
+            'check_out_photo_url' => $attendance->check_out_photo ? asset('storage/'.$attendance->check_out_photo) : null,
             'status' => $attendance->status,
             'note' => $attendance->note,
             'notes' => $attendance->note,
