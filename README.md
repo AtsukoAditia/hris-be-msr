@@ -33,7 +33,81 @@ http://localhost:8000/api/v1
 | Department, Position & Branch | ✅ | ✅ | Completed |
 | Employee Manager Relation | ✅ | ✅ | Completed |
 | Employee Profile & Emergency Contact | ✅ | ✅ | Completed |
-| **Employee Document Management** | ✅ | ✅ | **Completed** |
+| Employee Document Management | ✅ | ✅ | Completed |
+| **Employee Self-Service Completion** | ✅ | ⬜ | **Backend completed** |
+
+## Employee Self-Service Completion
+
+Backend Employee Self-Service membedakan perubahan profil menjadi dua jalur:
+
+1. Direct update untuk data kontak dan domisili.
+2. Profile change request untuk data legal, identitas, dan benefit yang memerlukan review Admin/HR.
+
+### Direct Self-Service Update
+
+```http
+GET   /api/v1/profile/me
+PATCH /api/v1/profile/me
+```
+
+Employee dapat langsung memperbarui:
+
+```text
+phone
+address
+personal_email
+alternate_phone
+domicile_address
+city
+province
+postal_code
+```
+
+Perubahan data sensitif melalui endpoint ini ditolak dengan validation error.
+
+### Employee Change Requests
+
+```http
+GET    /api/v1/profile/change-requests
+POST   /api/v1/profile/change-requests
+GET    /api/v1/profile/change-requests/{profileChangeRequest}
+DELETE /api/v1/profile/change-requests/{profileChangeRequest}
+```
+
+Field yang memerlukan approval:
+
+```text
+birth_date
+gender
+place_of_birth
+marital_status
+blood_type
+religion
+nationality
+identity_address
+tax_number
+social_security_number
+health_insurance_number
+```
+
+Employee dapat membuat, melihat, dan membatalkan request miliknya. Maksimal satu request `pending` per Employee.
+
+### Admin dan HR Review
+
+```http
+GET  /api/v1/profile-change-requests
+GET  /api/v1/profile-change-requests/{profileChangeRequest}
+POST /api/v1/profile-change-requests/{profileChangeRequest}/approve
+POST /api/v1/profile-change-requests/{profileChangeRequest}/reject
+```
+
+Approval menggunakan transaction, row locking, uniqueness revalidation, stale snapshot protection, dan self-review protection. Rejection wajib mempunyai review note.
+
+Dokumentasi lengkap:
+
+```text
+docs/employee-self-service.md
+```
 
 ## Employee Document Management
 
@@ -88,7 +162,7 @@ payroll
 other
 ```
 
-### Employee Self-Service
+### Employee Document Self-Service
 
 ```http
 GET /api/v1/document-categories
@@ -100,7 +174,7 @@ GET /api/v1/documents/my/{employeeDocument}/download
 
 Employee hanya dapat melihat dan mengunduh dokumen miliknya sendiri.
 
-### Admin dan HR
+### Admin dan HR Documents
 
 ```http
 GET    /api/v1/employee-documents
@@ -188,6 +262,8 @@ Backend CI menjalankan:
 - Full feature test suite.
 - Backend test-log artifact untuk diagnostics.
 
+Coverage Employee Self-Service mencakup direct update policy, request ownership, request cancellation, one-pending-request rule, Admin/HR review, role restrictions, required rejection note, self-review protection, duplicate processing, stale snapshots, dan approval-time uniqueness validation.
+
 Coverage Employee Document mencakup secure upload, private download, role dan ownership checks, metadata update, replace/versioning, expiry filters, summary, missing file handling, orphan cleanup, Employee deletion cleanup, secure headers, dan audit records.
 
 ## Local Setup
@@ -212,4 +288,4 @@ Sebuah modul dianggap selesai setelah migration, model, service, API, authorizat
 
 ## Next Module
 
-Belum ditetapkan. Pemilihan berikutnya mengikuti roadmap proyek setelah Employee Document Management selesai.
+Frontend Employee Self-Service: change password UI, request perubahan profil, riwayat request, dan Admin/HR review UI.
