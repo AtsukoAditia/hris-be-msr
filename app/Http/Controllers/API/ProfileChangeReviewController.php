@@ -10,6 +10,7 @@ use App\Models\EmployeeProfileChangeRequest;
 use App\Services\ProfileChangeRequestService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class ProfileChangeReviewController extends Controller
 {
@@ -18,6 +19,7 @@ class ProfileChangeReviewController extends Controller
     public function index(IndexProfileChangeRequest $request): JsonResponse
     {
         $validated = $request->validated();
+        $actor = $request->user();
         $query = EmployeeProfileChangeRequest::query()
             ->with(['employee.user', 'requester', 'reviewer']);
 
@@ -25,7 +27,7 @@ class ProfileChangeReviewController extends Controller
         $paginator = $query
             ->paginate((int) ($validated['per_page'] ?? 15))
             ->withQueryString()
-            ->through(fn (EmployeeProfileChangeRequest $changeRequest) => $this->changeRequestService->transform($changeRequest));
+            ->through(fn (EmployeeProfileChangeRequest $changeRequest) => $this->changeRequestService->transform($changeRequest, $actor));
 
         return response()->json([
             'success' => true,
@@ -34,12 +36,12 @@ class ProfileChangeReviewController extends Controller
         ]);
     }
 
-    public function show(EmployeeProfileChangeRequest $profileChangeRequest): JsonResponse
+    public function show(Request $request, EmployeeProfileChangeRequest $profileChangeRequest): JsonResponse
     {
         return response()->json([
             'success' => true,
             'message' => 'Detail permintaan perubahan profil berhasil diambil.',
-            'data' => $this->changeRequestService->transform($profileChangeRequest),
+            'data' => $this->changeRequestService->transform($profileChangeRequest, $request->user()),
         ]);
     }
 
@@ -56,7 +58,7 @@ class ProfileChangeReviewController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Permintaan perubahan profil berhasil disetujui.',
-            'data' => $this->changeRequestService->transform($profileChangeRequest),
+            'data' => $this->changeRequestService->transform($profileChangeRequest, $request->user()),
         ]);
     }
 
@@ -73,7 +75,7 @@ class ProfileChangeReviewController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Permintaan perubahan profil berhasil ditolak.',
-            'data' => $this->changeRequestService->transform($profileChangeRequest),
+            'data' => $this->changeRequestService->transform($profileChangeRequest, $request->user()),
         ]);
     }
 
