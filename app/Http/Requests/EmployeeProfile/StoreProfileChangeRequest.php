@@ -57,12 +57,16 @@ class StoreProfileChangeRequest extends FormRequest
         return [
             function (Validator $validator): void {
                 $employee = $this->user()?->employee;
+                $inputChanges = $this->input('changes');
 
-                if (! $employee || ! is_array($this->input('changes'))) {
+                if (! $employee || ! is_array($inputChanges)) {
                     return;
                 }
 
-                $changes = $this->validatedChanges();
+                $changes = Arr::only(
+                    $inputChanges,
+                    EmployeeProfileFieldPolicy::APPROVAL_REQUIRED_FIELDS,
+                );
                 $currentValues = EmployeeProfileFieldPolicy::currentValues(
                     $employee,
                     array_keys($changes),
