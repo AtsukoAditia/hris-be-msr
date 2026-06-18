@@ -61,6 +61,7 @@ class ProfileChangeRequestService
     public function cancel(EmployeeProfileChangeRequest $changeRequest, User $requester): EmployeeProfileChangeRequest
     {
         return DB::transaction(function () use ($changeRequest, $requester): EmployeeProfileChangeRequest {
+            Employee::query()->lockForUpdate()->findOrFail($changeRequest->employee_id);
             $changeRequest = EmployeeProfileChangeRequest::query()
                 ->whereKey($changeRequest->id)
                 ->where('requested_by', $requester->id)
@@ -84,6 +85,7 @@ class ProfileChangeRequestService
         ?string $reviewNote = null,
     ): EmployeeProfileChangeRequest {
         return DB::transaction(function () use ($changeRequest, $reviewer, $reviewNote): EmployeeProfileChangeRequest {
+            $employee = Employee::query()->lockForUpdate()->findOrFail($changeRequest->employee_id);
             $changeRequest = EmployeeProfileChangeRequest::query()
                 ->whereKey($changeRequest->id)
                 ->lockForUpdate()
@@ -91,7 +93,6 @@ class ProfileChangeRequestService
 
             $this->ensureReviewable($changeRequest, $reviewer);
 
-            $employee = Employee::query()->lockForUpdate()->findOrFail($changeRequest->employee_id);
             $fields = array_keys($changeRequest->requested_changes);
             $changes = EmployeeProfileFieldPolicy::normalize($changeRequest->requested_changes, $fields);
             $unknownFields = array_diff($fields, EmployeeProfileFieldPolicy::APPROVAL_REQUIRED_FIELDS);
@@ -135,6 +136,7 @@ class ProfileChangeRequestService
         string $reviewNote,
     ): EmployeeProfileChangeRequest {
         return DB::transaction(function () use ($changeRequest, $reviewer, $reviewNote): EmployeeProfileChangeRequest {
+            Employee::query()->lockForUpdate()->findOrFail($changeRequest->employee_id);
             $changeRequest = EmployeeProfileChangeRequest::query()
                 ->whereKey($changeRequest->id)
                 ->lockForUpdate()
