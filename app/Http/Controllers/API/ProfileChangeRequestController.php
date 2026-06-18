@@ -24,6 +24,7 @@ class ProfileChangeRequestController extends Controller
         }
 
         $validated = $request->validated();
+        $actor = $request->user();
         $query = EmployeeProfileChangeRequest::query()
             ->where('employee_id', $employee->id)
             ->with(['employee.user', 'requester', 'reviewer']);
@@ -32,7 +33,7 @@ class ProfileChangeRequestController extends Controller
         $paginator = $query
             ->paginate((int) ($validated['per_page'] ?? 15))
             ->withQueryString()
-            ->through(fn (EmployeeProfileChangeRequest $changeRequest) => $this->changeRequestService->transform($changeRequest));
+            ->through(fn (EmployeeProfileChangeRequest $changeRequest) => $this->changeRequestService->transform($changeRequest, $actor));
 
         return response()->json([
             'success' => true,
@@ -59,7 +60,7 @@ class ProfileChangeRequestController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Permintaan perubahan profil berhasil diajukan.',
-            'data' => $this->changeRequestService->transform($changeRequest),
+            'data' => $this->changeRequestService->transform($changeRequest, $request->user()),
         ], 201);
     }
 
@@ -72,7 +73,7 @@ class ProfileChangeRequestController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Detail permintaan perubahan profil berhasil diambil.',
-            'data' => $this->changeRequestService->transform($profileChangeRequest),
+            'data' => $this->changeRequestService->transform($profileChangeRequest, $request->user()),
         ]);
     }
 
@@ -90,7 +91,7 @@ class ProfileChangeRequestController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Permintaan perubahan profil berhasil dibatalkan.',
-            'data' => $this->changeRequestService->transform($profileChangeRequest),
+            'data' => $this->changeRequestService->transform($profileChangeRequest, $request->user()),
         ]);
     }
 
