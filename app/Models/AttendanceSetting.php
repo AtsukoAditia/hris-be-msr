@@ -41,6 +41,6 @@ class AttendanceSetting extends Model
 
     public function hasOfficeCoordinate(): bool
     {
-        return !is_null($this->office_latitude) && !is_null($this->office_longitude);
+        return ! is_null($this->office_latitude) && ! is_null($this->office_longitude);
     }
 }

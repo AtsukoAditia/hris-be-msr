@@ -89,7 +89,7 @@ class EmployeeSeeder extends Seeder
         foreach ($employees as $employeeData) {
             $user = User::where('email', $employeeData['email'])->first();
 
-            if (!$user) {
+            if (! $user) {
                 continue;
             }
 

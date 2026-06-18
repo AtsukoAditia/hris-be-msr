@@ -17,7 +17,7 @@ class LeaveController extends Controller
         $user = Auth::user();
         $query = Leave::with(['employee.user', 'approver'])->latest('created_at');
 
-        if (!$user->isAdmin() && !$user->isManager()) {
+        if (! $user->isAdmin() && ! $user->isManager()) {
             $query->whereHas('employee', fn ($q) => $q->where('user_id', $user->id));
         }
 
@@ -65,7 +65,7 @@ class LeaveController extends Controller
     {
         $employee = Auth::user()->employee;
 
-        if (!$employee) {
+        if (! $employee) {
             return response()->json([
                 'success' => false,
                 'message' => 'Profil karyawan tidak ditemukan.',
@@ -104,7 +104,7 @@ class LeaveController extends Controller
         $year = (int) $request->get('year', now()->year);
         $total = 12;
 
-        if (!$employee) {
+        if (! $employee) {
             return response()->json([
                 'success' => true,
                 'message' => 'Saldo cuti default.',
@@ -147,7 +147,7 @@ class LeaveController extends Controller
 
         $employee = Auth::user()->employee;
 
-        if (!$employee) {
+        if (! $employee) {
             return response()->json([
                 'success' => false,
                 'message' => 'Profil karyawan tidak ditemukan.',
@@ -225,7 +225,7 @@ class LeaveController extends Controller
             'note' => 'nullable|string|max:500',
         ]);
 
-        if (!$leave->isPending()) {
+        if (! $leave->isPending()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Pengajuan cuti sudah tidak berstatus pending.',
@@ -254,7 +254,7 @@ class LeaveController extends Controller
             'rejection_reason' => 'required|string|max:500',
         ]);
 
-        if (!$leave->isPending()) {
+        if (! $leave->isPending()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Pengajuan cuti sudah tidak berstatus pending.',
@@ -281,14 +281,14 @@ class LeaveController extends Controller
     {
         $user = Auth::user();
 
-        if (!$leave->isPending()) {
+        if (! $leave->isPending()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Hanya pengajuan pending yang bisa dibatalkan.',
             ], 422);
         }
 
-        if (!$user->isAdmin() && $leave->employee->user_id !== $user->id) {
+        if (! $user->isAdmin() && $leave->employee->user_id !== $user->id) {
             return response()->json([
                 'success' => false,
                 'message' => 'Tidak diizinkan.',
@@ -311,7 +311,7 @@ class LeaveController extends Controller
         $current = $startDate->copy();
 
         while ($current->lessThanOrEqualTo($endDate)) {
-            if (!$current->isWeekend()) {
+            if (! $current->isWeekend()) {
                 $days++;
             }
 

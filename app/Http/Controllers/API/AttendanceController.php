@@ -45,7 +45,7 @@ class AttendanceController extends Controller
     {
         $employee = $this->getAuthenticatedEmployee();
 
-        if (!$employee) {
+        if (! $employee) {
             return response()->json([
                 'success' => false,
                 'message' => 'Profil karyawan tidak ditemukan untuk akun ini.',
@@ -81,7 +81,7 @@ class AttendanceController extends Controller
     {
         $employee = $this->getAuthenticatedEmployee();
 
-        if (!$employee) {
+        if (! $employee) {
             return response()->json([
                 'success' => false,
                 'message' => 'Profil karyawan tidak ditemukan.',
@@ -145,7 +145,7 @@ class AttendanceController extends Controller
     {
         $employee = $this->getAuthenticatedEmployee();
 
-        if (!$employee) {
+        if (! $employee) {
             return response()->json(['success' => false, 'message' => 'Profil karyawan tidak ditemukan.'], 404);
         }
 
@@ -174,7 +174,7 @@ class AttendanceController extends Controller
         }
 
         $radiusValidation = $this->validateRadius($request, 'check_in');
-        if (!$radiusValidation['allowed']) {
+        if (! $radiusValidation['allowed']) {
             return response()->json([
                 'success' => false,
                 'message' => $radiusValidation['message'],
@@ -191,7 +191,7 @@ class AttendanceController extends Controller
         $now = now();
         $lateMinutes = $this->calculateLateMinutes($shift?->start_time, (int) ($shift?->late_tolerance ?? 15), $now);
 
-        $attendance = $existing ?: new Attendance();
+        $attendance = $existing ?: new Attendance;
         $attendance->employee_id = $employee->id;
         $attendance->shift_id = $shift?->id;
         $attendance->attendance_date = today();
@@ -223,7 +223,7 @@ class AttendanceController extends Controller
     {
         $employee = $this->getAuthenticatedEmployee();
 
-        if (!$employee) {
+        if (! $employee) {
             return response()->json(['success' => false, 'message' => 'Profil karyawan tidak ditemukan.'], 404);
         }
 
@@ -232,7 +232,7 @@ class AttendanceController extends Controller
             ->whereDate('attendance_date', today())
             ->first();
 
-        if (!$attendance || !$attendance->check_in_time) {
+        if (! $attendance || ! $attendance->check_in_time) {
             return response()->json(['success' => false, 'message' => 'Anda belum melakukan check-in hari ini.'], 422);
         }
 
@@ -257,7 +257,7 @@ class AttendanceController extends Controller
         }
 
         $radiusValidation = $this->validateRadius($request, 'check_out');
-        if (!$radiusValidation['allowed']) {
+        if (! $radiusValidation['allowed']) {
             return response()->json([
                 'success' => false,
                 'message' => $radiusValidation['message'],
@@ -321,7 +321,7 @@ class AttendanceController extends Controller
     {
         $user = request()->user();
 
-        if (!$user) {
+        if (! $user) {
             return null;
         }
 
@@ -332,7 +332,7 @@ class AttendanceController extends Controller
     {
         $setting = AttendanceSetting::current();
 
-        if (!$setting->is_radius_enabled) {
+        if (! $setting->is_radius_enabled) {
             return [
                 'allowed' => true,
                 'enabled' => false,
@@ -342,7 +342,7 @@ class AttendanceController extends Controller
             ];
         }
 
-        if (!$setting->hasOfficeCoordinate()) {
+        if (! $setting->hasOfficeCoordinate()) {
             return [
                 'allowed' => false,
                 'enabled' => true,
@@ -352,7 +352,7 @@ class AttendanceController extends Controller
             ];
         }
 
-        if (!$request->filled('latitude') || !$request->filled('longitude')) {
+        if (! $request->filled('latitude') || ! $request->filled('longitude')) {
             return [
                 'allowed' => false,
                 'enabled' => true,
@@ -388,7 +388,7 @@ class AttendanceController extends Controller
     {
         $setting = AttendanceSetting::current();
 
-        if (!$setting->is_qr_enabled) {
+        if (! $setting->is_qr_enabled) {
             return response()->json([
                 'success' => false,
                 'message' => 'QR attendance sedang dinonaktifkan.',
@@ -397,21 +397,21 @@ class AttendanceController extends Controller
 
         $qrToken = AttendanceQrToken::where('token', $token)->first();
 
-        if (!$qrToken) {
+        if (! $qrToken) {
             return response()->json([
                 'success' => false,
                 'message' => 'QR token tidak valid.',
             ], 422);
         }
 
-        if (!$qrToken->is_active || $qrToken->isExpired()) {
+        if (! $qrToken->is_active || $qrToken->isExpired()) {
             return response()->json([
                 'success' => false,
                 'message' => 'QR token sudah tidak aktif atau sudah expired.',
             ], 422);
         }
 
-        if (!in_array($qrToken->type, [$type, 'both'], true)) {
+        if (! in_array($qrToken->type, [$type, 'both'], true)) {
             return response()->json([
                 'success' => false,
                 'message' => 'QR token tidak sesuai dengan tipe absensi.',
@@ -442,11 +442,11 @@ class AttendanceController extends Controller
 
     private function calculateLateMinutes(?string $shiftStartTime, int $toleranceMinutes, Carbon $checkInTime): int
     {
-        if (!$shiftStartTime) {
+        if (! $shiftStartTime) {
             return 0;
         }
 
-        $scheduledStart = Carbon::parse(today()->format('Y-m-d') . ' ' . substr($shiftStartTime, 0, 5));
+        $scheduledStart = Carbon::parse(today()->format('Y-m-d').' '.substr($shiftStartTime, 0, 5));
         $allowedTime = $scheduledStart->copy()->addMinutes($toleranceMinutes);
 
         return $checkInTime->greaterThan($allowedTime)
@@ -456,11 +456,11 @@ class AttendanceController extends Controller
 
     private function calculateOvertimeMinutes(Attendance $attendance): int
     {
-        if (!$attendance->shift || !$attendance->shift->end_time || !$attendance->check_out_time) {
+        if (! $attendance->shift || ! $attendance->shift->end_time || ! $attendance->check_out_time) {
             return 0;
         }
 
-        $shiftEnd = Carbon::parse($attendance->attendance_date->format('Y-m-d') . ' ' . substr($attendance->shift->end_time, 0, 5));
+        $shiftEnd = Carbon::parse($attendance->attendance_date->format('Y-m-d').' '.substr($attendance->shift->end_time, 0, 5));
 
         if ($attendance->shift->is_overnight && $shiftEnd->lessThanOrEqualTo(Carbon::parse($attendance->check_in_time))) {
             $shiftEnd->addDay();
@@ -493,8 +493,8 @@ class AttendanceController extends Controller
             'is_check_out_within_radius' => $checkOutRadius['is_within_radius'],
             'check_in_photo' => $attendance->check_in_photo,
             'check_out_photo' => $attendance->check_out_photo,
-            'check_in_photo_url' => $attendance->check_in_photo ? asset('storage/' . $attendance->check_in_photo) : null,
-            'check_out_photo_url' => $attendance->check_out_photo ? asset('storage/' . $attendance->check_out_photo) : null,
+            'check_in_photo_url' => $attendance->check_in_photo ? asset('storage/'.$attendance->check_in_photo) : null,
+            'check_out_photo_url' => $attendance->check_out_photo ? asset('storage/'.$attendance->check_out_photo) : null,
             'status' => $attendance->status,
             'note' => $attendance->note,
             'notes' => $attendance->note,
@@ -522,7 +522,7 @@ class AttendanceController extends Controller
     {
         $setting = AttendanceSetting::current();
 
-        if (!$setting->is_radius_enabled || !$setting->hasOfficeCoordinate() || is_null($latitude) || is_null($longitude)) {
+        if (! $setting->is_radius_enabled || ! $setting->hasOfficeCoordinate() || is_null($latitude) || is_null($longitude)) {
             return [
                 'distance_meters' => null,
                 'is_within_radius' => null,
@@ -544,7 +544,7 @@ class AttendanceController extends Controller
 
     private function transformQrToken(?AttendanceQrToken $token): ?array
     {
-        if (!$token) {
+        if (! $token) {
             return null;
         }
 

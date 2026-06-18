@@ -5,8 +5,8 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\Shift;
 use App\Models\ShiftSchedule;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class ShiftController extends Controller
@@ -26,9 +26,9 @@ class ShiftController extends Controller
         if ($request->filled('search')) {
             $search = trim((string) $request->search);
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', '%' . $search . '%')
-                  ->orWhere('code', 'like', '%' . $search . '%')
-                  ->orWhere('description', 'like', '%' . $search . '%');
+                $q->where('name', 'like', '%'.$search.'%')
+                    ->orWhere('code', 'like', '%'.$search.'%')
+                    ->orWhere('description', 'like', '%'.$search.'%');
             });
         }
 
@@ -114,7 +114,7 @@ class ShiftController extends Controller
         $validated['is_overnight'] = $validated['is_overnight'] ?? false;
         $validated['is_active'] = $validated['is_active'] ?? true;
 
-        if (!$validated['is_overnight'] && $validated['end_time'] <= $validated['start_time']) {
+        if (! $validated['is_overnight'] && $validated['end_time'] <= $validated['start_time']) {
             abort(response()->json([
                 'success' => false,
                 'message' => 'Jam selesai harus lebih besar dari jam mulai untuk shift non-overnight.',

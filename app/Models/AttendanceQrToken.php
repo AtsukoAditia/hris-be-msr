@@ -38,8 +38,8 @@ class AttendanceQrToken extends Model
     public function isUsableFor(string $type): bool
     {
         return $this->is_active
-            && !$this->used_at
-            && !$this->isExpired()
+            && ! $this->used_at
+            && ! $this->isExpired()
             && in_array($this->type, [$type, 'both'], true);
     }
 
