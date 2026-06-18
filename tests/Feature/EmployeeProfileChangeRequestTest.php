@@ -85,7 +85,16 @@ class EmployeeProfileChangeRequestTest extends TestCase
 
         $this->getJson("/api/v1/profile/change-requests/{$requestId}")
             ->assertOk()
-            ->assertJsonPath('data.changes.0.field', 'nationality');
+            ->assertJsonFragment([
+                'field' => 'nationality',
+                'current_value' => 'Indonesia',
+                'requested_value' => 'Malaysia',
+            ])
+            ->assertJsonFragment([
+                'field' => 'tax_number',
+                'current_value' => 'TAX-OLD',
+                'requested_value' => 'TAX-NEW',
+            ]);
 
         $this->deleteJson("/api/v1/profile/change-requests/{$requestId}")
             ->assertOk()
