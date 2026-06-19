@@ -1,6 +1,10 @@
 <?php
 
 use App\Http\Controllers\API\ActivityLogController;
+use App\Http\Controllers\API\Admin\HolidayAdminController;
+use App\Http\Controllers\API\Admin\LeaveBalanceAdminController;
+use App\Http\Controllers\API\Admin\LeavePolicyAdminController;
+use App\Http\Controllers\API\Admin\LeaveTypeAdminController;
 use App\Http\Controllers\API\AttendanceActionController;
 use App\Http\Controllers\API\AttendanceController;
 use App\Http\Controllers\API\AttendanceCorrectionController;
@@ -14,6 +18,7 @@ use App\Http\Controllers\API\DocumentController;
 use App\Http\Controllers\API\EmployeeController;
 use App\Http\Controllers\API\LeaveController;
 use App\Http\Controllers\API\LeaveDetailController;
+use App\Http\Controllers\API\LeaveTypeController;
 use App\Http\Controllers\API\MyDocumentController;
 use App\Http\Controllers\API\PositionController;
 use App\Http\Controllers\API\ProfileChangeRequestController;
@@ -60,6 +65,9 @@ Route::prefix('v1')->group(function () {
             Route::get('/branches', [BranchController::class, 'index']);
             Route::get('/branches/{branch}', [BranchController::class, 'show']);
         });
+
+        Route::get('/leave-types', [LeaveTypeController::class, 'index']);
+        Route::get('/leave-types/{leaveType}', [LeaveTypeController::class, 'show']);
 
         Route::get('/leaves/my', [LeaveController::class, 'my']);
         Route::get('/leaves/balance', [LeaveController::class, 'balance']);
@@ -161,6 +169,15 @@ Route::prefix('v1')->group(function () {
             Route::put('/branches/{branch}', [BranchController::class, 'update']);
             Route::patch('/branches/{branch}', [BranchController::class, 'update']);
             Route::delete('/branches/{branch}', [BranchController::class, 'destroy']);
+
+            // ========================
+            // Leave Master Admin CRUD
+            // ========================
+            Route::apiResource('/admin/leave-types', LeaveTypeAdminController::class);
+            Route::apiResource('/admin/leave-policies', LeavePolicyAdminController::class);
+            Route::apiResource('/admin/holidays', HolidayAdminController::class);
+            Route::apiResource('/admin/leave-balances', LeaveBalanceAdminController::class)->only(['index', 'store', 'update', 'destroy']);
+            Route::post('/admin/leave-balances/adjust', [LeaveBalanceAdminController::class, 'adjust']);
         });
     });
 });

@@ -3,12 +3,15 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Leave\StoreLeaveRequest;
 use App\Models\Employee;
 use App\Models\Leave;
+use App\Models\LeaveType;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class LeaveController extends Controller
 {
@@ -136,14 +139,9 @@ class LeaveController extends Controller
         ]);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreLeaveRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'leave_type' => 'required|in:annual,sick,emergency,maternity,paternity,unpaid,other',
-            'start_date' => 'required|date|after_or_equal:today',
-            'end_date' => 'required|date|after_or_equal:start_date',
-            'reason' => 'required|string|max:1000',
-        ]);
+        $validated = $request->validated();
 
         $employee = Auth::user()->employee;
 
@@ -154,11 +152,20 @@ class LeaveController extends Controller
             ], 404);
         }
 
+        // Resolve leave type from leave_type_id (FK) or legacy leave_type string
+        $leaveType = null;
+        $leaveTypeCode = $validated['leave_type'] ?? null;
+
+        if (isset($validated['leave_type_id'])) {
+            $leaveType = LeaveType::find($validated['leave_type_id']);
+            $leaveTypeCode = $leaveType ? $leaveType->code : null;
+        }
+
         $startDate = Carbon::parse($validated['start_date']);
         $endDate = Carbon::parse($validated['end_date']);
-        $totalDays = $this->calculateBusinessDays($startDate, $endDate);
+        $totalDays = max(1, $startDate->diffInDays($endDate) + 1);
 
-        if ($validated['leave_type'] === 'annual') {
+        if ($leaveTypeCode === 'annual') {
             $balance = $this->getAnnualBalance($employee->id, (int) $startDate->year);
 
             if ($totalDays > $balance['remaining']) {
@@ -189,17 +196,27 @@ class LeaveController extends Controller
             ], 422);
         }
 
+        $attachmentPath = null;
+        if ($request->hasFile('attachment')) {
+            $attachmentPath = $request->file('attachment')->store(
+                "leave-attachments/{$employee->id}",
+                'public'
+            );
+        }
+
         $leave = Leave::create([
             'employee_id' => $employee->id,
-            'leave_type' => $validated['leave_type'],
+            'leave_type_id' => $validated['leave_type_id'] ?? null,
+            'leave_type' => $leaveTypeCode,
             'start_date' => $validated['start_date'],
             'end_date' => $validated['end_date'],
             'total_days' => $totalDays,
             'reason' => $validated['reason'],
+            'attachment' => $attachmentPath,
             'status' => Leave::STATUS_PENDING,
         ]);
 
-        $leave->load(['employee.user', 'approver']);
+        $leave->load(['employee.user', 'approver', 'leaveType']);
 
         return response()->json([
             'success' => true,
@@ -305,22 +322,6 @@ class LeaveController extends Controller
         ]);
     }
 
-    private function calculateBusinessDays(Carbon $startDate, Carbon $endDate): int
-    {
-        $days = 0;
-        $current = $startDate->copy();
-
-        while ($current->lessThanOrEqualTo($endDate)) {
-            if (! $current->isWeekend()) {
-                $days++;
-            }
-
-            $current->addDay();
-        }
-
-        return max(1, $days);
-    }
-
     private function getAnnualBalance(int $employeeId, int $year): array
     {
         $total = 12;
@@ -344,12 +345,14 @@ class LeaveController extends Controller
             'id' => $leave->id,
             'employee_id' => $leave->employee_id,
             'leave_type' => $leave->leave_type,
+            'leave_type_id' => $leave->leave_type_id,
             'leave_type_label' => $this->getLeaveTypeLabel($leave->leave_type),
             'start_date' => optional($leave->start_date)->format('Y-m-d'),
             'end_date' => optional($leave->end_date)->format('Y-m-d'),
             'total_days' => $leave->total_days,
             'reason' => $leave->reason,
             'attachment' => $leave->attachment,
+            'attachment_url' => $leave->attachment ? Storage::disk('public')->url($leave->attachment) : null,
             'status' => $leave->status,
             'status_label' => $this->getStatusLabel($leave->status),
             'rejection_reason' => $leave->rejection_reason,
