@@ -125,8 +125,9 @@ class LeaveService
                     'leave_balance_id' => $balance->id,
                     'reference_type' => Leave::class,
                     'reference_id' => null, // Backfilled below
-                    'type' => 'deduction',
+                    'transaction_type' => 'deduction',
                     'amount' => $totalDays,
+                    'change' => -$totalDays,
                     'balance_before' => $before,
                     'balance_after' => (int) $balance->remaining_days,
                     'description' => 'Pengajuan cuti',
@@ -137,6 +138,7 @@ class LeaveService
             $leave = Leave::create([
                 'employee_id' => $employee->id,
                 'leave_type_id' => $leaveType->id,
+                'leave_type' => $leaveType->code ?? $leaveType->name,
                 'start_date' => $startDate,
                 'end_date' => $endDate,
                 'total_days' => $totalDays,
@@ -149,7 +151,7 @@ class LeaveService
             if (isset($balance)) {
                 LeaveBalanceTransaction::where('leave_balance_id', $balance->id)
                     ->whereNull('reference_id')
-                    ->where('type', 'deduction')
+                    ->where('transaction_type', 'deduction')
                     ->latest()
                     ->first()
                     ?->update(['reference_id' => $leave->id]);
@@ -229,8 +231,9 @@ class LeaveService
                         'leave_balance_id' => $balance->id,
                         'reference_type' => Leave::class,
                         'reference_id' => $leave->id,
-                        'type' => 'adjustment',
+                        'transaction_type' => 'adjustment',
                         'amount' => $leave->total_days,
+                        'change' => $leave->total_days,
                         'balance_before' => $balance->remaining_days - $leave->total_days,
                         'balance_after' => $balance->remaining_days,
                         'description' => 'Pengembalian saldo - cuti ditolak',
@@ -287,8 +290,9 @@ class LeaveService
                         'leave_balance_id' => $balance->id,
                         'reference_type' => Leave::class,
                         'reference_id' => $leave->id,
-                        'type' => 'adjustment',
+                        'transaction_type' => 'adjustment',
                         'amount' => $leave->total_days,
+                        'change' => $leave->total_days,
                         'balance_before' => $balance->remaining_days - $leave->total_days,
                         'balance_after' => $balance->remaining_days,
                         'description' => 'Pengembalian saldo - cuti dibatalkan',
