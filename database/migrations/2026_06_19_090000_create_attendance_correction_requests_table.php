@@ -35,7 +35,7 @@ return new class extends Migration
             $table->index(['employee_id', 'status']);
             $table->index(['employee_id', 'correction_date']);
             $table->index(['status', 'created_at']);
-            $table->index(['correction_date', 'correction_type']);
+            $table->index(['correction_date', 'correction_type'], 'acr_date_type_index');
         });
     }
 
