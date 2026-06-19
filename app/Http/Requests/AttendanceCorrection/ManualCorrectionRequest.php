@@ -50,3 +50,4 @@ class ManualCorrectionRequest extends FormRequest
         });
     }
 }
+
