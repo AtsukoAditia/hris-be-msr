@@ -36,7 +36,6 @@ storage/framework/sessions/*
 storage/framework/views/*
 storage/logs/*
 database/database.sqlite
-database/migrations/
 
 # macOS
 .DS_Store

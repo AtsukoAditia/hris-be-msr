@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('attendance_correction_requests', function (Blueprint $table) {
             $table->id();
             $table->foreignId('employee_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('attendance_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('attendance_id')->nullable()->constrained('attendances')->nullOnDelete();
             $table->date('correction_date');
             $table->string('correction_type', 20);
             $table->dateTime('original_check_in')->nullable();
@@ -33,9 +33,8 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index(['employee_id', 'status']);
-            $table->index(['employee_id', 'correction_date']);
             $table->index(['status', 'created_at']);
-            $table->index(['correction_date', 'correction_type'], 'acr_date_type_index');
+            $table->index(['correction_date']);
         });
     }
 

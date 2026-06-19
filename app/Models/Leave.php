@@ -22,6 +22,7 @@ class Leave extends Model
         'employee_id',
         'approved_by',
         'leave_type',
+        'leave_type_id',
         'start_date',
         'end_date',
         'total_days',
@@ -47,6 +48,11 @@ class Leave extends Model
     public function approver()
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function leaveType()
+    {
+        return $this->belongsTo(LeaveType::class);
     }
 
     public function scopePending($query)
