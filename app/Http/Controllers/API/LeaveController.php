@@ -3,64 +3,40 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Leave\ApproveLeaveRequest;
+use App\Http\Requests\Leave\CancelLeaveRequest;
+use App\Http\Requests\Leave\RejectLeaveRequest;
 use App\Http\Requests\Leave\StoreLeaveRequest;
+use App\Http\Resources\LeaveResource;
 use App\Models\Employee;
 use App\Models\Leave;
+use App\Models\LeaveBalance;
 use App\Models\LeaveType;
+use App\Services\LeaveService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 
 class LeaveController extends Controller
 {
+    public function __construct(
+        protected LeaveService $leaveService
+    ) {}
+
     public function index(Request $request): JsonResponse
     {
-        $user = Auth::user();
-        $query = Leave::with(['employee.user', 'approver'])->latest('created_at');
+        $filters = $request->only([
+            'status', 'employee_id', 'leave_type_id', 'date_from', 'date_to', 'per_page',
+        ]);
 
-        if (! $user->isAdmin() && ! $user->isManager()) {
-            $query->whereHas('employee', fn ($q) => $q->where('user_id', $user->id));
-        }
-
-        if ($request->filled('employee_id')) {
-            $query->where('employee_id', $request->employee_id);
-        }
-
-        if ($request->filled('leave_type')) {
-            $query->where('leave_type', $request->leave_type);
-        }
-
-        if ($request->filled('status')) {
-            $statuses = collect(explode(',', (string) $request->status))
-                ->map(fn ($status) => trim($status))
-                ->filter()
-                ->values()
-                ->all();
-
-            if (count($statuses) > 1) {
-                $query->whereIn('status', $statuses);
-            } else {
-                $query->where('status', $statuses[0] ?? $request->status);
-            }
-        }
-
-        if ($request->filled('date_from') && $request->filled('date_to')) {
-            $query->where(function ($q) use ($request) {
-                $q->whereBetween('start_date', [$request->date_from, $request->date_to])
-                    ->orWhereBetween('end_date', [$request->date_from, $request->date_to]);
-            });
-        }
-
-        $perPage = min(max((int) $request->get('per_page', 15), 1), 100);
-        $leaves = $query->paginate($perPage);
-        $leaves->getCollection()->transform(fn ($leave) => $this->transformLeave($leave));
+        // Route is protected by role:admin,hr,manager middleware.
+        // Pass null so the service returns all leaves; filters narrow by employee_id if supplied.
+        $leaves = $this->leaveService->list(null, $filters);
 
         return response()->json([
             'success' => true,
             'message' => 'Data pengajuan cuti berhasil diambil.',
-            'data' => $leaves,
+            'data' => LeaveResource::collection($leaves),
         ]);
     }
 
@@ -76,22 +52,14 @@ class LeaveController extends Controller
             ], 404);
         }
 
-        $query = Leave::with(['employee.user', 'approver'])
-            ->where('employee_id', $employee->id)
-            ->latest('created_at');
+        $filters = $request->only(['status', 'per_page']);
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
-        $perPage = min(max((int) $request->get('per_page', 15), 1), 100);
-        $leaves = $query->paginate($perPage);
-        $leaves->getCollection()->transform(fn ($leave) => $this->transformLeave($leave));
+        $leaves = $this->leaveService->list($employee, $filters);
 
         return response()->json([
             'success' => true,
             'message' => 'Riwayat cuti berhasil diambil.',
-            'data' => $leaves,
+            'data' => LeaveResource::collection($leaves),
         ]);
     }
 
@@ -105,36 +73,47 @@ class LeaveController extends Controller
         }
 
         $year = (int) $request->get('year', now()->year);
-        $total = 12;
 
         if (! $employee) {
             return response()->json([
                 'success' => true,
                 'message' => 'Saldo cuti default.',
                 'data' => [
-                    'total' => $total,
+                    'total' => 12,
                     'used' => 0,
-                    'remaining' => $total,
+                    'remaining' => 12,
                     'year' => $year,
                 ],
             ]);
         }
 
-        $used = Leave::where('employee_id', $employee->id)
-            ->where('leave_type', 'annual')
-            ->where('status', Leave::STATUS_APPROVED)
-            ->whereYear('start_date', $year)
-            ->sum('total_days');
+        $balances = LeaveBalance::where('employee_id', $employee->id)
+            ->where('year', $year)
+            ->get()
+            ->keyBy('leave_type_id');
+
+        $leaveTypes = LeaveType::where('is_active', true)->get();
+
+        $balanceData = $leaveTypes->map(function ($lt) use ($balances) {
+            $b = $balances->get($lt->id);
+
+            return [
+                'leave_type_id' => $lt->id,
+                'leave_type_code' => $lt->code,
+                'leave_type_name' => $lt->name,
+                'total' => $b ? $b->opening_days : ($lt->max_days_per_year ?? 12),
+                'used' => $b ? $b->used_days : 0,
+                'remaining' => $b ? $b->remaining_days : ($lt->max_days_per_year ?? 12),
+            ];
+        });
 
         return response()->json([
             'success' => true,
             'message' => 'Saldo cuti berhasil diambil.',
             'data' => [
                 'employee_id' => $employee->id,
-                'total' => $total,
-                'used' => (int) $used,
-                'remaining' => max(0, $total - (int) $used),
                 'year' => $year,
+                'balances' => $balanceData,
             ],
         ]);
     }
@@ -142,7 +121,6 @@ class LeaveController extends Controller
     public function store(StoreLeaveRequest $request): JsonResponse
     {
         $validated = $request->validated();
-
         $employee = Auth::user()->employee;
 
         if (! $employee) {
@@ -150,50 +128,6 @@ class LeaveController extends Controller
                 'success' => false,
                 'message' => 'Profil karyawan tidak ditemukan.',
             ], 404);
-        }
-
-        // Resolve leave type from leave_type_id (FK) or legacy leave_type string
-        $leaveType = null;
-        $leaveTypeCode = $validated['leave_type'] ?? null;
-
-        if (isset($validated['leave_type_id'])) {
-            $leaveType = LeaveType::find($validated['leave_type_id']);
-            $leaveTypeCode = $leaveType ? $leaveType->code : null;
-        }
-
-        $startDate = Carbon::parse($validated['start_date']);
-        $endDate = Carbon::parse($validated['end_date']);
-        $totalDays = max(1, $startDate->diffInDays($endDate) + 1);
-
-        if ($leaveTypeCode === 'annual') {
-            $balance = $this->getAnnualBalance($employee->id, (int) $startDate->year);
-
-            if ($totalDays > $balance['remaining']) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Sisa cuti tahunan tidak mencukupi.',
-                    'data' => $balance,
-                ], 422);
-            }
-        }
-
-        $overlappingLeave = Leave::where('employee_id', $employee->id)
-            ->whereIn('status', [Leave::STATUS_PENDING, Leave::STATUS_APPROVED])
-            ->where(function ($q) use ($validated) {
-                $q->whereBetween('start_date', [$validated['start_date'], $validated['end_date']])
-                    ->orWhereBetween('end_date', [$validated['start_date'], $validated['end_date']])
-                    ->orWhere(function ($nested) use ($validated) {
-                        $nested->where('start_date', '<=', $validated['start_date'])
-                            ->where('end_date', '>=', $validated['end_date']);
-                    });
-            })
-            ->exists();
-
-        if ($overlappingLeave) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Sudah ada pengajuan cuti pada rentang tanggal tersebut.',
-            ], 422);
         }
 
         $attachmentPath = null;
@@ -204,94 +138,113 @@ class LeaveController extends Controller
             );
         }
 
-        $leave = Leave::create([
-            'employee_id' => $employee->id,
-            'leave_type_id' => $validated['leave_type_id'] ?? null,
-            'leave_type' => $leaveTypeCode,
+        $data = [
+            'leave_type_id' => $validated['leave_type_id'],
             'start_date' => $validated['start_date'],
             'end_date' => $validated['end_date'],
-            'total_days' => $totalDays,
             'reason' => $validated['reason'],
             'attachment' => $attachmentPath,
-            'status' => Leave::STATUS_PENDING,
-        ]);
+        ];
 
-        $leave->load(['employee.user', 'approver', 'leaveType']);
+        try {
+            $leave = $this->leaveService->submit($employee, $data);
+            $leave->load(['employee.user', 'approver', 'leaveType']);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Pengajuan cuti berhasil dikirim.',
-            'data' => $this->transformLeave($leave),
-        ], 201);
+            return response()->json([
+                'success' => true,
+                'message' => 'Pengajuan cuti berhasil dikirim.',
+                'data' => new LeaveResource($leave),
+            ], 201);
+        } catch (\DomainException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        }
     }
 
     public function show(Leave $leave): JsonResponse
     {
-        $leave->load(['employee.user', 'approver']);
+        $leave->load(['employee.user', 'approver', 'leaveType']);
 
         return response()->json([
             'success' => true,
             'message' => 'Detail pengajuan cuti berhasil diambil.',
-            'data' => $this->transformLeave($leave),
+            'data' => new LeaveResource($leave),
         ]);
     }
 
-    public function approve(Request $request, Leave $leave): JsonResponse
+    public function approve(ApproveLeaveRequest $request, Leave $leave): JsonResponse
     {
-        $request->validate([
-            'note' => 'nullable|string|max:500',
-        ]);
+        try {
+            $leave = $this->leaveService->approve($leave, $request->note);
+            $leave->load(['employee.user', 'approver', 'leaveType']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pengajuan cuti disetujui.',
+                'data' => new LeaveResource($leave),
+            ]);
+        } catch (\DomainException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    public function reject(RejectLeaveRequest $request, Leave $leave): JsonResponse
+    {
+        try {
+            $leave = $this->leaveService->reject($leave, $request->rejection_reason);
+            $leave->load(['employee.user', 'approver', 'leaveType']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pengajuan cuti ditolak.',
+                'data' => new LeaveResource($leave),
+            ]);
+        } catch (\DomainException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    public function cancel(CancelLeaveRequest $request, Leave $leave): JsonResponse
+    {
+        $user = Auth::user();
 
         if (! $leave->isPending()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Pengajuan cuti sudah tidak berstatus pending.',
+                'message' => 'Hanya pengajuan pending yang bisa dibatalkan.',
             ], 422);
         }
 
-        $leave->update([
-            'status' => Leave::STATUS_APPROVED,
-            'approved_by' => Auth::id(),
-            'approved_at' => now(),
-            'rejection_reason' => null,
-        ]);
-
-        $leave->load(['employee.user', 'approver']);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Pengajuan cuti disetujui.',
-            'data' => $this->transformLeave($leave),
-        ]);
-    }
-
-    public function reject(Request $request, Leave $leave): JsonResponse
-    {
-        $validated = $request->validate([
-            'rejection_reason' => 'required|string|max:500',
-        ]);
-
-        if (! $leave->isPending()) {
+        if (! $user->isAdmin() && $leave->employee->user_id !== $user->id) {
             return response()->json([
                 'success' => false,
-                'message' => 'Pengajuan cuti sudah tidak berstatus pending.',
-            ], 422);
+                'message' => 'Tidak diizinkan.',
+            ], 403);
         }
 
-        $leave->update([
-            'status' => Leave::STATUS_REJECTED,
-            'approved_by' => Auth::id(),
-            'approved_at' => now(),
-            'rejection_reason' => $validated['rejection_reason'],
-        ]);
+        try {
+            $leave = $this->leaveService->cancel($leave);
+            $leave->load(['employee.user', 'approver', 'leaveType']);
 
-        $leave->load(['employee.user', 'approver']);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Pengajuan cuti ditolak.',
-            'data' => $this->transformLeave($leave),
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Pengajuan cuti berhasil dibatalkan.',
+                'data' => new LeaveResource($leave),
+            ]);
+        } catch (\DomainException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        }
     }
 
     public function destroy(Leave $leave): JsonResponse
@@ -312,90 +265,18 @@ class LeaveController extends Controller
             ], 403);
         }
 
-        $leave->update([
-            'status' => Leave::STATUS_CANCELLED,
-        ]);
+        try {
+            $this->leaveService->cancel($leave);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Pengajuan cuti berhasil dibatalkan.',
-        ]);
-    }
-
-    private function getAnnualBalance(int $employeeId, int $year): array
-    {
-        $total = 12;
-        $used = Leave::where('employee_id', $employeeId)
-            ->where('leave_type', 'annual')
-            ->where('status', Leave::STATUS_APPROVED)
-            ->whereYear('start_date', $year)
-            ->sum('total_days');
-
-        return [
-            'total' => $total,
-            'used' => (int) $used,
-            'remaining' => max(0, $total - (int) $used),
-            'year' => $year,
-        ];
-    }
-
-    private function transformLeave(Leave $leave): array
-    {
-        return [
-            'id' => $leave->id,
-            'employee_id' => $leave->employee_id,
-            'leave_type' => $leave->leave_type,
-            'leave_type_id' => $leave->leave_type_id,
-            'leave_type_label' => $this->getLeaveTypeLabel($leave->leave_type),
-            'start_date' => optional($leave->start_date)->format('Y-m-d'),
-            'end_date' => optional($leave->end_date)->format('Y-m-d'),
-            'total_days' => $leave->total_days,
-            'reason' => $leave->reason,
-            'attachment' => $leave->attachment,
-            'attachment_url' => $leave->attachment ? Storage::disk('public')->url($leave->attachment) : null,
-            'status' => $leave->status,
-            'status_label' => $this->getStatusLabel($leave->status),
-            'rejection_reason' => $leave->rejection_reason,
-            'approved_by' => $leave->approved_by,
-            'approved_at' => optional($leave->approved_at)->format('Y-m-d H:i:s'),
-            'created_at' => optional($leave->created_at)->format('Y-m-d H:i:s'),
-            'employee' => $leave->relationLoaded('employee') && $leave->employee ? [
-                'id' => $leave->employee->id,
-                'name' => $leave->employee->user->name ?? null,
-                'email' => $leave->employee->user->email ?? null,
-                'department' => $leave->employee->department ?? null,
-                'position' => $leave->employee->position ?? null,
-            ] : null,
-            'approver' => $leave->relationLoaded('approver') && $leave->approver ? [
-                'id' => $leave->approver->id,
-                'name' => $leave->approver->name ?? null,
-                'email' => $leave->approver->email ?? null,
-            ] : null,
-        ];
-    }
-
-    private function getLeaveTypeLabel(?string $type): string
-    {
-        return match ($type) {
-            'annual' => 'Cuti Tahunan',
-            'sick' => 'Cuti Sakit',
-            'emergency' => 'Cuti Darurat',
-            'maternity' => 'Cuti Melahirkan',
-            'paternity' => 'Cuti Ayah',
-            'unpaid' => 'Cuti Tidak Dibayar',
-            'other' => 'Lainnya',
-            default => 'Cuti',
-        };
-    }
-
-    private function getStatusLabel(?string $status): string
-    {
-        return match ($status) {
-            Leave::STATUS_PENDING => 'Menunggu',
-            Leave::STATUS_APPROVED => 'Disetujui',
-            Leave::STATUS_REJECTED => 'Ditolak',
-            Leave::STATUS_CANCELLED => 'Dibatalkan',
-            default => '-',
-        };
+            return response()->json([
+                'success' => true,
+                'message' => 'Pengajuan cuti berhasil dibatalkan.',
+            ]);
+        } catch (\DomainException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        }
     }
 }
