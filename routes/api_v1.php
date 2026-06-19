@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\API\ActivityLogController;
 use App\Http\Controllers\API\AttendanceActionController;
 use App\Http\Controllers\API\AttendanceController;
 use App\Http\Controllers\API\AttendanceCorrectionController;
@@ -93,6 +94,10 @@ Route::prefix('v1')->group(function () {
 
         Route::middleware('role:admin,hr')->group(function () {
             Route::post('/attendance-corrections/manual', [AttendanceCorrectionController::class, 'manualCorrection']);
+
+            // Activity Log Viewer
+            Route::get('/activity-logs', [ActivityLogController::class, 'index']);
+            Route::get('/activity-logs/{activityLog}', [ActivityLogController::class, 'show']);
         });
 
         Route::get('/profile/change-requests', [ProfileChangeRequestController::class, 'index']);
