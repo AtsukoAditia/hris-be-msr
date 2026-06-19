@@ -92,11 +92,18 @@ class AttendanceCorrectionController extends Controller
             ], 404);
         }
 
-        $correctionRequest = $this->correctionService->submit(
-            $employee,
-            $request->validated(),
-            $request->file('attachment')
-        );
+        try {
+            $correctionRequest = $this->correctionService->submit(
+                $employee,
+                $request->validated(),
+                $request->file('attachment')
+            );
+        } catch (\DomainException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        }
 
         return response()->json([
             'success' => true,
@@ -153,10 +160,17 @@ class AttendanceCorrectionController extends Controller
         $reviewer = Auth::user();
         $this->authorizeReviewer($reviewer, $correction);
 
-        $result = $this->correctionService->approve(
-            $correction,
-            $request->validated()['review_note'] ?? null
-        );
+        try {
+            $result = $this->correctionService->approve(
+                $correction,
+                $request->validated()['review_note'] ?? null
+            );
+        } catch (\DomainException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        }
 
         return response()->json([
             'success' => true,
@@ -173,10 +187,17 @@ class AttendanceCorrectionController extends Controller
         $reviewer = Auth::user();
         $this->authorizeReviewer($reviewer, $correction);
 
-        $result = $this->correctionService->reject(
-            $correction,
-            $request->validated()['review_note']
-        );
+        try {
+            $result = $this->correctionService->reject(
+                $correction,
+                $request->validated()['review_note']
+            );
+        } catch (\DomainException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        }
 
         return response()->json([
             'success' => true,
@@ -199,7 +220,14 @@ class AttendanceCorrectionController extends Controller
             ], 403);
         }
 
-        $result = $this->correctionService->cancel($correction);
+        try {
+            $result = $this->correctionService->cancel($correction);
+        } catch (\DomainException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        }
 
         return response()->json([
             'success' => true,
@@ -216,10 +244,17 @@ class AttendanceCorrectionController extends Controller
         $employeeId = $request->validated()['employee_id'];
         $employee = Employee::findOrFail($employeeId);
 
-        $correction = $this->correctionService->manualCorrection(
-            $employee,
-            $request->validated()
-        );
+        try {
+            $correction = $this->correctionService->manualCorrection(
+                $employee,
+                $request->validated()
+            );
+        } catch (\DomainException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        }
 
         return response()->json([
             'success' => true,

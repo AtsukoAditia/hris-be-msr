@@ -117,8 +117,8 @@ class AttendanceCorrectionService
                 'attendance_id' => $attendance?->id,
                 'correction_date' => $correctionDate,
                 'correction_type' => $data['correction_type'],
-                'original_check_in' => $attendance?->check_in_at,
-                'original_check_out' => $attendance?->check_out_at,
+                'original_check_in' => $attendance?->check_in_time,
+                'original_check_out' => $attendance?->check_out_time,
                 'requested_check_in' => $requestedCheckIn,
                 'requested_check_out' => $requestedCheckOut,
                 'reason' => $data['reason'],
@@ -181,8 +181,8 @@ class AttendanceCorrectionService
             }
 
             $originalValues = [
-                'check_in_at' => $correction->original_check_in?->format('Y-m-d H:i:s'),
-                'check_out_at' => $correction->original_check_out?->format('Y-m-d H:i:s'),
+                'check_in_time' => $correction->original_check_in?->format('Y-m-d H:i:s'),
+                'check_out_time' => $correction->original_check_out?->format('Y-m-d H:i:s'),
             ];
 
             // Update attendance
@@ -191,17 +191,11 @@ class AttendanceCorrectionService
 
                 if ($attendance) {
                     if ($correction->affectsCheckIn()) {
-                        $attendance->check_in_at = $correction->requested_check_in;
+                        $attendance->check_in_time = $correction->requested_check_in;
                     }
 
                     if ($correction->affectsCheckOut()) {
-                        $attendance->check_out_at = $correction->requested_check_out;
-                    }
-
-                    // Recalculate derived fields
-                    if ($attendance->check_in_at && $attendance->check_out_at) {
-                        $attendance->work_duration_minutes = (int) $attendance->check_in_at
-                            ->diffInMinutes($attendance->check_out_at);
+                        $attendance->check_out_time = $correction->requested_check_out;
                     }
 
                     $attendance->save();
@@ -209,15 +203,15 @@ class AttendanceCorrectionService
             }
 
             $newValues = [
-                'check_in_at' => $correction->requested_check_in?->format('Y-m-d H:i:s'),
-                'check_out_at' => $correction->requested_check_out?->format('Y-m-d H:i:s'),
+                'check_in_time' => $correction->requested_check_in?->format('Y-m-d H:i:s'),
+                'check_out_time' => $correction->requested_check_out?->format('Y-m-d H:i:s'),
             ];
 
             if ($correction->attendance_id) {
                 $att = Attendance::find($correction->attendance_id);
                 $newValues = [
-                    'check_in_at' => $att?->check_in_at?->format('Y-m-d H:i:s'),
-                    'check_out_at' => $att?->check_out_at?->format('Y-m-d H:i:s'),
+                    'check_in_time' => $att?->check_in_time?->format('Y-m-d H:i:s'),
+                    'check_out_time' => $att?->check_out_time?->format('Y-m-d H:i:s'),
                 ];
             }
 
@@ -294,30 +288,24 @@ class AttendanceCorrectionService
             }
 
             $originalValues = [
-                'check_in_at' => $attendance->check_in_at?->format('Y-m-d H:i:s'),
-                'check_out_at' => $attendance->check_out_at?->format('Y-m-d H:i:s'),
+                'check_in_time' => $attendance->check_in_time?->format('Y-m-d H:i:s'),
+                'check_out_time' => $attendance->check_out_time?->format('Y-m-d H:i:s'),
             ];
 
             // Update attendance directly
             if (in_array($data['correction_type'], [AttendanceCorrectionRequest::TYPE_CHECK_IN, AttendanceCorrectionRequest::TYPE_BOTH], true)) {
-                $attendance->check_in_at = $correctionDate.' '.$data['requested_check_in'].':00';
+                $attendance->check_in_time = $correctionDate.' '.$data['requested_check_in'].':00';
             }
 
             if (in_array($data['correction_type'], [AttendanceCorrectionRequest::TYPE_CHECK_OUT, AttendanceCorrectionRequest::TYPE_BOTH], true)) {
-                $attendance->check_out_at = $correctionDate.' '.$data['requested_check_out'].':00';
-            }
-
-            // Recalculate
-            if ($attendance->check_in_at && $attendance->check_out_at) {
-                $attendance->work_duration_minutes = (int) $attendance->check_in_at
-                    ->diffInMinutes($attendance->check_out_at);
+                $attendance->check_out_time = $correctionDate.' '.$data['requested_check_out'].':00';
             }
 
             $attendance->save();
 
             $newValues = [
-                'check_in_at' => $attendance->check_in_at?->format('Y-m-d H:i:s'),
-                'check_out_at' => $attendance->check_out_at?->format('Y-m-d H:i:s'),
+                'check_in_time' => $attendance->check_in_time?->format('Y-m-d H:i:s'),
+                'check_out_time' => $attendance->check_out_time?->format('Y-m-d H:i:s'),
             ];
 
             // Build requested times for the correction record
@@ -337,8 +325,8 @@ class AttendanceCorrectionService
                 'attendance_id' => $attendance->id,
                 'correction_date' => $correctionDate,
                 'correction_type' => $data['correction_type'],
-                'original_check_in' => $originalValues['check_in_at'],
-                'original_check_out' => $originalValues['check_out_at'],
+                'original_check_in' => $originalValues['check_in_time'],
+                'original_check_out' => $originalValues['check_out_time'],
                 'requested_check_in' => $requestedCheckIn,
                 'requested_check_out' => $requestedCheckOut,
                 'reason' => $data['reason'],

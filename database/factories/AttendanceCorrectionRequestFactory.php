@@ -21,13 +21,12 @@ class AttendanceCorrectionRequestFactory extends Factory
         return [
             'employee_id' => $employee->id,
             'attendance_id' => $attendance->id,
-            'requested_by_user_id' => $employee->user_id,
             'correction_date' => $date->format('Y-m-d'),
             'correction_type' => $this->faker->randomElement(['check_in', 'check_out', 'both']),
-            'requested_check_in' => '08:00:00',
-            'requested_check_out' => '17:00:00',
-            'original_check_in' => '08:30:00',
-            'original_check_out' => '16:30:00',
+            'requested_check_in' => now()->setTime(8, 0),
+            'requested_check_out' => now()->setTime(17, 0),
+            'original_check_in' => now()->setTime(8, 30),
+            'original_check_out' => now()->setTime(16, 30),
             'reason' => $this->faker->sentence(),
             'status' => 'pending',
         ];

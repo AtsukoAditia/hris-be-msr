@@ -54,10 +54,9 @@ class AttendanceCorrectionTest extends TestCase
     {
         AttendanceCorrectionRequest::factory()->create([
             'employee_id' => $this->employeeRecord->id,
-            'requested_by' => $this->employee->id,
         ]);
 
-        $response = $this->actingAs($this->employee)->getJson('/api/v1/attendance-corrections');
+        $response = $this->actingAs($this->employee)->getJson('/api/v1/attendance-corrections/my');
 
         $response->assertOk()->assertJsonStructure(['data']);
     }
@@ -65,8 +64,7 @@ class AttendanceCorrectionTest extends TestCase
     public function test_employee_can_submit_correction(): void
     {
         $response = $this->actingAs($this->employee)->postJson('/api/v1/attendance-corrections', [
-            'attendance_id' => $this->attendance->id,
-            'correction_date' => $this->attendance->attendance_date,
+            'attendance_date' => $this->attendance->attendance_date->toDateString(),
             'correction_type' => 'check_in',
             'requested_check_in' => '07:55',
             'reason' => 'Terlambat karena macet',
@@ -105,7 +103,6 @@ class AttendanceCorrectionTest extends TestCase
     {
         $correction = AttendanceCorrectionRequest::factory()->create([
             'employee_id' => $this->employeeRecord->id,
-            'requested_by' => $this->employee->id,
             'status' => 'pending',
         ]);
 
@@ -135,9 +132,9 @@ class AttendanceCorrectionTest extends TestCase
         $correction = AttendanceCorrectionRequest::factory()->create([
             'employee_id' => $this->employeeRecord->id,
             'attendance_id' => $this->attendance->id,
-            'correction_date' => $this->attendance->attendance_date,
+            'correction_date' => $this->attendance->attendance_date->toDateString(),
             'correction_type' => 'check_in',
-            'requested_check_in' => '07:55',
+            'requested_check_in' => now()->subDay()->setTime(7, 55),
             'requested_check_out' => null,
             'status' => 'pending',
         ]);
@@ -149,7 +146,7 @@ class AttendanceCorrectionTest extends TestCase
         $this->assertEquals('approved', $correction->status);
         // Verify attendance was updated
         $this->attendance->refresh();
-        $this->assertEquals('07:55:00', $this->attendance->check_in_time);
+        $this->assertEquals('07:55:00', $this->attendance->check_in_time->format('H:i:s'));
     }
 
     public function test_hr_can_reject_with_note(): void
@@ -160,13 +157,13 @@ class AttendanceCorrectionTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->hr)->postJson("/api/v1/attendance-corrections/{$correction->id}/reject", [
-            'reviewer_note' => 'Bukti tidak cukup',
+            'review_note' => 'Bukti tidak cukup',
         ]);
 
         $response->assertOk();
         $correction->refresh();
         $this->assertEquals('rejected', $correction->status);
-        $this->assertEquals('Bukti tidak cukup', $correction->reviewer_note);
+        $this->assertEquals('Bukti tidak cukup', $correction->review_note);
     }
 
     public function test_reject_requires_note(): void
@@ -197,8 +194,8 @@ class AttendanceCorrectionTest extends TestCase
     public function test_hr_can_manual_correction(): void
     {
         $response = $this->actingAs($this->hr)->postJson('/api/v1/attendance-corrections/manual', [
-            'attendance_id' => $this->attendance->id,
-            'correction_date' => $this->attendance->attendance_date,
+            'employee_id' => $this->employeeRecord->id,
+            'attendance_date' => $this->attendance->attendance_date->toDateString(),
             'correction_type' => 'check_in',
             'requested_check_in' => '07:50',
             'reason' => 'Manual correction by HR',
@@ -210,7 +207,7 @@ class AttendanceCorrectionTest extends TestCase
             'correction_type' => 'check_in',
         ]);
         $this->attendance->refresh();
-        $this->assertEquals('07:50:00', $this->attendance->check_in_time);
+        $this->assertEquals('07:50:00', $this->attendance->check_in_time->format('H:i:s'));
     }
 
     public function test_unauthenticated_cannot_access(): void
@@ -224,17 +221,17 @@ class AttendanceCorrectionTest extends TestCase
         $correction = AttendanceCorrectionRequest::factory()->create([
             'employee_id' => $this->employeeRecord->id,
             'attendance_id' => $this->attendance->id,
-            'correction_date' => $this->attendance->attendance_date,
+            'correction_date' => $this->attendance->attendance_date->toDateString(),
             'correction_type' => 'check_out',
             'requested_check_in' => null,
-            'requested_check_out' => '18:30',
+            'requested_check_out' => now()->subDay()->setTime(18, 30),
             'status' => 'pending',
         ]);
 
         $this->actingAs($this->hr)->postJson("/api/v1/attendance-corrections/{$correction->id}/approve")->assertOk();
 
         $this->attendance->refresh();
-        $this->assertEquals('18:30:00', $this->attendance->check_out_time);
+        $this->assertEquals('18:30:00', $this->attendance->check_out_time->format('H:i:s'));
     }
 
     public function test_approve_updates_both_times(): void
@@ -242,17 +239,17 @@ class AttendanceCorrectionTest extends TestCase
         $correction = AttendanceCorrectionRequest::factory()->create([
             'employee_id' => $this->employeeRecord->id,
             'attendance_id' => $this->attendance->id,
-            'correction_date' => $this->attendance->attendance_date,
+            'correction_date' => $this->attendance->attendance_date->toDateString(),
             'correction_type' => 'both',
-            'requested_check_in' => '07:50',
-            'requested_check_out' => '18:00',
+            'requested_check_in' => now()->subDay()->setTime(7, 50),
+            'requested_check_out' => now()->subDay()->setTime(18, 0),
             'status' => 'pending',
         ]);
 
         $this->actingAs($this->hr)->postJson("/api/v1/attendance-corrections/{$correction->id}/approve")->assertOk();
 
         $this->attendance->refresh();
-        $this->assertEquals('07:50:00', $this->attendance->check_in_time);
-        $this->assertEquals('18:00:00', $this->attendance->check_out_time);
+        $this->assertEquals('07:50:00', $this->attendance->check_in_time->format('H:i:s'));
+        $this->assertEquals('18:00:00', $this->attendance->check_out_time->format('H:i:s'));
     }
 }
