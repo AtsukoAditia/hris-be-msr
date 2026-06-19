@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Attendance;
+use App\Models\Employee;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class AttendanceFactory extends Factory
@@ -12,10 +13,10 @@ class AttendanceFactory extends Factory
     public function definition(): array
     {
         $checkIn = fake()->dateTimeBetween('-1 month', 'now');
-        $checkOut = (clone $checkIn)->modify('+' . rand(4, 10) . ' hours');
+        $checkOut = (clone $checkIn)->modify('+'.rand(4, 10).' hours');
 
         return [
-            'employee_id' => \App\Models\Employee::factory(),
+            'employee_id' => Employee::factory(),
             'shift_id' => null,
             'attendance_date' => $checkIn->format('Y-m-d'),
             'check_in_time' => $checkIn->format('Y-m-d H:i:s'),

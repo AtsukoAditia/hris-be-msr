@@ -40,7 +40,7 @@ class ManualCorrectionRequest extends FormRequest
             $checkIn = $this->input('requested_check_in');
             $checkOut = $this->input('requested_check_out');
 
-            if ($correctionType === 'both' && (!$checkIn || !$checkOut)) {
+            if ($correctionType === 'both' && (! $checkIn || ! $checkOut)) {
                 $validator->errors()->add('requested_check_in', 'Untuk koreksi keduanya, check-in dan check-out wajib diisi.');
             }
 
@@ -50,4 +50,3 @@ class ManualCorrectionRequest extends FormRequest
         });
     }
 }
-

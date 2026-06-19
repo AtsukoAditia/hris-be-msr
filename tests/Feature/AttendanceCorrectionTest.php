@@ -15,13 +15,19 @@ class AttendanceCorrectionTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private User $hr;
+
     private User $manager;
+
     private User $employee;
+
     private Employee $employeeRecord;
+
     private Attendance $attendance;
+
     private Shift $shift;
-    
+
     protected function setUp(): void
     {
         parent::setUp();
