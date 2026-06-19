@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\API\AttendanceActionController;
 use App\Http\Controllers\API\AttendanceController;
+use App\Http\Controllers\API\AttendanceCorrectionController;
 use App\Http\Controllers\API\AttendanceSettingController;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\BranchController;
@@ -73,6 +74,26 @@ Route::prefix('v1')->group(function () {
         Route::put('/profile/me/emergency-contacts/{emergencyContact}', [ContactController::class, 'myUpdate']);
         Route::patch('/profile/me/emergency-contacts/{emergencyContact}', [ContactController::class, 'myUpdate']);
         Route::delete('/profile/me/emergency-contacts/{emergencyContact}', [ContactController::class, 'myDestroy']);
+
+        // ========================
+        // Attendance Correction Endpoints
+        // ========================
+        // Employee endpoints (any authenticated user)
+        Route::get('/attendance-corrections/my', [AttendanceCorrectionController::class, 'my']);
+        Route::post('/attendance-corrections', [AttendanceCorrectionController::class, 'store']);
+        Route::post('/attendance-corrections/{correction}/cancel', [AttendanceCorrectionController::class, 'cancel']);
+        Route::get('/attendance-corrections/{correction}/attachment', [AttendanceCorrectionController::class, 'downloadAttachment']);
+        Route::get('/attendance-corrections/{correction}', [AttendanceCorrectionController::class, 'show']);
+
+        Route::middleware('role:admin,hr,manager')->group(function () {
+            Route::get('/attendance-corrections', [AttendanceCorrectionController::class, 'index']);
+            Route::post('/attendance-corrections/{correction}/approve', [AttendanceCorrectionController::class, 'approve']);
+            Route::post('/attendance-corrections/{correction}/reject', [AttendanceCorrectionController::class, 'reject']);
+        });
+
+        Route::middleware('role:admin,hr')->group(function () {
+            Route::post('/attendance-corrections/manual', [AttendanceCorrectionController::class, 'manualCorrection']);
+        });
 
         Route::get('/profile/change-requests', [ProfileChangeRequestController::class, 'index']);
         Route::post('/profile/change-requests', [ProfileChangeRequestController::class, 'store']);
