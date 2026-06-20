@@ -193,7 +193,7 @@ Route::prefix('v1')->group(function () {
         // Overtime Request Endpoints
         // ========================
         // All authenticated users can list/view/submit
-        Route::get('/overtime-requests/my', [OvertimeController::class, 'index']);
+        Route::get('/overtime-requests/my', [OvertimeController::class, 'my']);
         Route::post('/overtime-requests', [OvertimeController::class, 'store']);
         Route::post('/overtime-requests/{overtimeRequest}/cancel', [OvertimeController::class, 'cancel']);
         Route::get('/overtime-requests/{overtimeRequest}', [OvertimeController::class, 'show']);
