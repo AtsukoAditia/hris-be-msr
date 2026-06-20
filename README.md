@@ -43,27 +43,32 @@ http://localhost:8000/api/v1
 | Leave Request, Approval, Balance & History | ✅ | ✅ | Completed |
 | Leave Type, Policy, Holiday & Balance Administration | ✅ | ✅ | Completed |
 | Attendance, Leave & Employee Reports + CSV | ✅ | ✅ | Completed |
-| **Overtime Policy & Request Workflow** | ✅ | ⬜ | **Backend completed** |
+| **Overtime Policy & Request Workflow** | ✅ | ✅ | **Completed** |
 | Payroll Foundation | ⬜ | ⬜ | Planned |
 
 ## Current Backend Milestone — Overtime Management
 
-Backend overtime saat ini menyediakan:
+Overtime sudah tersedia end-to-end dan disinkronkan dengan frontend:
 
 - Overtime policy CRUD untuk Admin dan HR.
+- Active overtime policy options untuk seluruh user terautentikasi.
 - Pengajuan overtime oleh authenticated employee.
 - Daftar dan detail overtime berdasarkan scope role.
+- Endpoint `my` selalu dibatasi ke employee milik actor, termasuk untuk Admin, HR, dan Manager.
 - Pembatalan request selama masih `pending`.
 - Approval dan rejection oleh Admin, HR, atau direct manager yang berwenang.
 - Pencatatan actual overtime minutes oleh Admin dan HR.
 - Validasi batas maksimum overtime berdasarkan policy aktif.
 - Penyimpanan rate multiplier dari policy.
 - Transaction dan row locking pada proses status kritis.
-- Feature tests, migration verification, dan Laravel Pint melalui CI.
+- Frontend responsive untuk request, review, actual minutes, dan policy administration.
+- Backend tests, frontend component tests, production build, dan mobile acceptance melalui CI.
 
 ### Overtime Endpoints
 
 ```http
+GET    /api/v1/overtime-policies
+
 GET    /api/v1/overtime-requests/my
 POST   /api/v1/overtime-requests
 GET    /api/v1/overtime-requests/{overtimeRequest}
@@ -234,4 +239,4 @@ Modul dinyatakan selesai setelah database, model, service, API, authorization, v
 
 ## Next Focus
 
-**Frontend Overtime Management**, meliputi employee request/history, reviewer approval, policy administration, responsive mobile UI, component tests, dan mobile acceptance.
+**Basic Payroll Foundation**, menggunakan approved overtime dan actual minutes sebagai input payroll-ready.
