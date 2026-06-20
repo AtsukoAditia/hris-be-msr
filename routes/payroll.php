@@ -6,10 +6,11 @@ use App\Http\Controllers\API\Admin\PayrollPeriodAdminController;
 use App\Http\Controllers\API\Admin\SalaryComponentAdminController;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('v1')
+Route::prefix('v1/admin')
     ->middleware(['auth:sanctum', 'role:admin,hr'])
     ->group(function () {
-        Route::apiResource('/salary-components', SalaryComponentAdminController::class);
+        Route::apiResource('/salary-components', SalaryComponentAdminController::class)
+            ->parameters(['salary-components' => 'salaryComponent']);
 
         Route::get('/employees/{employee}/salary-profiles', [EmployeeSalaryProfileAdminController::class, 'index']);
         Route::post('/employees/{employee}/salary-profiles', [EmployeeSalaryProfileAdminController::class, 'store']);
@@ -18,7 +19,8 @@ Route::prefix('v1')
         Route::patch('/salary-profiles/{salaryProfile}', [EmployeeSalaryProfileAdminController::class, 'update']);
         Route::delete('/salary-profiles/{salaryProfile}', [EmployeeSalaryProfileAdminController::class, 'destroy']);
 
-        Route::apiResource('/payroll-periods', PayrollPeriodAdminController::class);
+        Route::apiResource('/payroll-periods', PayrollPeriodAdminController::class)
+            ->parameters(['payroll-periods' => 'payrollPeriod']);
         Route::post('/payroll-periods/{payrollPeriod}/generate', [PayrollAdminController::class, 'generate']);
 
         Route::get('/payrolls', [PayrollAdminController::class, 'index']);
