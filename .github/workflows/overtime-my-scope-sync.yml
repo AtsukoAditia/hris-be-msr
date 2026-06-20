@@ -1,0 +1,44 @@
+name: Overtime my scope sync
+
+on:
+  push:
+    branches:
+      - feat/overtime-frontend-support
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/overtime-frontend-support
+      - name: Scope my requests to current employee
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          controller = Path('app/Http/Controllers/API/OvertimeController.php')
+          content = controller.read_text()
+          marker = "        return OvertimeRequestResource::collection($paginator);\n    }\n\n    /**\n     * @throws AuthorizationException\n     */\n    public function store"
+          method = "        return OvertimeRequestResource::collection($paginator);\n    }\n\n    /**\n     * @throws AuthorizationException\n     */\n    public function my(IndexOvertimeRequest $request): AnonymousResourceCollection\n    {\n        $user = $request->user();\n        abort_unless($this->policy->viewAny($user), 403);\n\n        $filters = $request->validated();\n        $filters['employee_id'] = $user->employee?->id ?? 0;\n        $paginator = $this->overtimeService->list($filters, $user);\n\n        return OvertimeRequestResource::collection($paginator);\n    }\n\n    /**\n     * @throws AuthorizationException\n     */\n    public function store"
+          if 'public function my(IndexOvertimeRequest $request)' not in content:
+              content = content.replace(marker, method)
+          controller.write_text(content)
+
+          routes = Path('routes/api_v1.php')
+          content = routes.read_text().replace(
+              "Route::get('/overtime-requests/my', [OvertimeController::class, 'index']);",
+              "Route::get('/overtime-requests/my', [OvertimeController::class, 'my']);",
+          )
+          routes.write_text(content)
+          PY
+      - name: Commit scope fix
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add app/Http/Controllers/API/OvertimeController.php routes/api_v1.php
+          git diff --cached --quiet || git commit -m "fix(overtime): scope my requests to current employee"
+          git push origin HEAD:feat/overtime-frontend-support
