@@ -1,8 +1,8 @@
 # HRIS Backend — `hris-be-msr`
 
-Laravel REST API untuk **Smart Attendance HRIS**, terhubung dengan frontend React PWA [`hris-fe-msr`](https://github.com/AtsukoAditia/hris-fe-msr).
+Laravel REST API untuk **Smart Attendance HRIS**, terhubung dengan frontend React PWA `hris-fe-msr`.
 
-> **Status terakhir diverifikasi:** 20 Juni 2026  
+> Status terakhir diverifikasi: 20 Juni 2026  
 > Branch utama: `main`
 
 ## Tech Stack
@@ -13,9 +13,7 @@ Laravel REST API untuk **Smart Attendance HRIS**, terhubung dengan frontend Reac
 | Language | PHP 8.3+ |
 | Database | MySQL 8 |
 | Authentication | Laravel Sanctum |
-| Authorization | Role middleware, policy, ownership, dan manager scope |
-| ORM | Eloquent |
-| File Storage | Laravel Filesystem private disk |
+| Authorization | Role middleware, ownership, and manager scope |
 | Testing | PHPUnit / Laravel Feature Tests |
 | Code Style | Laravel Pint |
 | CI | GitHub Actions |
@@ -26,176 +24,84 @@ Laravel REST API untuk **Smart Attendance HRIS**, terhubung dengan frontend Reac
 http://localhost:8000/api/v1
 ```
 
-## Current Project Status
+## Current Status
 
-| Module | Backend | Frontend | Status |
-|---|:---:|:---:|---|
-| Foundation, API v1, Authentication & RBAC | ✅ | ✅ | Synced |
-| Role-based Dashboard | ✅ | ✅ | Synced |
-| Organization Master: Department, Position, Branch | ✅ | ✅ | Completed |
-| Employee Management & Direct Manager Relation | ✅ | ✅ | Completed |
-| Employee Profile, Emergency Contact & Documents | ✅ | ✅ | Completed |
-| Employee Self-Service & Profile Change Approval | ✅ | ✅ | Completed |
-| Shift & Basic Shift Schedule | ✅ | ✅ | Completed |
-| Attendance: GPS, Photo, Radius & QR | ✅ | ✅ | Completed |
-| Attendance Correction | ✅ | ✅ | Completed |
-| Activity Log Viewer | ✅ | ✅ | Completed |
-| Leave Request, Approval, Balance & History | ✅ | ✅ | Completed |
-| Leave Type, Policy, Holiday & Balance Administration | ✅ | ✅ | Completed |
-| Attendance, Leave & Employee Reports + CSV | ✅ | ✅ | Completed |
-| **Overtime Policy & Request Workflow** | ✅ | ✅ | **Completed** |
-| Payroll Foundation | ⬜ | ⬜ | Planned |
+Core modules already integrated with the frontend:
 
-## Current Backend Milestone — Overtime Management
+- Authentication, RBAC, and role-based dashboard.
+- Department, position, branch, employee, and manager relations.
+- Employee profile, contacts, documents, and profile-change approval.
+- Shift, attendance, GPS/photo/radius/QR, and attendance correction.
+- Leave, leave administration, and overtime workflow.
+- Reports, CSV export, and activity log viewer.
 
-Overtime sudah tersedia end-to-end dan disinkronkan dengan frontend:
+### Basic Payroll Foundation
 
-- Overtime policy CRUD untuk Admin dan HR.
-- Active overtime policy options untuk seluruh user terautentikasi.
-- Pengajuan overtime oleh authenticated employee.
-- Daftar dan detail overtime berdasarkan scope role.
-- Endpoint `my` selalu dibatasi ke employee milik actor, termasuk untuk Admin, HR, dan Manager.
-- Pembatalan request selama masih `pending`.
-- Approval dan rejection oleh Admin, HR, atau direct manager yang berwenang.
-- Pencatatan actual overtime minutes oleh Admin dan HR.
-- Validasi batas maksimum overtime berdasarkan policy aktif.
-- Penyimpanan rate multiplier dari policy.
-- Transaction dan row locking pada proses status kritis.
-- Frontend responsive untuk request, review, actual minutes, dan policy administration.
-- Backend tests, frontend component tests, production build, dan mobile acceptance melalui CI.
+Backend implementation is complete and the frontend workspace is the active integration milestone.
 
-### Overtime Endpoints
+Available backend capabilities:
 
-```http
-GET    /api/v1/overtime-policies
+- Salary component master with earning and deduction types.
+- Fixed, percentage, and formula-ready configuration.
+- Effective-dated employee salary profiles.
+- Payroll periods and cutoff dates.
+- Payroll generation from basic salary, attendance, absence, approved unpaid leave, and approved overtime actual minutes.
+- Payroll item breakdown and calculation snapshots.
+- Draft recalculation.
+- Review, finalize, paid, and cancel lifecycle.
+- Transaction and row-lock protection.
+- Audit records and Admin/HR-only authorization.
+- Integer-cent calculation before decimal persistence.
 
-GET    /api/v1/overtime-requests/my
-POST   /api/v1/overtime-requests
-GET    /api/v1/overtime-requests/{overtimeRequest}
-POST   /api/v1/overtime-requests/{overtimeRequest}/cancel
+Payroll foundation endpoints are under:
 
-GET    /api/v1/overtime-requests
-POST   /api/v1/overtime-requests/{overtimeRequest}/approve
-POST   /api/v1/overtime-requests/{overtimeRequest}/reject
-POST   /api/v1/overtime-requests/{overtimeRequest}/record-actual
+```text
+/api/v1/admin/salary-components
+/api/v1/admin/employees/{employee}/salary-profiles
+/api/v1/admin/salary-profiles/{salaryProfile}
+/api/v1/admin/payroll-periods
+/api/v1/admin/payrolls
 ```
 
-Overtime policy administration:
+Detailed endpoint mapping is available in `docs/API_MATRIX.md`.
 
-```http
-GET    /api/v1/admin/overtime-policies
-POST   /api/v1/admin/overtime-policies
-GET    /api/v1/admin/overtime-policies/{overtimePolicy}
-PUT    /api/v1/admin/overtime-policies/{overtimePolicy}
-PATCH  /api/v1/admin/overtime-policies/{overtimePolicy}
-DELETE /api/v1/admin/overtime-policies/{overtimePolicy}
-```
+## Payroll Scope Limitations
 
-## Attendance Correction
+The foundation release intentionally excludes:
 
-Attendance Correction sudah tersedia end-to-end untuk employee dan reviewer.
+- Employee payslip and PDF download.
+- Payroll CSV/PDF reporting.
+- Tax and social-security calculation.
+- Post-finalization adjustment records.
+- Multi-level payroll approval.
 
-Employee dapat:
+These are planned for Payroll Sprint 2.
 
-- Melihat request miliknya.
-- Mengajukan koreksi check-in, check-out, atau keduanya.
-- Melampirkan bukti.
-- Melihat detail dan status.
-- Membatalkan request `pending`.
+## Security Rules
 
-Admin, HR, dan Manager sesuai scope dapat:
-
-- Melihat dan memfilter request.
-- Membandingkan attendance asli dengan nilai yang diminta.
-- Approve atau reject.
-- Mengunduh attachment secara terautentikasi.
-- Melakukan manual correction untuk role yang diizinkan.
-
-## Leave Management
-
-Leave module mencakup:
-
-- Employee leave request, history, detail, dan cancellation.
-- Leave balance per type dan tahun.
-- Admin/HR/Manager approval dan rejection sesuai authorization.
-- Leave type master.
-- Leave policy configuration.
-- Holiday master.
-- Leave balance administration dan adjustment.
-- Working-day calculation dan leave balance transaction handling.
-
-## Employee Self-Service
-
-Employee Self-Service memisahkan perubahan data menjadi:
-
-1. **Direct update** untuk data kontak dan domisili.
-2. **Profile change request** untuk data legal, identitas, dan benefit yang memerlukan review Admin/HR.
-
-Endpoint utama:
-
-```http
-GET   /api/v1/profile/me
-PATCH /api/v1/profile/me
-
-GET    /api/v1/profile/change-requests
-POST   /api/v1/profile/change-requests
-GET    /api/v1/profile/change-requests/{profileChangeRequest}
-DELETE /api/v1/profile/change-requests/{profileChangeRequest}
-```
-
-Dokumen employee disimpan pada private disk dan hanya dapat diunduh melalui authenticated endpoint dengan role atau ownership check.
-
-## Activity Log
-
-Activity log menyimpan informasi seperti:
-
-- Actor.
-- Module dan action.
-- Endpoint dan HTTP method.
-- Response status.
-- Request dan response preview.
-- IP address dan waktu aktivitas.
-
-Password, token, dan data sensitif difilter. Binary upload tidak disimpan ke audit payload.
-
-Admin dan HR dapat mengakses viewer melalui:
-
-```http
-GET /api/v1/activity-logs
-GET /api/v1/activity-logs/{activityLog}
-```
-
-## Security and Business Rules
-
-- Semua endpoint bisnis dilindungi Sanctum.
-- Role dari frontend tidak dipercaya sebagai sumber authorization.
-- Employee dibatasi pada resource miliknya.
-- Manager dibatasi pada direct subordinate sesuai relasi organisasi.
-- Operasi approval menggunakan transaction; operasi kritis menggunakan row locking saat diperlukan.
-- File sensitif disimpan pada private disk.
-- List besar menggunakan pagination.
-- Form Request digunakan untuk validasi payload.
-- Soft delete digunakan pada data yang membutuhkan lifecycle historis.
+- All business endpoints use Sanctum authentication.
+- Frontend role visibility is not treated as authorization.
+- Payroll administration is restricted to Admin and HR.
+- Critical status transitions use database transactions and row locking.
+- Draft payroll can be recalculated; finalized and paid payroll cannot be edited directly.
+- Cancellation requires a reason and is blocked after payment.
+- Sensitive documents remain on private storage.
 
 ## Testing and CI
 
-Jalankan secara lokal:
+Run locally:
 
 ```bash
 composer test
 vendor/bin/pint --test
 ```
 
-Backend CI menjalankan:
+Backend CI validates:
 
-1. Composer validation.
-2. Dependency installation.
-3. MySQL service dan database migration.
-4. Laravel Pint pada file PHP yang berubah.
-5. Full backend test suite.
-6. Upload test log sebagai diagnostic artifact.
-
-Status CI pada milestone terbaru: **passing**.
+1. Composer metadata and dependency installation.
+2. MySQL migrations.
+3. Laravel Pint on changed files.
+4. Full Laravel test suite.
 
 ## Local Setup
 
@@ -205,38 +111,21 @@ cd hris-be-msr
 composer install
 cp .env.example .env
 php artisan key:generate
-```
-
-Atur koneksi MySQL pada `.env`, lalu jalankan:
-
-```bash
 php artisan migrate --seed
 php artisan serve
 ```
 
-API tersedia secara default di:
-
-```text
-http://localhost:8000/api/v1
-```
-
-`php artisan storage:link` hanya diperlukan untuk asset public. Employee documents dan attachment sensitif tetap berada pada private disk.
-
-## Project Documentation
+## Documentation
 
 ```text
 docs/PROJECT_STATUS.md
+docs/MODULES.md
 docs/ROADMAP.md
 docs/API_MATRIX.md
-docs/employee-self-service.md
-docs/employee-document-management.md
-docs/employee-profile-emergency-contact.md
+docs/ARCHITECTURE.md
+docs/DEVELOPMENT_GUIDE.md
 ```
-
-## Definition of Done
-
-Modul dinyatakan selesai setelah database, model, service, API, authorization, validation, transaction safety, tests, CI, frontend integration, mobile acceptance, dan dokumentasi telah sinkron.
 
 ## Next Focus
 
-**Basic Payroll Foundation**, menggunakan approved overtime dan actual minutes sebagai input payroll-ready.
+Frontend Basic Payroll Foundation: salary components, employee salary profiles, payroll periods, payroll processing, lifecycle actions, responsive states, tests, and documentation.

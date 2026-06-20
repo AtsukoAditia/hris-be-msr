@@ -1,189 +1,108 @@
 # Roadmap — Smart Attendance HRIS
 
 > Last updated: 20 June 2026  
-> This roadmap is shared conceptually with `hris-fe-msr` and must remain synchronized.
-
-## Roadmap Principles
-
-1. Complete end-to-end modules, not isolated backend endpoints.
-2. Keep backend authorization as the source of truth.
-3. Require tests, CI, responsive frontend behavior, and documentation before a module is marked complete.
-4. Introduce database changes with safe migrations and backward-compatible rollout when existing data is affected.
-5. Prioritize HRIS core functions before optional business modules.
+> Backend and frontend roadmaps must remain synchronized.
 
 ## Phase 0 — Foundation and Core HRIS ✅
 
-- [x] Laravel REST API under `/api/v1`
-- [x] React PWA integration
-- [x] Sanctum authentication
-- [x] Admin, HR, Manager, and Employee roles
-- [x] Role-based dashboard
-- [x] Department, position, and branch master data
-- [x] Employee management and direct-manager relation
-- [x] Employee profile and emergency contacts
-- [x] Employee document management
-- [x] Employee self-service and profile change approval
-- [x] Shift management and basic shift schedule
-- [x] Attendance with GPS, photo, office radius, and QR
+- [x] Laravel REST API and React PWA integration
+- [x] Sanctum authentication and four-role RBAC
+- [x] Dashboard and organization master data
+- [x] Employee management, profile, contacts, documents, and self-service
+- [x] Shift management and basic schedule assignment
+- [x] Attendance with GPS, photo, radius, and QR
 - [x] Attendance correction and manual correction
-- [x] Leave request, approval, balance, and history
-- [x] Leave type, policy, holiday, and balance administration
+- [x] Leave request, approval, master data, and balance administration
 - [x] Activity log viewer
-- [x] Attendance, leave, and employee reports
-- [x] CSV export
+- [x] Attendance, leave, and employee reports with CSV export
 - [x] Overtime policy and request workflow
-
----
 
 ## Sprint 1 — Basic Payroll Foundation 🔵
 
-### Database and domain
+### Backend ✅
 
-- [ ] Salary component master
-- [ ] Component category: earning or deduction
-- [ ] Fixed, percentage, and formula-ready calculation type
-- [ ] Employee salary profile
-- [ ] Payroll period and cutoff dates
-- [ ] Payroll, payroll item, and payroll status models
-- [ ] Safe decimal and currency handling
+- [x] Salary component master
+- [x] Earning and deduction types
+- [x] Fixed, percentage, and formula-ready calculation configuration
+- [x] Effective-dated employee salary profile
+- [x] Payroll period and cutoff dates
+- [x] Payroll and payroll item records
+- [x] Integer-safe currency calculation
+- [x] Basic salary, attendance, absence, unpaid leave, and overtime inputs
+- [x] Generate and recalculate draft payroll
+- [x] Review, finalize, paid, and cancel workflow
+- [x] Authorization and Form Request validation
+- [x] Transactions, row locking, and audit records
+- [x] Backend feature tests and green CI
 
-### Calculation inputs
+### Frontend 🔵
 
-- [ ] Basic salary
-- [ ] Fixed allowances and deductions
-- [ ] Attendance summary
-- [ ] Late and absence inputs
-- [ ] Approved unpaid leave input
-- [ ] Approved overtime and actual-minute input
-
-### Workflow
-
-- [ ] Generate draft payroll
-- [ ] Recalculate draft payroll
-- [ ] Review payroll
-- [ ] Finalize payroll
-- [ ] Mark payroll as paid
-- [ ] Cancel payroll with reason
-- [ ] Prevent changes after finalization without controlled rollback
-
-### Delivery requirements
-
-- [ ] Role authorization
-- [ ] Form Request validation
-- [ ] Transaction and locking strategy
-- [ ] Audit trail
-- [ ] Backend feature tests
-- [ ] Frontend integration
-- [ ] Responsive payroll workspace
-- [ ] Documentation update
-
----
+- [ ] Payroll route and Admin/HR navigation
+- [ ] Salary component administration
+- [ ] Employee salary profile administration
+- [ ] Payroll period administration
+- [ ] Draft generation and recalculation
+- [ ] Payroll list and detail breakdown
+- [ ] Review, finalize, paid, and cancel actions
+- [ ] Loading, error, empty, validation, and conflict states
+- [ ] Responsive table/card layouts
+- [ ] Component tests, lint, build, and mobile acceptance
+- [ ] Frontend documentation
 
 ## Sprint 2 — Payslip and Payroll Reporting
 
-- [ ] Employee payslip view
+- [ ] Employee payslip history and detail
 - [ ] Authenticated payslip download
-- [ ] Payroll history per employee
 - [ ] Payroll summary by period
-- [ ] Earning and deduction breakdown
+- [ ] Earning and deduction report breakdown
 - [ ] CSV payroll export
 - [ ] PDF payslip after the core workflow is stable
-- [ ] Payroll report filters
-- [ ] Payroll regression tests
-
----
+- [ ] Payroll report filters and regression tests
 
 ## Sprint 3 — Shift Schedule Calendar
 
-- [ ] Weekly calendar
-- [ ] Monthly calendar
+- [ ] Weekly and monthly views
 - [ ] Employee, department, and branch filters
-- [ ] Bulk assignment UI
-- [ ] Copy previous week
-- [ ] Period schedule generation
-- [ ] Rotating shift templates
-- [ ] Day-off assignment
+- [ ] Bulk assignment and copy previous week
+- [ ] Rotating shifts and day off
 - [ ] Conflict validation
-- [ ] Manager team schedule
-- [ ] Employee personal schedule improvement
-
----
+- [ ] Manager team and employee personal schedules
 
 ## Sprint 4 — Notification Center
 
-- [ ] In-app notifications
-- [ ] Unread count
-- [ ] Mark as read and mark all as read
-- [ ] Deep link to related records
-- [ ] Notification preferences
+- [ ] Inbox and unread count
+- [ ] Mark read and mark all read
+- [ ] Deep links and preferences
 - [ ] Queue-based delivery with local fallback
-- [ ] Triggers for leave, correction, profile change, overtime, schedule changes, expiring documents, and missing checkout
-- [ ] Tests
-
----
+- [ ] Leave, correction, profile, overtime, schedule, document, and checkout triggers
 
 ## Sprint 5 — Generic Approval Workflow
 
-- [ ] Approval request model
-- [ ] Approval steps and actions
-- [ ] Multi-level approval
-- [ ] Approver delegation
-- [ ] Configurable approval flow
-- [ ] Adapter migration for leave, correction, profile changes, and overtime
-- [ ] Backward-compatible rollout
-- [ ] Regression tests
-
----
+- [ ] Approval request, step, and action models
+- [ ] Multi-level approval and delegation
+- [ ] Configurable approval flows
+- [ ] Incremental adapters for existing workflows
+- [ ] Backward-compatible rollout and regression tests
 
 ## Sprint 6 — Attendance and Leave Enhancements
 
-### Attendance
-
-- [ ] Attendance anomaly detection
-- [ ] Missing checkout reminder
-- [ ] Early-leave calculation
-- [ ] Work-from-home and business-trip attendance status
-- [ ] Branch-specific attendance configuration
-
-### Leave
-
-- [ ] Half-day leave
-- [ ] Hourly permission
-- [ ] Cuti bersama
-- [ ] Carry forward and expiration
-- [ ] Team leave calendar
-- [ ] Team availability warning
-- [ ] Attachment requirement by leave type
-
----
+- [ ] Attendance anomaly and missing checkout
+- [ ] Early leave, work from home, and business trip
+- [ ] Half-day leave and hourly permission
+- [ ] Carry forward, expiration, and team leave calendar
 
 ## Sprint 7 — Reporting Enhancement
 
-- [ ] Excel export
-- [ ] PDF export
-- [ ] Attendance anomaly report
-- [ ] Late and overtime report
-- [ ] Contract and document expiry report
-- [ ] Employee turnover report
-- [ ] Consistent cross-report filters
-- [ ] Background export for large datasets
-
----
+- [ ] Excel and PDF exports
+- [ ] Attendance anomaly, late, overtime, expiry, and turnover reports
+- [ ] Consistent filters and background exports
 
 ## Sprint 8 — System Settings
 
 - [ ] Company profile and logo
-- [ ] Timezone and date format
-- [ ] Working days and weekends
-- [ ] Attendance grace period
-- [ ] Overtime defaults
-- [ ] Leave defaults
-- [ ] Payroll cutoff
-- [ ] Upload limits
-- [ ] QR expiration
-- [ ] Notification preferences
-
----
+- [ ] Timezone, date format, working days, and weekends
+- [ ] Attendance, leave, overtime, and payroll defaults
+- [ ] Upload limits, QR expiration, and notification preferences
 
 ## Sprint 9 — Optional HRIS Expansion
 
@@ -191,43 +110,17 @@
 - [ ] Recruitment
 - [ ] Onboarding and offboarding
 - [ ] Performance management
-- [ ] Reimbursement
-- [ ] Asset management
-- [ ] Announcement and company calendar
-- [ ] Training and development
-- [ ] Employee loan
+- [ ] Reimbursement and asset management
+- [ ] Announcements, training, and employee loans
 
-These modules are intentionally deferred until payroll and the core operational flow are stable.
+## Sprint 10 — Production Hardening
 
----
-
-## Sprint 10 — Production Hardening and Final Documentation
-
-- [ ] Production environment and secrets management
-- [ ] HTTPS and production CORS
-- [ ] Rate limiting and security headers
-- [ ] Queue, scheduler, and backup strategy
-- [ ] Structured logging and error monitoring
-- [ ] Health endpoint
-- [ ] Database indexing review
-- [ ] CI/CD deployment workflow
-- [ ] PWA install and mobile acceptance
-- [ ] Accessibility review
-- [ ] ERD and architecture diagrams
-- [ ] API documentation
-- [ ] User and administrator manual
-- [ ] Known limitations and changelog
+- [ ] Production environment, HTTPS, CORS, and secrets
+- [ ] Queue, scheduler, backups, monitoring, and health checks
+- [ ] Database indexing and deployment workflow
+- [ ] PWA install, mobile acceptance, and accessibility
+- [ ] ERD, API docs, manuals, limitations, and changelog
 
 ## Definition of Done
 
-A module is complete only when:
-
-- Database and domain model are stable.
-- API contract and frontend integration are synchronized.
-- Authorization and ownership rules are enforced by the backend.
-- Validation, error, loading, and empty states are handled.
-- Critical operations use transactions where appropriate.
-- Automated tests pass.
-- CI is green.
-- Mobile behavior is accepted.
-- Documentation is updated in both repositories.
+A module is complete only when backend and frontend contracts are synchronized, authorization and validation are enforced, critical operations are transaction-safe, automated tests and CI pass, mobile behavior is accepted, and documentation is current in both repositories.

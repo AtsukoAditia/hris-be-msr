@@ -98,22 +98,32 @@ class Employee extends Model
         return $this->hasMany(EmployeeProfileChangeRequest::class)->latest();
     }
 
-    public function attendances()
+    public function attendances(): HasMany
     {
         return $this->hasMany(Attendance::class);
     }
 
-    public function leaves()
+    public function leaves(): HasMany
     {
         return $this->hasMany(Leave::class);
     }
 
-    public function shiftSchedules()
+    public function salaryProfiles(): HasMany
+    {
+        return $this->hasMany(EmployeeSalaryProfile::class)->latest('effective_from');
+    }
+
+    public function payrolls(): HasMany
+    {
+        return $this->hasMany(Payroll::class);
+    }
+
+    public function shiftSchedules(): HasMany
     {
         return $this->hasMany(ShiftSchedule::class);
     }
 
-    public function todayShiftSchedule()
+    public function todayShiftSchedule(): HasOne
     {
         return $this->hasOne(ShiftSchedule::class)->whereDate('schedule_date', today());
     }
