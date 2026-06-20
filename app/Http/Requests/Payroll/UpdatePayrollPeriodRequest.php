@@ -2,6 +2,4 @@
 
 namespace App\Http\Requests\Payroll;
 
-class UpdatePayrollPeriodRequest extends StorePayrollPeriodRequest
-{
-}
+class UpdatePayrollPeriodRequest extends StorePayrollPeriodRequest {}
