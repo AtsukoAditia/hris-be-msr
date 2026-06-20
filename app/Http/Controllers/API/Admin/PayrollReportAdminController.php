@@ -29,7 +29,7 @@ class PayrollReportAdminController extends Controller
             ->paginate($perPage);
 
         return response()->json([
-            'data' => PayrollResource::collection($payrolls->getCollection())->resolve($request),
+            'data' => $this->resourceCollection($payrolls->getCollection())->resolve($request),
             'meta' => [
                 'current_page' => $payrolls->currentPage(),
                 'last_page' => $payrolls->lastPage(),
@@ -207,5 +207,10 @@ class PayrollReportAdminController extends Controller
             ],
             'by_currency' => $byCurrency,
         ];
+    }
+
+    private function resourceCollection(iterable $resources): AnonymousResourceCollection
+    {
+        return PayrollResource::collection($resources);
     }
 }
