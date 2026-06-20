@@ -83,6 +83,8 @@ jobs:
       - name: Check code style for changed PHP files
         shell: bash
         run: |
+          set -o pipefail
+          mkdir -p test-results
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             BASE_SHA="${{ github.event.pull_request.base.sha }}"
           else
@@ -96,12 +98,21 @@ jobs:
           fi
 
           if [ "${#PHP_FILES[@]}" -eq 0 ]; then
-            echo "No changed PHP files to check."
+            echo "No changed PHP files to check." | tee test-results/pint.log
             exit 0
           fi
 
-          printf 'Checking %s\n' "${PHP_FILES[@]}"
-          vendor/bin/pint --test "${PHP_FILES[@]}"
+          printf 'Checking %s\n' "${PHP_FILES[@]}" | tee test-results/pint.log
+          vendor/bin/pint --test "${PHP_FILES[@]}" 2>&1 | tee -a test-results/pint.log
+
+      - name: Upload Pint log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-pint-log
+          path: test-results/pint.log
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Run test suite
         shell: bash
