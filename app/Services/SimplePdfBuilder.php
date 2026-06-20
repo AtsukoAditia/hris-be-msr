@@ -35,7 +35,7 @@ final class SimplePdfBuilder
                 self::PAGE_HEIGHT,
                 $contentId,
             );
-            $objects[$contentId] = "<< /Length ".strlen($stream)." >>\nstream\n{$stream}\nendstream";
+            $objects[$contentId] = '<< /Length '.strlen($stream)." >>\nstream\n{$stream}\nendstream";
         }
 
         $objects[1] = '<< /Type /Catalog /Pages 2 0 R >>';
