@@ -34,8 +34,6 @@ class PayslipResource extends JsonResource
                 'name' => $this->employee->user?->name,
                 'department_name' => $this->employee->departmentMaster?->name ?? $this->employee->department,
                 'position_name' => $this->employee->positionMaster?->name ?? $this->employee->position,
-                'bank_name' => $this->employee->bank_name,
-                'bank_account_masked' => $this->maskBankAccount($this->employee->bank_account),
             ]),
             'items' => $this->whenLoaded('items', fn () => $this->items->map(fn ($item) => [
                 'id' => $item->id,
@@ -51,16 +49,5 @@ class PayslipResource extends JsonResource
             'finalized_at' => $this->finalized_at,
             'paid_at' => $this->paid_at,
         ];
-    }
-
-    private function maskBankAccount(?string $account): ?string
-    {
-        if (! $account) {
-            return null;
-        }
-
-        $visible = substr($account, -4);
-
-        return str_repeat('*', max(strlen($account) - 4, 0)).$visible;
     }
 }
