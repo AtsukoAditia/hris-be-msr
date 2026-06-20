@@ -9,6 +9,7 @@ Route::prefix('v1')
     ->group(function () {
         Route::get('/payslips', [PayslipController::class, 'index']);
         Route::get('/payslips/{payroll}', [PayslipController::class, 'show']);
+        Route::post('/payslips/{payroll}/pdf', [PayslipController::class, 'download']);
     });
 
 Route::prefix('v1/admin')
@@ -16,4 +17,6 @@ Route::prefix('v1/admin')
     ->group(function () {
         Route::get('/payroll-reports', [PayrollReportAdminController::class, 'index']);
         Route::get('/payroll-reports/breakdown', [PayrollReportAdminController::class, 'breakdown']);
+        Route::post('/payroll-reports/csv', [PayrollReportAdminController::class, 'export']);
+        Route::post('/payrolls/{payroll}/payslip-pdf', [PayrollReportAdminController::class, 'payslip']);
     });
