@@ -16,9 +16,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class PayrollAdminController extends Controller
 {
-    public function __construct(private readonly PayrollService $payrollService)
-    {
-    }
+    public function __construct(private readonly PayrollService $payrollService) {}
 
     public function index(Request $request): AnonymousResourceCollection
     {
@@ -28,12 +26,15 @@ class PayrollAdminController extends Controller
         if ($request->filled('payroll_period_id')) {
             $query->where('payroll_period_id', $request->integer('payroll_period_id'));
         }
+
         if ($request->filled('employee_id')) {
             $query->where('employee_id', $request->integer('employee_id'));
         }
+
         if ($request->filled('status')) {
             $query->where('status', $request->input('status'));
         }
+
         if ($request->filled('search')) {
             $search = trim((string) $request->input('search'));
             $query->whereHas('employee', function ($employeeQuery) use ($search) {
