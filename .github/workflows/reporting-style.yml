@@ -1,0 +1,34 @@
+name: Reporting Style
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  style:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          coverage: none
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - run: >-
+          vendor/bin/pint --test
+          app/Http/Controllers/API/Admin/BasePayrollReportController.php
+          app/Http/Controllers/API/Admin/PayrollReportAdminController.php
+          app/Http/Controllers/API/Admin/PayrollReportV2Controller.php
+          app/Http/Controllers/API/PayslipController.php
+          app/Http/Resources/PayslipResource.php
+          app/Services/PayslipPdfService.php
+          routes/payroll.php
+          routes/payslip_reporting.php
+          routes/reporting_v2.php
+          tests/Feature/PayslipAccessTest.php

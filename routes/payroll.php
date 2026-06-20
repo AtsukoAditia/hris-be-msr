@@ -31,3 +31,5 @@ Route::prefix('v1/admin')
         Route::post('/payrolls/{payroll}/paid', [PayrollAdminController::class, 'markPaid']);
         Route::post('/payrolls/{payroll}/cancel', [PayrollAdminController::class, 'cancel']);
     });
+
+require __DIR__.'/payslip_reporting.php';

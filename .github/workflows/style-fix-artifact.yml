@@ -1,0 +1,27 @@
+name: Style Fix Artifact
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          coverage: none
+      - run: composer install --no-interaction --prefer-dist --no-progress --quiet
+      - run: vendor/bin/pint app/Services/PayslipPdfService.php
+      - uses: actions/upload-artifact@v4
+        with:
+          name: formatted-pdf-service
+          path: app/Services/PayslipPdfService.php
+          retention-days: 1
