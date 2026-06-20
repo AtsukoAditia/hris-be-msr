@@ -46,9 +46,33 @@ jobs:
             routes/api_v1.php \
             tests/Feature/LeaveTest.php \
             tests/Feature/OvertimeTest.php
-          git diff --binary > pint-fix.patch
+          tar -czf pint-formatted-sources.tar.gz \
+            app/Http/Controllers/API/Admin/OvertimePolicyAdminController.php \
+            app/Http/Controllers/API/LeaveController.php \
+            app/Http/Controllers/API/OvertimeController.php \
+            app/Http/Requests/Leave/CancelLeaveRequest.php \
+            app/Http/Requests/Overtime \
+            app/Http/Requests/OvertimePolicy \
+            app/Http/Resources/EmployeeBasicResource.php \
+            app/Http/Resources/LeaveResource.php \
+            app/Http/Resources/LeaveTypeBasicResource.php \
+            app/Http/Resources/OvertimePolicyResource.php \
+            app/Http/Resources/OvertimeRequestResource.php \
+            app/Models/OvertimePolicy.php \
+            app/Models/OvertimeRequest.php \
+            app/Policies/OvertimePolicyPolicy.php \
+            app/Policies/OvertimeRequestPolicy.php \
+            app/Services/LeaveService.php \
+            app/Services/OvertimeService.php \
+            database/factories/OvertimePolicyFactory.php \
+            database/factories/OvertimeRequestFactory.php \
+            database/migrations/2026_06_19_205742_create_overtime_policies_table.php \
+            database/migrations/2026_06_19_205742_create_overtime_requests_table.php \
+            routes/api_v1.php \
+            tests/Feature/LeaveTest.php \
+            tests/Feature/OvertimeTest.php
       - uses: actions/upload-artifact@v4
         with:
-          name: pint-fix-preview
-          path: pint-fix.patch
+          name: pint-formatted-sources
+          path: pint-formatted-sources.tar.gz
           retention-days: 1
