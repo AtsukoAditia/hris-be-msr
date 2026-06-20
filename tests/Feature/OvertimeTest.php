@@ -27,6 +27,7 @@ class OvertimeTest extends TestCase
     {
         $user = User::factory()->create(['role' => 'manager']);
         Employee::factory()->create(['user_id' => $user->id]);
+
         return $user;
     }
 
@@ -34,19 +35,20 @@ class OvertimeTest extends TestCase
     {
         $user = User::factory()->create(['role' => 'employee']);
         Employee::factory()->create([
-            'user_id'    => $user->id,
+            'user_id' => $user->id,
             'manager_id' => $managerId,
         ]);
+
         return $user;
     }
 
     private function activePolicy(): OvertimePolicy
     {
         return OvertimePolicy::factory()->create([
-            'is_active'          => true,
-            'daily_max_minutes'  => 240,
+            'is_active' => true,
+            'daily_max_minutes' => 240,
             'weekly_max_minutes' => 1200,
-            'rate_multiplier'    => 1.5,
+            'rate_multiplier' => 1.5,
         ]);
     }
 
@@ -59,12 +61,12 @@ class OvertimeTest extends TestCase
         $admin = $this->adminUser();
 
         $response = $this->actingAs($admin)->postJson('/api/v1/admin/overtime-policies', [
-            'name'                => 'Weekday OT',
-            'description'         => 'Standard weekday overtime',
-            'daily_max_minutes'   => 180,
-            'weekly_max_minutes'  => 900,
-            'rate_multiplier'     => 1.5,
-            'is_active'           => true,
+            'name' => 'Weekday OT',
+            'description' => 'Standard weekday overtime',
+            'daily_max_minutes' => 180,
+            'weekly_max_minutes' => 900,
+            'rate_multiplier' => 1.5,
+            'is_active' => true,
         ]);
 
         $response->assertCreated()
@@ -77,11 +79,11 @@ class OvertimeTest extends TestCase
         $employee = $this->employeeUser();
 
         $this->actingAs($employee)->postJson('/api/v1/admin/overtime-policies', [
-            'name'               => 'OT',
-            'daily_max_minutes'  => 120,
+            'name' => 'OT',
+            'daily_max_minutes' => 120,
             'weekly_max_minutes' => 600,
-            'rate_multiplier'    => 1.5,
-            'is_active'          => true,
+            'rate_multiplier' => 1.5,
+            'is_active' => true,
         ])->assertForbidden();
     }
 
@@ -97,26 +99,26 @@ class OvertimeTest extends TestCase
 
     public function test_admin_can_update_overtime_policy(): void
     {
-        $admin  = $this->adminUser();
+        $admin = $this->adminUser();
         $policy = $this->activePolicy();
 
         $this->actingAs($admin)->putJson("/api/v1/admin/overtime-policies/{$policy->id}", [
-            'name'               => 'Updated OT',
-            'daily_max_minutes'  => 200,
+            'name' => 'Updated OT',
+            'daily_max_minutes' => 200,
             'weekly_max_minutes' => 1000,
-            'rate_multiplier'    => 2.0,
-            'is_active'          => true,
+            'rate_multiplier' => 2.0,
+            'is_active' => true,
         ])->assertOk()->assertJsonPath('data.name', 'Updated OT');
     }
 
     public function test_admin_cannot_delete_policy_with_requests(): void
     {
-        $admin    = $this->adminUser();
-        $policy   = $this->activePolicy();
+        $admin = $this->adminUser();
+        $policy = $this->activePolicy();
         $employee = $this->employeeUser();
 
         OvertimeRequest::factory()->create([
-            'employee_id'        => $employee->employee->id,
+            'employee_id' => $employee->employee->id,
             'overtime_policy_id' => $policy->id,
         ]);
 
@@ -131,14 +133,14 @@ class OvertimeTest extends TestCase
     public function test_employee_can_submit_overtime_request(): void
     {
         $employee = $this->employeeUser();
-        $policy   = $this->activePolicy();
+        $policy = $this->activePolicy();
 
         $response = $this->actingAs($employee)->postJson('/api/v1/overtime-requests', [
             'overtime_policy_id' => $policy->id,
-            'overtime_date'      => '2026-06-20',
+            'overtime_date' => '2026-06-20',
             'planned_start_time' => '18:00',
-            'planned_end_time'   => '20:00',
-            'reason'             => 'Project deadline',
+            'planned_end_time' => '20:00',
+            'reason' => 'Project deadline',
         ]);
 
         $response->assertCreated()
@@ -152,23 +154,23 @@ class OvertimeTest extends TestCase
 
         $this->postJson('/api/v1/overtime-requests', [
             'overtime_policy_id' => $policy->id,
-            'overtime_date'      => '2026-06-20',
+            'overtime_date' => '2026-06-20',
             'planned_start_time' => '18:00',
-            'planned_end_time'   => '20:00',
-            'reason'             => 'Test',
+            'planned_end_time' => '20:00',
+            'reason' => 'Test',
         ])->assertUnauthorized();
     }
 
     public function test_overtime_request_requires_reason(): void
     {
         $employee = $this->employeeUser();
-        $policy   = $this->activePolicy();
+        $policy = $this->activePolicy();
 
         $this->actingAs($employee)->postJson('/api/v1/overtime-requests', [
             'overtime_policy_id' => $policy->id,
-            'overtime_date'      => '2026-06-20',
+            'overtime_date' => '2026-06-20',
             'planned_start_time' => '18:00',
-            'planned_end_time'   => '20:00',
+            'planned_end_time' => '20:00',
         ])->assertUnprocessable()->assertJsonValidationErrors(['reason']);
     }
 
@@ -178,14 +180,14 @@ class OvertimeTest extends TestCase
 
     public function test_manager_can_approve_subordinate_overtime(): void
     {
-        $manager  = $this->managerUser();
+        $manager = $this->managerUser();
         $employee = $this->employeeUser($manager->employee->id);
-        $policy   = $this->activePolicy();
+        $policy = $this->activePolicy();
 
         $request = OvertimeRequest::factory()->create([
-            'employee_id'        => $employee->employee->id,
+            'employee_id' => $employee->employee->id,
             'overtime_policy_id' => $policy->id,
-            'status'             => OvertimeRequest::STATUS_PENDING,
+            'status' => OvertimeRequest::STATUS_PENDING,
         ]);
 
         $this->actingAs($manager)->postJson("/api/v1/overtime-requests/{$request->id}/approve")
@@ -196,12 +198,12 @@ class OvertimeTest extends TestCase
     public function test_employee_cannot_approve_own_overtime(): void
     {
         $employee = $this->employeeUser();
-        $policy   = $this->activePolicy();
+        $policy = $this->activePolicy();
 
         $request = OvertimeRequest::factory()->create([
-            'employee_id'        => $employee->employee->id,
+            'employee_id' => $employee->employee->id,
             'overtime_policy_id' => $policy->id,
-            'status'             => OvertimeRequest::STATUS_PENDING,
+            'status' => OvertimeRequest::STATUS_PENDING,
         ]);
 
         $this->actingAs($employee)->postJson("/api/v1/overtime-requests/{$request->id}/approve")
@@ -210,14 +212,14 @@ class OvertimeTest extends TestCase
 
     public function test_manager_can_reject_overtime_with_reason(): void
     {
-        $manager  = $this->managerUser();
+        $manager = $this->managerUser();
         $employee = $this->employeeUser($manager->employee->id);
-        $policy   = $this->activePolicy();
+        $policy = $this->activePolicy();
 
         $request = OvertimeRequest::factory()->create([
-            'employee_id'        => $employee->employee->id,
+            'employee_id' => $employee->employee->id,
             'overtime_policy_id' => $policy->id,
-            'status'             => OvertimeRequest::STATUS_PENDING,
+            'status' => OvertimeRequest::STATUS_PENDING,
         ]);
 
         $this->actingAs($manager)->postJson("/api/v1/overtime-requests/{$request->id}/reject", [
@@ -229,14 +231,14 @@ class OvertimeTest extends TestCase
 
     public function test_cannot_approve_already_approved_request(): void
     {
-        $admin  = $this->adminUser();
+        $admin = $this->adminUser();
         $policy = $this->activePolicy();
-        $emp    = $this->employeeUser();
+        $emp = $this->employeeUser();
 
         $request = OvertimeRequest::factory()->create([
-            'employee_id'        => $emp->employee->id,
+            'employee_id' => $emp->employee->id,
             'overtime_policy_id' => $policy->id,
-            'status'             => OvertimeRequest::STATUS_APPROVED,
+            'status' => OvertimeRequest::STATUS_APPROVED,
         ]);
 
         $this->actingAs($admin)->postJson("/api/v1/overtime-requests/{$request->id}/approve")
@@ -250,12 +252,12 @@ class OvertimeTest extends TestCase
     public function test_employee_can_cancel_own_pending_overtime(): void
     {
         $employee = $this->employeeUser();
-        $policy   = $this->activePolicy();
+        $policy = $this->activePolicy();
 
         $request = OvertimeRequest::factory()->create([
-            'employee_id'        => $employee->employee->id,
+            'employee_id' => $employee->employee->id,
             'overtime_policy_id' => $policy->id,
-            'status'             => OvertimeRequest::STATUS_PENDING,
+            'status' => OvertimeRequest::STATUS_PENDING,
         ]);
 
         $this->actingAs($employee)->postJson("/api/v1/overtime-requests/{$request->id}/cancel")
@@ -266,12 +268,12 @@ class OvertimeTest extends TestCase
     public function test_employee_cannot_cancel_approved_overtime(): void
     {
         $employee = $this->employeeUser();
-        $policy   = $this->activePolicy();
+        $policy = $this->activePolicy();
 
         $request = OvertimeRequest::factory()->create([
-            'employee_id'        => $employee->employee->id,
+            'employee_id' => $employee->employee->id,
             'overtime_policy_id' => $policy->id,
-            'status'             => OvertimeRequest::STATUS_APPROVED,
+            'status' => OvertimeRequest::STATUS_APPROVED,
         ]);
 
         $this->actingAs($employee)->postJson("/api/v1/overtime-requests/{$request->id}/cancel")
@@ -284,14 +286,14 @@ class OvertimeTest extends TestCase
 
     public function test_admin_can_record_actual_minutes(): void
     {
-        $admin    = $this->adminUser();
+        $admin = $this->adminUser();
         $employee = $this->employeeUser();
-        $policy   = $this->activePolicy();
+        $policy = $this->activePolicy();
 
         $request = OvertimeRequest::factory()->create([
-            'employee_id'        => $employee->employee->id,
+            'employee_id' => $employee->employee->id,
             'overtime_policy_id' => $policy->id,
-            'status'             => OvertimeRequest::STATUS_APPROVED,
+            'status' => OvertimeRequest::STATUS_APPROVED,
         ]);
 
         $this->actingAs($admin)->postJson("/api/v1/overtime-requests/{$request->id}/record-actual", [
@@ -303,12 +305,12 @@ class OvertimeTest extends TestCase
     public function test_employee_cannot_record_actual_minutes(): void
     {
         $employee = $this->employeeUser();
-        $policy   = $this->activePolicy();
+        $policy = $this->activePolicy();
 
         $request = OvertimeRequest::factory()->create([
-            'employee_id'        => $employee->employee->id,
+            'employee_id' => $employee->employee->id,
             'overtime_policy_id' => $policy->id,
-            'status'             => OvertimeRequest::STATUS_APPROVED,
+            'status' => OvertimeRequest::STATUS_APPROVED,
         ]);
 
         $this->actingAs($employee)->postJson("/api/v1/overtime-requests/{$request->id}/record-actual", [
@@ -322,16 +324,16 @@ class OvertimeTest extends TestCase
 
     public function test_employee_can_only_see_own_overtime_requests(): void
     {
-        $employee  = $this->employeeUser();
-        $other     = $this->employeeUser();
-        $policy    = $this->activePolicy();
+        $employee = $this->employeeUser();
+        $other = $this->employeeUser();
+        $policy = $this->activePolicy();
 
         OvertimeRequest::factory()->count(2)->create([
-            'employee_id'        => $employee->employee->id,
+            'employee_id' => $employee->employee->id,
             'overtime_policy_id' => $policy->id,
         ]);
         OvertimeRequest::factory()->create([
-            'employee_id'        => $other->employee->id,
+            'employee_id' => $other->employee->id,
             'overtime_policy_id' => $policy->id,
         ]);
 
@@ -344,11 +346,11 @@ class OvertimeTest extends TestCase
     public function test_employee_cannot_view_another_employees_overtime(): void
     {
         $employee = $this->employeeUser();
-        $other    = $this->employeeUser();
-        $policy   = $this->activePolicy();
+        $other = $this->employeeUser();
+        $policy = $this->activePolicy();
 
         $request = OvertimeRequest::factory()->create([
-            'employee_id'        => $other->employee->id,
+            'employee_id' => $other->employee->id,
             'overtime_policy_id' => $policy->id,
         ]);
 
@@ -358,17 +360,17 @@ class OvertimeTest extends TestCase
 
     public function test_admin_can_see_all_overtime_requests(): void
     {
-        $admin   = $this->adminUser();
-        $emp1    = $this->employeeUser();
-        $emp2    = $this->employeeUser();
-        $policy  = $this->activePolicy();
+        $admin = $this->adminUser();
+        $emp1 = $this->employeeUser();
+        $emp2 = $this->employeeUser();
+        $policy = $this->activePolicy();
 
         OvertimeRequest::factory()->count(3)->create([
-            'employee_id'        => $emp1->employee->id,
+            'employee_id' => $emp1->employee->id,
             'overtime_policy_id' => $policy->id,
         ]);
         OvertimeRequest::factory()->count(2)->create([
-            'employee_id'        => $emp2->employee->id,
+            'employee_id' => $emp2->employee->id,
             'overtime_policy_id' => $policy->id,
         ]);
 

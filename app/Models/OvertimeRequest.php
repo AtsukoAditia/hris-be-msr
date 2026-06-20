@@ -11,8 +11,11 @@ class OvertimeRequest extends Model
     use HasFactory, SoftDeletes;
 
     const STATUS_PENDING = 'pending';
+
     const STATUS_APPROVED = 'approved';
+
     const STATUS_REJECTED = 'rejected';
+
     const STATUS_CANCELLED = 'cancelled';
 
     protected $fillable = [

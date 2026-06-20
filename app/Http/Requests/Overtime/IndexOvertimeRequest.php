@@ -14,11 +14,11 @@ class IndexOvertimeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status'      => ['nullable', 'string', 'in:pending,approved,rejected,cancelled'],
+            'status' => ['nullable', 'string', 'in:pending,approved,rejected,cancelled'],
             'employee_id' => ['nullable', 'integer', 'exists:employees,id'],
-            'date_from'   => ['nullable', 'date', 'date_format:Y-m-d'],
-            'date_to'     => ['nullable', 'date', 'date_format:Y-m-d', 'after_or_equal:date_from'],
-            'per_page'    => ['nullable', 'integer', 'min:1', 'max:100'],
+            'date_from' => ['nullable', 'date', 'date_format:Y-m-d'],
+            'date_to' => ['nullable', 'date', 'date_format:Y-m-d', 'after_or_equal:date_from'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ];
     }
 }

@@ -33,7 +33,7 @@ class OvertimeRequestPolicy
 
     public function cancel(User $user, OvertimeRequest $overtimeRequest): bool
     {
-        if (!$overtimeRequest->isPending()) {
+        if (! $overtimeRequest->isPending()) {
             return false;
         }
 
@@ -43,7 +43,7 @@ class OvertimeRequestPolicy
 
     public function approve(User $user, OvertimeRequest $overtimeRequest): bool
     {
-        if (!$overtimeRequest->isPending()) {
+        if (! $overtimeRequest->isPending()) {
             return false;
         }
 

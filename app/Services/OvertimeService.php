@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Employee;
+use App\Models\OvertimePolicy;
 use App\Models\OvertimeRequest;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -23,19 +24,19 @@ class OvertimeService
             $query->whereIn('employee_id', $subordinateIds);
         }
 
-        if (!empty($filters['status'])) {
+        if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
 
-        if (!empty($filters['employee_id'])) {
+        if (! empty($filters['employee_id'])) {
             $query->where('employee_id', $filters['employee_id']);
         }
 
-        if (!empty($filters['date_from'])) {
+        if (! empty($filters['date_from'])) {
             $query->whereDate('date', '>=', $filters['date_from']);
         }
 
-        if (!empty($filters['date_to'])) {
+        if (! empty($filters['date_to'])) {
             $query->whereDate('date', '<=', $filters['date_to']);
         }
 
@@ -50,25 +51,25 @@ class OvertimeService
                 $data['end_time']
             );
 
-            $policy = \App\Models\OvertimePolicy::findOrFail($data['overtime_policy_id']);
+            $policy = OvertimePolicy::findOrFail($data['overtime_policy_id']);
 
             return OvertimeRequest::create([
-                'employee_id'        => $actor->employee->id,
+                'employee_id' => $actor->employee->id,
                 'overtime_policy_id' => $data['overtime_policy_id'],
-                'date'               => $data['date'],
-                'start_time'         => $data['start_time'],
-                'end_time'           => $data['end_time'],
-                'planned_minutes'    => $plannedMinutes,
-                'rate_multiplier'    => $policy->rate_multiplier,
-                'status'             => OvertimeRequest::STATUS_PENDING,
-                'reason'             => $data['reason'],
+                'date' => $data['date'],
+                'start_time' => $data['start_time'],
+                'end_time' => $data['end_time'],
+                'planned_minutes' => $plannedMinutes,
+                'rate_multiplier' => $policy->rate_multiplier,
+                'status' => OvertimeRequest::STATUS_PENDING,
+                'reason' => $data['reason'],
             ]);
         });
     }
 
     public function cancel(OvertimeRequest $overtimeRequest): OvertimeRequest
     {
-        if (!$overtimeRequest->isPending()) {
+        if (! $overtimeRequest->isPending()) {
             throw new \DomainException('Only pending overtime requests can be cancelled.');
         }
 
@@ -79,13 +80,13 @@ class OvertimeService
 
     public function approve(OvertimeRequest $overtimeRequest, User $actor): OvertimeRequest
     {
-        if (!$overtimeRequest->isPending()) {
+        if (! $overtimeRequest->isPending()) {
             throw new \DomainException('Only pending overtime requests can be approved.');
         }
 
         return DB::transaction(function () use ($overtimeRequest, $actor) {
             $overtimeRequest->update([
-                'status'      => OvertimeRequest::STATUS_APPROVED,
+                'status' => OvertimeRequest::STATUS_APPROVED,
                 'approved_by' => $actor->id,
                 'approved_at' => now(),
             ]);
@@ -96,14 +97,14 @@ class OvertimeService
 
     public function reject(OvertimeRequest $overtimeRequest, User $actor, string $rejectionReason): OvertimeRequest
     {
-        if (!$overtimeRequest->isPending()) {
+        if (! $overtimeRequest->isPending()) {
             throw new \DomainException('Only pending overtime requests can be rejected.');
         }
 
         $overtimeRequest->update([
-            'status'           => OvertimeRequest::STATUS_REJECTED,
-            'approved_by'      => $actor->id,
-            'approved_at'      => now(),
+            'status' => OvertimeRequest::STATUS_REJECTED,
+            'approved_by' => $actor->id,
+            'approved_at' => now(),
             'rejection_reason' => $rejectionReason,
         ]);
 
@@ -127,7 +128,7 @@ class OvertimeService
         [$endH, $endM] = explode(':', $endTime);
 
         $startMinutes = (int) $startH * 60 + (int) $startM;
-        $endMinutes   = (int) $endH * 60 + (int) $endM;
+        $endMinutes = (int) $endH * 60 + (int) $endM;
 
         if ($endMinutes <= $startMinutes) {
             $endMinutes += 24 * 60;
