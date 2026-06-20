@@ -49,7 +49,7 @@ class PayslipReportingTest extends TestCase
 
         $response->assertOk()
             ->assertHeader('content-type', 'application/pdf')
-            ->assertHeader('cache-control', 'private, no-store, max-age=0');
+            ->assertHeader('cache-control', 'max-age=0, no-store, private');
         $this->assertStringStartsWith('%PDF-1.4', $response->getContent());
     }
 
