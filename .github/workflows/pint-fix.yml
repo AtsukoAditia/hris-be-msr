@@ -1,4 +1,4 @@
-name: Capture Backend Formatting
+name: Diagnose Backend Formatting
 
 on:
   pull_request:
@@ -8,7 +8,7 @@ permissions:
   contents: read
 
 jobs:
-  format:
+  diagnose:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -18,12 +18,27 @@ jobs:
           tools: composer:v2
           coverage: none
       - run: composer install --no-interaction --prefer-dist --no-progress
-      - name: Format files
+      - name: Diagnose and format files
+        shell: bash
         run: |
-          vendor/bin/pint app/Models/OvertimeRequest.php app/Policies/OvertimeRequestPolicy.php app/Services/OvertimeService.php database/migrations/2026_06_19_205742_create_overtime_requests_table.php
-          tar -czf backend-format.tar.gz app/Models/OvertimeRequest.php app/Policies/OvertimeRequestPolicy.php app/Services/OvertimeService.php database/migrations/2026_06_19_205742_create_overtime_requests_table.php
+          set +e
+          mkdir -p diagnostics
+          FILES=(
+            app/Models/OvertimeRequest.php
+            app/Policies/OvertimeRequestPolicy.php
+            app/Services/OvertimeService.php
+            database/migrations/2026_06_19_205742_create_overtime_requests_table.php
+          )
+          for file in "${FILES[@]}"; do
+            echo "===== $file =====" | tee -a diagnostics/syntax.log
+            php -l "$file" 2>&1 | tee -a diagnostics/syntax.log
+          done
+          vendor/bin/pint "${FILES[@]}" > diagnostics/pint.log 2>&1
+          tar -czf diagnostics/backend-format.tar.gz "${FILES[@]}"
+          exit 0
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: backend-format
-          path: backend-format.tar.gz
+          name: backend-format-diagnostics
+          path: diagnostics
           retention-days: 1
