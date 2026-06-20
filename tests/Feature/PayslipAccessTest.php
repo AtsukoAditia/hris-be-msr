@@ -47,6 +47,35 @@ class PayslipAccessTest extends TestCase
         $this->actingAs($user)->getJson("/api/v1/payslips/{$other->id}")->assertForbidden();
     }
 
+    public function test_admin_report_returns_summary_and_component_breakdown(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $manager = User::factory()->create(['role' => 'manager']);
+        [, $employee] = $this->employeeUser('report@example.com');
+        $paid = $this->payroll($employee, 'paid', 6);
+        $this->payroll($employee, 'finalized', 7);
+
+        $response = $this->actingAs($admin)
+            ->getJson('/api/v1/admin/payroll-reports?status=paid')
+            ->assertOk()
+            ->assertJsonPath('summary.total_records', 1)
+            ->assertJsonPath('summary.status_counts.paid', 1)
+            ->assertJsonPath('summary.by_currency.0.currency', 'IDR')
+            ->assertJsonPath('summary.by_currency.0.net_salary', '90.00');
+
+        $this->assertSame($paid->id, $response->json('data.0.id'));
+
+        $this->actingAs($admin)
+            ->getJson('/api/v1/admin/payroll-reports/breakdown?status=paid')
+            ->assertOk()
+            ->assertJsonFragment(['code' => 'BASIC', 'total_amount' => '100.00'])
+            ->assertJsonFragment(['code' => 'ABSENCE', 'total_amount' => '10.00']);
+
+        $this->actingAs($manager)
+            ->getJson('/api/v1/admin/payroll-reports')
+            ->assertForbidden();
+    }
+
     private function employeeUser(string $email): array
     {
         $user = User::factory()->create(['email' => $email, 'role' => 'employee']);
@@ -65,8 +94,7 @@ class PayslipAccessTest extends TestCase
             'cutoff_end_date' => sprintf('2026-%02d-25', $month),
             'status' => 'closed',
         ]);
-
-        return Payroll::create([
+        $payroll = Payroll::create([
             'payroll_period_id' => $period->id,
             'employee_id' => $employee->id,
             'status' => $status,
@@ -79,5 +107,27 @@ class PayslipAccessTest extends TestCase
             'finalized_at' => in_array($status, ['finalized', 'paid'], true) ? now() : null,
             'paid_at' => $status === 'paid' ? now() : null,
         ]);
+        $payroll->items()->createMany([
+            [
+                'code' => 'BASIC',
+                'name' => 'Basic Salary',
+                'type' => 'earning',
+                'source' => 'basic_salary',
+                'quantity' => 1,
+                'rate' => 100,
+                'amount' => 100,
+            ],
+            [
+                'code' => 'ABSENCE',
+                'name' => 'Absence Deduction',
+                'type' => 'deduction',
+                'source' => 'attendance',
+                'quantity' => 1,
+                'rate' => 10,
+                'amount' => 10,
+            ],
+        ]);
+
+        return $payroll;
     }
 }
