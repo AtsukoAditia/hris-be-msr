@@ -1,241 +1,133 @@
-# PROJECT STATUS — Smart Attendance HRIS
+# Project Status — Smart Attendance HRIS Backend
 
-> Phase 0 Audit — 2026-06-18
+> Last verified: 20 June 2026  
+> Repository: `AtsukoAditia/hris-be-msr`  
+> Main branch: `main`
 
----
+## Status Legend
 
-## 1. Foundation
+| Symbol | Meaning |
+|---|---|
+| ✅ | Completed and integrated |
+| 🟡 | Available but still needs enhancement |
+| 🔵 | Current development focus |
+| ⬜ | Planned |
 
-| Module | Backend | Frontend | Test | Status |
-|---|---|---|---|---|
-| Laravel REST API | ✅ | — | — | DONE |
-| API Versioning /api/v1 | ✅ | — | — | DONE |
-| Axios integration | — | ✅ | — | DONE |
-| Sanctum auth | ✅ | ✅ | ✅ | DONE |
-| PWA foundation | — | ✅ | — | DONE |
-| Role middleware | ✅ | ✅ | — | DONE |
-| MySQL | ✅ | — | — | DONE |
-| Activity log table | ✅ | — | — | DONE |
+## Module Status
 
-## 2. Authentication & RBAC
+| Module | Backend | Frontend Integration | Status |
+|---|:---:|:---:|---|
+| API v1, Sanctum authentication, RBAC | ✅ | ✅ | Completed |
+| Role-based dashboard | ✅ | ✅ | Completed |
+| Department, position, and branch master data | ✅ | ✅ | Completed |
+| Employee management and direct-manager relation | ✅ | ✅ | Completed |
+| Employee profile and emergency contacts | ✅ | ✅ | Completed |
+| Employee document management | ✅ | ✅ | Completed |
+| Employee self-service and profile change approval | ✅ | ✅ | Completed |
+| Shift management and basic schedule assignment | ✅ | ✅ | Completed |
+| Attendance with GPS, photo, office radius, and QR | ✅ | ✅ | Completed |
+| Attendance correction and manual correction | ✅ | ✅ | Completed |
+| Activity log viewer | ✅ | ✅ | Completed |
+| Leave request, approval, balance, and history | ✅ | ✅ | Completed |
+| Leave type, policy, holiday, and balance administration | ✅ | ✅ | Completed |
+| Attendance, leave, and employee reports with CSV export | ✅ | ✅ | Completed |
+| Overtime policy and request workflow | ✅ | ✅ | Completed |
+| Payroll foundation | ⬜ | ⬜ | Next milestone |
 
-| Module | Backend | Frontend | Test | Status |
-|---|---|---|---|---|
-| Login | ✅ | ✅ | — | DONE |
-| Logout | ✅ | ✅ | — | DONE |
-| Authenticated user | ✅ | ✅ | — | DONE |
-| Role middleware | ✅ | ✅ | — | DONE |
-| Admin role | ✅ | ✅ | — | DONE |
-| HR role | ✅ | ✅ | — | DONE |
-| Manager role | ✅ | ✅ | — | DONE |
-| Employee role | ✅ | ✅ | — | DONE |
+## Completed Backend Capabilities
 
-## 3. Dashboard
+### Identity and access
 
-| Module | Backend | Frontend | Test | Status |
-|---|---|---|---|---|
-| Dashboard by role | ✅ | ✅ | — | DONE |
-| Employee summary | ✅ | ✅ | — | DONE |
-| Attendance summary | ✅ | ✅ | — | DONE |
-| Leave summary | ✅ | ✅ | — | DONE |
+- Laravel Sanctum authentication.
+- Roles: `admin`, `hr`, `manager`, and `employee`.
+- Backend authorization remains the source of truth.
+- Employee ownership and manager direct-report scopes.
 
-## 4. Organization Master Data
+### Organization and employee data
 
-| Module | Backend | Frontend | Test | Status |
-|---|---|---|---|---|
-| Department CRUD | ✅ | ✅ | — | DONE |
-| Position CRUD | ✅ | ✅ | — | DONE |
-| Branch/Work location | ✅ | ✅ | — | DONE |
-| Direct manager relation | ✅ | ✅ | — | DONE |
+- Department, position, and branch CRUD.
+- Employee CRUD, employment data, bank data, and manager relation.
+- Employee profile, emergency contacts, and profile completion.
+- Private employee document storage and authenticated download.
+- Sensitive profile change request with Admin/HR review.
 
-## 5. Employee Management
+### Time management
 
-| Module | Backend | Frontend | Test | Status |
-|---|---|---|---|---|
-| Employee CRUD | ✅ | ✅ | — | DONE |
-| Employee number | ✅ | ✅ | — | DONE |
-| NIK | ✅ | ✅ | — | DONE |
-| Contact info | ✅ | ✅ | — | DONE |
-| DOB/Gender | ✅ | ✅ | — | DONE |
-| Address | ✅ | ✅ | — | DONE |
-| Join date | ✅ | ✅ | — | DONE |
-| Employment type | ✅ | ✅ | — | DONE |
-| Basic salary | ✅ | ✅ | — | DONE |
-| Bank info | ✅ | ✅ | — | DONE |
-| Dept/Position/Branch | ✅ | ✅ | — | DONE |
-| Direct manager | ✅ | ✅ | — | DONE |
-| Active/Inactive | ✅ | ✅ | — | DONE |
-| Soft delete | ✅ | ✅ | — | DONE |
-| Face enrollment image | ✅ | ✅ | — | DONE |
+- Shift CRUD, overnight shift, and late tolerance.
+- Shift schedule CRUD and bulk assignment endpoint.
+- Attendance check-in/check-out with GPS and compressed photo evidence.
+- Radius validation and QR attendance.
+- Attendance monitoring, export, and correction workflow.
 
-## 6. Employee Profile & ESS
+### Leave and overtime
 
-| Module | Backend | Frontend | Test | Status |
-|---|---|---|---|---|
-| Personal profile | ✅ | ✅ | — | DONE |
-| Emergency contacts | ✅ | ✅ | — | DONE |
-| Employee documents | ✅ | ✅ | — | DONE |
-| Profile completion | ✅ | ✅ | — | DONE |
-| Change password | ✅ | ✅ | — | DONE |
-| Profile change request | ✅ | ✅ | — | DONE |
-| Admin/HR review | ✅ | ✅ | — | DONE |
+- Leave request, cancellation, approval, rejection, and balance tracking.
+- Leave type, policy, holiday, and balance administration.
+- Overtime policy CRUD.
+- Overtime request, cancellation, approval, rejection, and actual-minute recording.
 
-## 7. Shift
+### Reporting and audit
 
-| Module | Backend | Frontend | Test | Status |
-|---|---|---|---|---|
-| Shift CRUD | ✅ | ✅ | — | DONE |
-| Regular shift | ✅ | ✅ | — | DONE |
-| Overnight shift | ✅ | ✅ | — | DONE |
-| Late tolerance | ✅ | ✅ | — | DONE |
-| Active/Inactive | ✅ | ✅ | — | DONE |
+- Attendance, leave, and employee reports.
+- CSV export.
+- Activity log with actor, endpoint, request/response preview, status, IP, and timestamp.
+- Sensitive fields and binary upload payloads are filtered from audit data.
 
-## 8. Shift Schedule
+## Security Baseline
 
-| Module | Backend | Frontend | Test | Status |
-|---|---|---|---|---|
-| Assign shift | ✅ | ✅ | — | DONE |
-| Employee schedule | ✅ | ✅ | — | DONE |
-| Date schedule | ✅ | ✅ | — | DONE |
-| Bulk assignment | ✅ | ✅ | — | DONE |
+- All business endpoints use `auth:sanctum`.
+- Role middleware protects administrative routes.
+- Manager access is limited to authorized direct reports.
+- Sensitive documents and attachments use private storage.
+- Critical status changes use database transactions and row locking where required.
+- Validation uses Form Requests.
+- Lifecycle-sensitive records use soft delete where applicable.
 
-## 9. Attendance
+## Testing and CI
 
-| Module | Backend | Frontend | Test | Status |
-|---|---|---|---|---|
-| Check-in | ✅ | ✅ | — | DONE |
-| Check-out | ✅ | ✅ | — | DONE |
-| GPS/Photo | ✅ | ✅ | — | DONE |
-| QR attendance | ✅ | ✅ | — | DONE |
-| Attendance history | ✅ | ✅ | — | DONE |
-| Attendance monitoring | ✅ | ✅ | — | DONE |
+The backend workflow is expected to run:
 
-## 10. Leave
+1. Composer validation and dependency installation.
+2. MySQL service and migrations.
+3. Laravel Pint checks.
+4. Full Laravel/PHPUnit test suite.
+5. Diagnostic artifact upload when a failure occurs.
 
-| Module | Backend | Frontend | Test | Status |
-|---|---|---|---|---|
-| Leave request | ✅ | ✅ | — | DONE |
-| Leave balance | ✅ | ✅ | — | DONE |
-| Leave history | ✅ | ✅ | — | DONE |
-| Leave approval | ✅ | ✅ | — | DONE |
-| Leave rejection | ✅ | ✅ | — | DONE |
-| Cancel pending | ✅ | ✅ | — | DONE |
+Local verification:
 
-## 11. Attendance Correction — SPRINT 1 TARGET
+```bash
+composer test
+vendor/bin/pint --test
+```
 
-| Sub-module | Backend | Frontend | Test | Status |
-|---|---|---|---|---|
-| Migration | ✅ | — | — | DONE |
-| Model + relations | ✅ | — | — | DONE |
-| Factory | ✅ | — | ✅ | DONE |
-| Form Requests | ✅ | — | — | DONE |
-| Service (core logic) | ⚠️ PARTIAL | — | — | **BROKEN** |
-| Controller | ⚠️ PARTIAL | — | — | **BROKEN** |
-| API Resource | ❌ | — | — | MISSING |
-| Routes | ✅ | — | — | DONE |
-| Employee list | ⚠️ | ✅ | — | **BROKEN (service)** |
-| Employee submit | ⚠️ | ✅ | — | **BROKEN (method name)** |
-| Employee cancel | ✅ | ✅ | — | PARTIAL |
-| Employee detail | ⚠️ | ✅ | — | **BROKEN (no transform)** |
-| Reviewer list | ⚠️ | ✅ | — | **BROKEN (service)** |
-| Reviewer approve | ✅ | ✅ | — | DONE |
-| Reviewer reject | ✅ | ✅ | — | DONE |
-| Manual correction | ⚠️ | ❌ | — | **BROKEN + NO FE** |
-| Attachment download | ✅ | ✅ | — | DONE |
-| Reviewer filters (emp/dept) | ❌ | ❌ | — | MISSING |
-| Reviewer scope for manager | ✅ | — | — | DONE |
-| Backend tests | ✅ | — | ⚠️ | **MAY FAIL** |
-| Frontend tests | — | — | ❌ | MISSING |
-| Loading/error/empty | — | ✅ | — | DONE |
-| Mobile responsive | — | ✅ | — | DONE |
-| Audit trail in detail | — | ✅ | — | DONE |
+## Current Focus
 
-### Critical Bugs Found
+### Basic Payroll Foundation
 
-1. **`AttendanceCorrectionService::list()` — MISSING METHOD**
-   - Controller `index()` and `my()` both call `$this->correctionService->list($filters)`
-   - This method does NOT exist in the service file
-   - **Impact**: All list endpoints return 500 error
+Planned initial scope:
 
-2. **`AttendanceCorrectionService::submit()` — METHOD NAME MISMATCH**
-   - Controller `store()` calls `$this->correctionService->submit($employee->id, ...)`
-   - Service defines method as `create(Employee $employee, User $requester, array $data, ...)`
-   - **Impact**: Employee submit returns 500 error
+- Salary component master.
+- Earning and deduction component types.
+- Employee salary profile.
+- Payroll periods and cutoff dates.
+- Draft payroll calculation.
+- Attendance, approved leave, and approved overtime input.
+- Review, finalize, paid, and cancel lifecycle.
+- Payslip and payroll report.
+- Audit trail and automated tests.
 
-3. **`AttendanceCorrectionService::manualCorrection()` — SIGNATURE MISMATCH**
-   - Controller passes `$creator->id` (int) as first argument
-   - Service expects `User $actor` as first argument
-   - **Impact**: Manual correction returns 500 error
+## Known Gaps
 
-4. **Service `create()` references `attendance_date` but migration column is `correction_date`**
-   - `$date = Carbon::parse($data['attendance_date'])->toDateString()` — field name mismatch
-   - **Impact**: Submit may fail with undefined index
+- Payroll has not been implemented.
+- Shift scheduling is functional but does not yet provide a full weekly/monthly calendar experience.
+- Export is currently centered on CSV; Excel and PDF remain planned.
+- Notification center and reusable multi-level approval engine remain planned.
+- Production deployment and final operational documentation remain incomplete.
 
-5. **Attendance column name inconsistency**
-   - Service references `attendance_date`, `check_in_time`, `check_out_time`
-   - Migration for `attendances` table uses `date`, `check_in`, `check_out`
-   - **Impact**: Approve may fail to find/update attendance record
+## Source of Truth
 
-6. **Controller `show()` returns raw model instead of transformed data**
-   - Service has `transform()` method but controller doesn't use it
-   - Missing `can_cancel`, `can_review`, computed fields
-   - **Impact**: Frontend detail view may not function correctly
-
-### Frontend Issues
-
-1. **Form requires manual `attendance_id` input** — poor UX, should auto-lookup
-2. **Correction date field** — user must manually enter, should derive from selected attendance
-3. **No employee/department filter for reviewer** — reviewer can't filter by employee or department
-4. **No manual correction UI** — the manual correction form is completely missing from frontend
-
-## 12. Reports
-
-| Module | Backend | Frontend | Test | Status |
-|---|---|---|---|---|
-| Attendance report | ✅ | ✅ | — | DONE |
-| Leave report | ✅ | ✅ | — | DONE |
-| Employee report | ✅ | ✅ | — | DONE |
-| CSV export | ✅ | ✅ | — | DONE |
-
-## 13. Audit Foundation
-
-| Module | Backend | Frontend | Test | Status |
-|---|---|---|---|---|
-| Activity log model/table | ✅ | — | — | DONE |
-| Global audit middleware | ✅ | — | — | DONE |
-| Request/response preview | ✅ | — | — | DONE |
-| Sensitive data filtering | ✅ | — | — | DONE |
-
----
-
-## Known Issues
-
-### Backend
-- Attendance Correction service has 3 method mismatches that prevent core functionality from working
-- Column name inconsistencies between service code and actual migrations
-- Missing `list()` method in `AttendanceCorrectionService`
-- No API Resource class for consistent response transformation
-
-### Frontend
-- Correction form has poor UX (requires raw attendance_id)
-- Missing manual correction form for Admin/HR
-- Missing employee/department filters for reviewer
-- No frontend tests for correction module
-
-### Pre-existing Test Status
-- Backend: 14 AttendanceCorrection tests exist, likely failing due to service bugs
-- Frontend: No correction-specific tests
-
----
-
-## Security Notes
-
-- Sanctum authentication ✅
-- Role middleware ✅  
-- Manager scope restriction ✅ (in controller)
-- Attachment stored on private disk ✅
-- Row locking on critical operations ✅
-- DB transactions ✅
-- Audit logging ✅
-- No mass assignment vulnerabilities detected
-- No secrets in repository ✅
+- Endpoint definitions: `routes/api_v1.php`
+- Current repository summary: `README.md`
+- Module inventory: `docs/MODULES.md`
+- Implementation sequence: `docs/ROADMAP.md`
+- Endpoint integration map: `docs/API_MATRIX.md`
