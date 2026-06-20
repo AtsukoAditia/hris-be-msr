@@ -11,9 +11,17 @@ class PayrollPeriod extends Model
     use HasFactory;
 
     public const STATUS_OPEN = 'open';
+
     public const STATUS_CLOSED = 'closed';
 
-    protected $fillable = ['name', 'start_date', 'end_date', 'cutoff_start_date', 'cutoff_end_date', 'status'];
+    protected $fillable = [
+        'name',
+        'start_date',
+        'end_date',
+        'cutoff_start_date',
+        'cutoff_end_date',
+        'status',
+    ];
 
     protected $casts = [
         'start_date' => 'date',
