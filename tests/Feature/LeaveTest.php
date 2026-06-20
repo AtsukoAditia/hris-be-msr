@@ -61,10 +61,14 @@ class LeaveTest extends TestCase
     {
         Sanctum::actingAs($this->employeeUser);
 
+        // Use deterministic weekday dates: find next Monday, then Mon-Wed = 3 working days
+        $startDate = now()->next('Monday')->startOfDay();
+        $endDate = $startDate->copy()->addDays(2); // Wednesday
+
         $response = $this->postJson('/api/v1/leaves', [
             'leave_type_id' => $this->leaveType->id,
-            'start_date' => now()->addDays(7)->format('Y-m-d'),
-            'end_date' => now()->addDays(9)->format('Y-m-d'),
+            'start_date' => $startDate->format('Y-m-d'),
+            'end_date' => $endDate->format('Y-m-d'),
             'reason' => 'Keperluan keluarga',
         ]);
 
