@@ -22,6 +22,7 @@ use App\Http\Controllers\API\LeaveDetailController;
 use App\Http\Controllers\API\LeaveTypeController;
 use App\Http\Controllers\API\MyDocumentController;
 use App\Http\Controllers\API\OvertimeController;
+use App\Http\Controllers\API\OvertimePolicyController;
 use App\Http\Controllers\API\PositionController;
 use App\Http\Controllers\API\ProfileChangeRequestController;
 use App\Http\Controllers\API\ProfileChangeReviewController;
@@ -70,6 +71,7 @@ Route::prefix('v1')->group(function () {
 
         Route::get('/leave-types', [LeaveTypeController::class, 'index']);
         Route::get('/leave-types/{leaveType}', [LeaveTypeController::class, 'show']);
+        Route::get('/overtime-policies', [OvertimePolicyController::class, 'index']);
 
         Route::get('/leaves/my', [LeaveController::class, 'my']);
         Route::get('/leaves/balance', [LeaveController::class, 'balance']);
@@ -191,7 +193,7 @@ Route::prefix('v1')->group(function () {
         // Overtime Request Endpoints
         // ========================
         // All authenticated users can list/view/submit
-        Route::get('/overtime-requests/my', [OvertimeController::class, 'index']);
+        Route::get('/overtime-requests/my', [OvertimeController::class, 'my']);
         Route::post('/overtime-requests', [OvertimeController::class, 'store']);
         Route::post('/overtime-requests/{overtimeRequest}/cancel', [OvertimeController::class, 'cancel']);
         Route::get('/overtime-requests/{overtimeRequest}', [OvertimeController::class, 'show']);

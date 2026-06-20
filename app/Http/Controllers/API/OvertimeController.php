@@ -40,6 +40,21 @@ class OvertimeController extends Controller
     /**
      * @throws AuthorizationException
      */
+    public function my(IndexOvertimeRequest $request): AnonymousResourceCollection
+    {
+        $user = $request->user();
+        abort_unless($this->policy->viewAny($user), 403);
+
+        $filters = $request->validated();
+        $filters['employee_id'] = $user->employee?->id ?? 0;
+        $paginator = $this->overtimeService->list($filters, $user);
+
+        return OvertimeRequestResource::collection($paginator);
+    }
+
+    /**
+     * @throws AuthorizationException
+     */
     public function store(StoreOvertimeRequest $request): JsonResponse
     {
         abort_unless($this->policy->create($request->user()), 403);
