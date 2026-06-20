@@ -52,7 +52,8 @@ class PayslipController extends Controller
             'Employee Payslip',
         );
 
-        ActivityLog::log(ActivityAction::EXPORT, Payroll::class, $payroll->id, [
+        ActivityLog::log(ActivityAction::MANUAL_UPDATE, Payroll::class, $payroll->id, [
+            'event' => 'export',
             'format' => 'pdf',
             'scope' => 'employee_payslip',
         ]);
