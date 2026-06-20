@@ -15,7 +15,7 @@ class OvertimePolicyResource extends JsonResource
             'description' => $this->description,
             'daily_max_minutes' => $this->daily_max_minutes,
             'weekly_max_minutes' => $this->weekly_max_minutes,
-            'rate_multiplier' => $this->rate_multiplier,
+            'rate_multiplier' => (string) (float) $this->rate_multiplier,
             'is_active' => $this->is_active,
             'created_at' => $this->created_at?->toDateTimeString(),
         ];
