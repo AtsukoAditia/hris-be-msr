@@ -5,6 +5,7 @@ use App\Http\Controllers\API\Admin\HolidayAdminController;
 use App\Http\Controllers\API\Admin\LeaveBalanceAdminController;
 use App\Http\Controllers\API\Admin\LeavePolicyAdminController;
 use App\Http\Controllers\API\Admin\LeaveTypeAdminController;
+use App\Http\Controllers\API\Admin\OvertimePolicyAdminController;
 use App\Http\Controllers\API\AttendanceActionController;
 use App\Http\Controllers\API\AttendanceController;
 use App\Http\Controllers\API\AttendanceCorrectionController;
@@ -19,6 +20,7 @@ use App\Http\Controllers\API\EmployeeController;
 use App\Http\Controllers\API\LeaveController;
 use App\Http\Controllers\API\LeaveDetailController;
 use App\Http\Controllers\API\LeaveTypeController;
+use App\Http\Controllers\API\OvertimeController;
 use App\Http\Controllers\API\MyDocumentController;
 use App\Http\Controllers\API\PositionController;
 use App\Http\Controllers\API\ProfileChangeRequestController;
@@ -178,6 +180,30 @@ Route::prefix('v1')->group(function () {
             Route::apiResource('/admin/holidays', HolidayAdminController::class);
             Route::apiResource('/admin/leave-balances', LeaveBalanceAdminController::class)->only(['index', 'store', 'update', 'destroy']);
             Route::post('/admin/leave-balances/adjust', [LeaveBalanceAdminController::class, 'adjust']);
+
+            // ========================
+            // Overtime Policy Admin CRUD
+            // ========================
+            Route::apiResource('/admin/overtime-policies', OvertimePolicyAdminController::class);
+        });
+
+        // ========================
+        // Overtime Request Endpoints
+        // ========================
+        // All authenticated users can list/view/submit
+        Route::get('/overtime-requests/my', [OvertimeController::class, 'index']);
+        Route::post('/overtime-requests', [OvertimeController::class, 'store']);
+        Route::post('/overtime-requests/{overtimeRequest}/cancel', [OvertimeController::class, 'cancel']);
+        Route::get('/overtime-requests/{overtimeRequest}', [OvertimeController::class, 'show']);
+
+        Route::middleware('role:admin,hr,manager')->group(function () {
+            Route::get('/overtime-requests', [OvertimeController::class, 'index']);
+            Route::post('/overtime-requests/{overtimeRequest}/approve', [OvertimeController::class, 'approve']);
+            Route::post('/overtime-requests/{overtimeRequest}/reject', [OvertimeController::class, 'reject']);
+        });
+
+        Route::middleware('role:admin,hr')->group(function () {
+            Route::post('/overtime-requests/{overtimeRequest}/record-actual', [OvertimeController::class, 'recordActual']);
         });
     });
 });
