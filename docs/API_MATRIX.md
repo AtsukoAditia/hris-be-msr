@@ -1,189 +1,198 @@
-# API MATRIX — Smart Attendance HRIS
+# API Matrix — Smart Attendance HRIS Backend
 
-> Phase 0 Audit — 2026-06-18
+> Last verified: 20 June 2026  
+> Base path: `/api/v1`  
+> Authoritative route file: `routes/api_v1.php`
 
-All endpoints are prefixed with `/api/v1`.
+## Access Legend
 
----
+| Access | Meaning |
+|---|---|
+| Public | No authentication required |
+| Auth | Any authenticated role |
+| Admin/HR | Administrative HR access |
+| Admin/HR/Manager | Review or reporting access with manager scope enforced by backend |
 
-## Authentication
+## Authentication and Dashboard
 
-| Method | Endpoint | Role | Controller | Frontend Service | Frontend Page | Test |
-|---|---|---|---|---|---|---|
-| POST | `/login` | Public | AuthController | authService | LoginPage | ✅ |
-| POST | `/logout` | Auth | AuthController | authService | — | — |
-| GET | `/user` | Auth | AuthController | authService | — | — |
+| Method | Endpoint | Access | Purpose |
+|---|---|---|---|
+| POST | `/auth/login` | Public | Login and issue Sanctum token |
+| GET | `/auth/me` | Auth | Current authenticated user |
+| POST | `/auth/logout` | Auth | Revoke active token |
+| POST | `/auth/change-password` | Auth | Change account password |
+| GET | `/dashboard/summary` | Auth | Role-based dashboard summary |
 
----
+## Organization Master Data
 
-## Dashboard
+| Method | Endpoint | Access | Purpose |
+|---|---|---|---|
+| GET | `/departments` | Admin/HR/Manager | Department list |
+| GET | `/departments/{department}` | Admin/HR/Manager | Department detail |
+| POST | `/departments` | Admin/HR | Create department |
+| PUT/PATCH | `/departments/{department}` | Admin/HR | Update department |
+| DELETE | `/departments/{department}` | Admin/HR | Delete or deactivate department according to business rules |
+| GET | `/positions` | Admin/HR/Manager | Position list |
+| GET | `/positions/{position}` | Admin/HR/Manager | Position detail |
+| POST | `/positions` | Admin/HR | Create position |
+| PUT/PATCH | `/positions/{position}` | Admin/HR | Update position |
+| DELETE | `/positions/{position}` | Admin/HR | Delete or deactivate position |
+| GET | `/branches` | Admin/HR/Manager | Branch list |
+| GET | `/branches/{branch}` | Admin/HR/Manager | Branch detail |
+| POST | `/branches` | Admin/HR | Create branch |
+| PUT/PATCH | `/branches/{branch}` | Admin/HR | Update branch |
+| DELETE | `/branches/{branch}` | Admin/HR | Delete or deactivate branch |
 
-| Method | Endpoint | Role | Controller | Frontend Service | Frontend Page | Test |
-|---|---|---|---|---|---|---|
-| GET | `/dashboard/summary` | All | DashboardController | dashboardService | DashboardPage | — |
-| GET | `/dashboard/employee-summary` | Admin/HR | DashboardController | dashboardService | DashboardPage | — |
-| GET | `/dashboard/attendance-summary` | All | DashboardController | dashboardService | DashboardPage | — |
-| GET | `/dashboard/leave-summary` | All | DashboardController | dashboardService | DashboardPage | — |
+## Employee Management
 
----
+| Method | Endpoint | Access | Purpose |
+|---|---|---|---|
+| GET | `/employees` | Admin/HR | Employee list and filters |
+| POST | `/employees` | Admin/HR | Create employee |
+| GET | `/employees/{employee}` | Admin/HR | Employee detail |
+| PUT/PATCH | `/employees/{employee}` | Admin/HR | Update employee |
+| DELETE | `/employees/{employee}` | Admin/HR | Delete or deactivate employee |
+| GET | `/employees/manager-options` | Admin/HR | Direct-manager options |
+| POST | `/employees/{employee}/face-enrollment` | Admin/HR | Store face enrollment image |
 
-## Employees
+## Profile and Emergency Contacts
 
-| Method | Endpoint | Role | Controller | Frontend Service | Frontend Page | Test |
-|---|---|---|---|---|---|---|
-| GET | `/employees` | Admin/HR | EmployeeController | employeeService | EmployeeListPage | — |
-| POST | `/employees` | Admin/HR | EmployeeController | employeeService | EmployeeFormPage | — |
-| GET | `/employees/{id}` | Admin/HR | EmployeeController | employeeService | EmployeeDetailPage | — |
-| PUT | `/employees/{id}` | Admin/HR | EmployeeController | employeeService | EmployeeFormPage | — |
-| DELETE | `/employees/{id}` | Admin | EmployeeController | employeeService | — | — |
-| GET | `/employees/{id}/documents` | Admin/HR | EmployeeController | employeeService | EmployeeDetailPage | — |
-| POST | `/employees/{id}/documents` | Admin/HR | EmployeeController | employeeService | EmployeeDetailPage | — |
+| Method | Endpoint | Access | Purpose |
+|---|---|---|---|
+| GET | `/profile/me` | Auth | Current employee profile |
+| PUT/PATCH | `/profile/me` | Auth | Update self-service fields |
+| GET | `/profile/me/emergency-contacts` | Auth | Own emergency contacts |
+| POST | `/profile/me/emergency-contacts` | Auth | Add emergency contact |
+| PUT/PATCH | `/profile/me/emergency-contacts/{emergencyContact}` | Auth | Update own emergency contact |
+| DELETE | `/profile/me/emergency-contacts/{emergencyContact}` | Auth | Remove own emergency contact |
+| GET | `/employees/{employee}/profile` | Admin/HR | Managed employee profile |
+| PUT/PATCH | `/employees/{employee}/profile` | Admin/HR | Update managed employee profile |
+| GET/POST | `/employees/{employee}/emergency-contacts` | Admin/HR | List or add employee contact |
+| PUT/PATCH/DELETE | `/employees/{employee}/emergency-contacts/{emergencyContact}` | Admin/HR | Maintain employee contact |
 
----
+## Profile Change Requests
 
-## Departments
+| Method | Endpoint | Access | Purpose |
+|---|---|---|---|
+| GET | `/profile/change-requests` | Auth | Own request history; reviewer route is role-scoped |
+| POST | `/profile/change-requests` | Auth | Submit sensitive data change |
+| GET | `/profile/change-requests/{profileChangeRequest}` | Auth | Request detail with ownership or reviewer authorization |
+| DELETE | `/profile/change-requests/{profileChangeRequest}` | Auth | Cancel pending own request |
+| POST | `/profile-change-requests/{profileChangeRequest}/approve` | Admin/HR | Approve change request |
+| POST | `/profile-change-requests/{profileChangeRequest}/reject` | Admin/HR | Reject change request |
 
-| Method | Endpoint | Role | Controller | Frontend Service | Frontend Page | Test |
-|---|---|---|---|---|---|---|
-| GET | `/departments` | Admin/HR | DepartmentController | departmentService | DepartmentPage | — |
-| POST | `/departments` | Admin | DepartmentController | departmentService | DepartmentPage | — |
-| PUT | `/departments/{id}` | Admin | DepartmentController | departmentService | DepartmentPage | — |
-| DELETE | `/departments/{id}` | Admin | DepartmentController | departmentService | DepartmentPage | — |
+## Employee Documents
 
----
+| Method | Endpoint | Access | Purpose |
+|---|---|---|---|
+| GET | `/document-categories` | Auth | Document category options |
+| GET | `/documents/my` | Auth | Own document list |
+| GET | `/documents/my/summary` | Auth | Own document summary |
+| GET | `/documents/my/{employeeDocument}` | Auth | Own document metadata |
+| GET | `/documents/my/{employeeDocument}/download` | Auth | Authenticated own-document download |
+| GET | `/employee-documents` | Admin/HR | Global employee document list |
+| GET | `/employee-documents/summary` | Admin/HR | Document summary |
+| GET/POST | `/employees/{employee}/documents` | Admin/HR | List or upload employee document |
+| GET/PUT/PATCH/DELETE | `/employees/{employee}/documents/{employeeDocument}` | Admin/HR | View, update, or delete document metadata |
+| POST | `/employees/{employee}/documents/{employeeDocument}/replace` | Admin/HR | Replace file and increment version |
+| GET | `/employees/{employee}/documents/{employeeDocument}/download` | Admin/HR | Authenticated document download |
 
-## Positions
+## Shift and Schedule
 
-| Method | Endpoint | Role | Controller | Frontend Service | Frontend Page | Test |
-|---|---|---|---|---|---|---|
-| GET | `/positions` | Admin/HR | PositionController | positionService | PositionPage | — |
-| POST | `/positions` | Admin | PositionController | positionService | PositionPage | — |
-| PUT | `/positions/{id}` | Admin | PositionController | positionService | PositionPage | — |
-| DELETE | `/positions/{id}` | Admin | PositionController | positionService | PositionPage | — |
-
----
-
-## Branches
-
-| Method | Endpoint | Role | Controller | Frontend Service | Frontend Page | Test |
-|---|---|---|---|---|---|---|
-| GET | `/branches` | Admin/HR | BranchController | branchService | BranchPage | — |
-| POST | `/branches` | Admin | BranchController | branchService | BranchPage | — |
-| PUT | `/branches/{id}` | Admin | BranchController | branchService | BranchPage | — |
-| DELETE | `/branches/{id}` | Admin | BranchController | branchService | BranchPage | — |
-
----
-
-## Shifts
-
-| Method | Endpoint | Role | Controller | Frontend Service | Frontend Page | Test |
-|---|---|---|---|---|---|---|
-| GET | `/shifts` | Admin/HR | ShiftController | shiftService | ShiftPage | — |
-| POST | `/shifts` | Admin/HR | ShiftController | shiftService | ShiftFormModal | — |
-| PUT | `/shifts/{id}` | Admin/HR | ShiftController | shiftService | ShiftFormModal | — |
-| DELETE | `/shifts/{id}` | Admin | ShiftController | shiftService | — | — |
-
----
-
-## Shift Schedules
-
-| Method | Endpoint | Role | Controller | Frontend Service | Frontend Page | Test |
-|---|---|---|---|---|---|---|
-| GET | `/shift-schedules` | All | ShiftScheduleController | shiftScheduleService | ShiftSchedulePage | — |
-| POST | `/shift-schedules` | Admin/HR | ShiftScheduleController | shiftScheduleService | ShiftSchedulePage | — |
-| POST | `/shift-schedules/bulk` | Admin/HR | ShiftScheduleController | shiftScheduleService | ShiftSchedulePage | — |
-
----
+| Method | Endpoint | Access | Purpose |
+|---|---|---|---|
+| API Resource | `/shifts` | Admin/HR | Shift CRUD |
+| API Resource | `/shift-schedules` | Admin/HR | Shift schedule CRUD |
+| GET | `/shift-schedules/employee/{employeeId}` | Admin/HR | Schedule by employee |
+| GET | `/shift-schedules/date/{date}` | Admin/HR | Schedule by date |
+| POST | `/shift-schedules/bulk` | Admin/HR | Bulk shift assignment |
 
 ## Attendance
 
-| Method | Endpoint | Role | Controller | Frontend Service | Frontend Page | Test |
-|---|---|---|---|---|---|---|
-| POST | `/attendance/check-in` | Employee | AttendanceController | attendanceService | AttendancePage | — |
-| POST | `/attendance/check-out` | Employee | AttendanceController | attendanceService | AttendancePage | — |
-| POST | `/attendance/qr-check-in` | Employee | AttendanceController | attendanceService | AttendancePage | — |
-| GET | `/attendance/history` | All | AttendanceController | attendanceService | AttendancePage | — |
-| GET | `/attendance/monitoring` | Admin/HR | AttendanceController | attendanceService | AttendanceMonitoringPage | — |
+| Method | Endpoint | Access | Purpose |
+|---|---|---|---|
+| GET | `/attendance/my` | Auth | Own attendance history |
+| GET | `/attendance/today` | Auth | Own attendance today |
+| POST | `/attendance/check-in` | Auth | GPS and photo check-in |
+| POST | `/attendance/check-out` | Auth | GPS and photo check-out |
+| POST | `/attendance/check-in/qr` | Auth | QR check-in |
+| POST | `/attendance/check-out/qr` | Auth | QR check-out |
+| GET | `/attendance` | Admin/HR/Manager | Attendance monitoring with role scope |
+| GET | `/attendance/export` | Admin/HR/Manager | Attendance export |
+| GET | `/attendance/employee/{employeeId}` | Admin/HR/Manager | Employee attendance with scope enforcement |
+| GET | `/attendance/{attendance}` | Admin/HR/Manager | Attendance detail |
+| GET | `/attendance/settings` | Admin/HR/Manager | Attendance and office-radius settings |
+| PUT | `/attendance/settings` | Admin/HR | Update attendance settings |
+| POST | `/attendance/qr/generate` | Admin/HR | Generate expiring QR payload |
 
----
+## Attendance Correction
 
-## Attendance Correction — ⚠️ BROKEN (Sprint 1 target)
+| Method | Endpoint | Access | Purpose |
+|---|---|---|---|
+| GET | `/attendance-corrections/my` | Auth | Own correction requests |
+| POST | `/attendance-corrections` | Auth | Submit correction request |
+| GET | `/attendance-corrections/{correction}` | Auth | Authorized correction detail |
+| POST | `/attendance-corrections/{correction}/cancel` | Auth | Cancel pending own request |
+| GET | `/attendance-corrections/{correction}/attachment` | Auth | Authenticated attachment download |
+| GET | `/attendance-corrections` | Admin/HR/Manager | Reviewer list with scope |
+| POST | `/attendance-corrections/{correction}/approve` | Admin/HR/Manager | Approve correction |
+| POST | `/attendance-corrections/{correction}/reject` | Admin/HR/Manager | Reject correction |
+| POST | `/attendance-corrections/manual` | Admin/HR | Manual attendance correction |
 
-| Method | Endpoint | Role | Controller | Frontend Service | Frontend Page | Test | Status |
-|---|---|---|---|---|---|---|---|
-| GET | `/attendance/correction-requests` | Admin/HR/Mgr | AttendanceCorrectionController | correctionService | CorrectionPage(reviewer) | ⚠️ | **BROKEN** — service `list()` missing |
-| GET | `/attendance/my-correction-requests` | Employee | AttendanceCorrectionController | correctionService | CorrectionPage(employee) | ⚠️ | **BROKEN** — service `list()` missing |
-| POST | `/attendance/correction-requests` | Employee | AttendanceCorrectionController | correctionService | CorrectionFormPage | ⚠️ | **BROKEN** — method name mismatch |
-| GET | `/attendance/correction-requests/{id}` | Auth | AttendanceCorrectionController | correctionService | CorrectionDetailPage | ⚠️ | **PARTIAL** — no transform |
-| POST | `/attendance/correction-requests/{id}/approve` | Admin/HR/Mgr | AttendanceCorrectionController | correctionService | CorrectionDetailPage | ⚠️ | DONE |
-| POST | `/attendance/correction-requests/{id}/reject` | Admin/HR/Mgr | AttendanceCorrectionController | correctionService | CorrectionDetailPage | ⚠️ | DONE |
-| POST | `/attendance/correction-requests/{id}/cancel` | Employee | AttendanceCorrectionController | correctionService | CorrectionDetailPage | ⚠️ | DONE |
-| POST | `/attendance/manual-correction` | Admin/HR | AttendanceCorrectionController | ❌ MISSING | ❌ MISSING | ⚠️ | **BROKEN** + no FE |
-| GET | `/attendance/correction-requests/{id}/attachment` | Auth | AttendanceCorrectionController | correctionService | CorrectionDetailPage | — | DONE |
+## Leave
 
----
+| Method | Endpoint | Access | Purpose |
+|---|---|---|---|
+| GET | `/leave-types` | Auth | Active leave type options |
+| GET | `/leave-types/{leaveType}` | Auth | Leave type detail |
+| GET | `/leaves/my` | Auth | Own leave history |
+| GET | `/leaves/balance` | Auth | Own leave balances |
+| POST | `/leaves` | Auth | Submit leave request |
+| GET | `/leaves/{leave}` | Auth | Authorized leave detail |
+| DELETE | `/leaves/{leave}` | Auth | Cancel pending own leave |
+| GET | `/leaves` | Admin/HR/Manager | Reviewer leave list |
+| POST | `/leaves/{leave}/approve` | Admin/HR/Manager | Approve leave |
+| POST | `/leaves/{leave}/reject` | Admin/HR/Manager | Reject leave |
 
-## Leaves
+## Leave Administration
 
-| Method | Endpoint | Role | Controller | Frontend Service | Frontend Page | Test |
-|---|---|---|---|---|---|---|
-| POST | `/leaves/request` | Employee | LeaveController | leaveService | LeaveFormPage | — |
-| GET | `/leaves/history` | All | LeaveController | leaveService | LeaveHistoryPage | — |
-| GET | `/leaves/pending` | Admin/HR/Mgr | LeaveController | leaveService | LeaveApprovalPage | — |
-| POST | `/leaves/{id}/approve` | Admin/HR/Mgr | LeaveController | leaveService | LeaveApprovalPage | — |
-| POST | `/leaves/{id}/reject` | Admin/HR/Mgr | LeaveController | leaveService | LeaveApprovalPage | — |
-| POST | `/leaves/{id}/cancel` | Employee | LeaveController | leaveService | LeaveHistoryPage | — |
-| GET | `/leaves/balance` | Employee | LeaveController | leaveService | LeaveBalancePage | — |
+| Method | Endpoint | Access | Purpose |
+|---|---|---|---|
+| API Resource | `/admin/leave-types` | Admin/HR | Leave type CRUD |
+| API Resource | `/admin/leave-policies` | Admin/HR | Leave policy CRUD |
+| API Resource | `/admin/holidays` | Admin/HR | Holiday CRUD |
+| GET/POST/PUT/PATCH/DELETE | `/admin/leave-balances` | Admin/HR | Leave balance administration |
+| POST | `/admin/leave-balances/adjust` | Admin/HR | Audited balance adjustment |
 
----
+## Overtime
 
-## Profile & ESS
+| Method | Endpoint | Access | Purpose |
+|---|---|---|---|
+| GET | `/overtime-policies` | Auth | Active overtime policy options |
+| GET | `/overtime-requests/my` | Auth | Own overtime requests |
+| POST | `/overtime-requests` | Auth | Submit overtime request |
+| GET | `/overtime-requests/{overtimeRequest}` | Auth | Authorized request detail |
+| POST | `/overtime-requests/{overtimeRequest}/cancel` | Auth | Cancel pending own request |
+| GET | `/overtime-requests` | Admin/HR/Manager | Reviewer list with manager scope |
+| POST | `/overtime-requests/{overtimeRequest}/approve` | Admin/HR/Manager | Approve overtime |
+| POST | `/overtime-requests/{overtimeRequest}/reject` | Admin/HR/Manager | Reject overtime |
+| POST | `/overtime-requests/{overtimeRequest}/record-actual` | Admin/HR | Record actual approved minutes |
+| API Resource | `/admin/overtime-policies` | Admin/HR | Overtime policy CRUD |
 
-| Method | Endpoint | Role | Controller | Frontend Service | Frontend Page | Test |
-|---|---|---|---|---|---|---|
-| GET | `/profile` | Auth | ProfileController | profileService | ProfilePage | — |
-| PUT | `/profile` | Auth | ProfileController | profileService | ProfilePage | — |
-| PUT | `/profile/password` | Auth | ProfileController | profileService | ProfilePage | — |
-| GET | `/profile/emergency-contacts` | Auth | ProfileController | profileService | ProfilePage | — |
-| POST | `/profile/emergency-contacts` | Auth | ProfileController | profileService | ProfilePage | — |
-| POST | `/profile/change-request` | Employee | ProfileChangeController | profileChangeService | ProfileChangePage | — |
-| GET | `/profile/change-requests` | Admin/HR | ProfileChangeController | profileChangeService | ProfileChangeReviewPage | — |
-| POST | `/profile/change-requests/{id}/approve` | Admin/HR | ProfileChangeController | profileChangeService | ProfileChangeReviewPage | — |
-| POST | `/profile/change-requests/{id}/reject` | Admin/HR | ProfileChangeController | profileChangeService | ProfileChangeReviewPage | — |
+## Reporting and Audit
 
----
+| Method | Endpoint | Access | Purpose |
+|---|---|---|---|
+| GET | `/reports/attendance` | Admin/HR/Manager | Attendance report |
+| GET | `/reports/leave` | Admin/HR/Manager | Leave report |
+| GET | `/reports/employee` | Admin/HR/Manager | Employee report |
+| GET | `/reports/export` | Admin/HR/Manager | CSV export selected by report type |
+| GET | `/activity-logs` | Admin/HR | Activity log list and filters |
+| GET | `/activity-logs/{activityLog}` | Admin/HR | Activity log detail |
 
-## Reports
+## Integration Notes
 
-| Method | Endpoint | Role | Controller | Frontend Service | Frontend Page | Test |
-|---|---|---|---|---|---|---|
-| GET | `/reports/attendance` | Admin/HR | ReportController | reportService | ReportPage | — |
-| GET | `/reports/leave` | Admin/HR | ReportController | reportService | ReportPage | — |
-| GET | `/reports/employee` | Admin/HR | ReportController | reportService | ReportPage | — |
-| GET | `/reports/attendance/export` | Admin/HR | ReportController | reportService | ReportPage | — |
-| GET | `/reports/leave/export` | Admin/HR | ReportController | reportService | ReportPage | — |
-
----
-
-## Activity Logs (Audit)
-
-| Method | Endpoint | Role | Controller | Frontend Service | Frontend Page | Test |
-|---|---|---|---|---|---|---|
-| GET | `/activity-logs` | Admin | ActivityLogController | ❌ MISSING | ❌ MISSING | — |
-| GET | `/activity-logs/{id}` | Admin | ActivityLogController | ❌ MISSING | ❌ MISSING | — |
-
-> **Note**: Backend endpoints exist but frontend has no audit log viewer yet. This is Sprint 2 target.
-
----
-
-## Key Observations
-
-1. **Attendance Correction** is the only module with confirmed backend bugs — the service layer has missing/mismatched methods that prevent list, submit, and manual correction from working.
-
-2. **Activity Logs** — backend exists but no frontend UI to view them (Sprint 2).
-
-3. **Frontend consistently uses** `correctionService`, `attendanceService`, `leaveService`, `profileService`, `profileChangeService`, `dashboardService`, `reportService`, `employeeService`, `departmentService`, `positionService`, `branchService`, `shiftService`, `shiftScheduleService`, `authService`.
-
-4. **No frontend test files found** for any module — testing is a gap across the board.
-
-5. **Backend tests** — only `AttendanceCorrectionTest.php` found (14 tests, likely failing due to service bugs). No tests for other modules.
+- Frontend services must use the endpoint names in this document and `routes/api_v1.php`; older endpoint aliases are not authoritative.
+- Role restrictions shown here describe route-level access. Controllers, policies, and services must still enforce ownership and manager scope.
+- File downloads require authentication and must not be replaced with public storage URLs.
+- New endpoints must update this matrix, the frontend route/service documentation, and automated tests in the same milestone.
