@@ -23,7 +23,7 @@ class ActivityLogTest extends TestCase
     {
         parent::setUp();
 
-        $this->admin = User::factory()->create(['role' => 'admin']);
+        $this->admin = User::factory()->create(['role' => 'admin', 'name' => 'Activity Admin']);
         $this->hr = User::factory()->create(['role' => 'hr']);
         $this->manager = User::factory()->create(['role' => 'manager']);
         $this->employee = User::factory()->create(['role' => 'employee']);
