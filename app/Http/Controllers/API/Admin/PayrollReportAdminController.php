@@ -34,7 +34,8 @@ class PayrollReportAdminController extends Controller
         $summary = $this->reportingService->summary($filters);
         $timestamp = now()->format('Ymd-His');
 
-        ActivityLog::log(ActivityAction::EXPORT, Payroll::class, 0, [
+        ActivityLog::log(ActivityAction::MANUAL_UPDATE, Payroll::class, 0, [
+            'event' => 'export',
             'format' => $format,
             'filters' => $filters,
             'records_count' => $records->count(),
@@ -80,7 +81,8 @@ class PayrollReportAdminController extends Controller
             'Employee Payslip',
         );
 
-        ActivityLog::log(ActivityAction::EXPORT, Payroll::class, $payroll->id, [
+        ActivityLog::log(ActivityAction::MANUAL_UPDATE, Payroll::class, $payroll->id, [
+            'event' => 'export',
             'format' => 'pdf',
             'scope' => 'admin_payslip',
         ]);
