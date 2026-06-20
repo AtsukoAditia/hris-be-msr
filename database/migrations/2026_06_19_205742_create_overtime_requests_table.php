@@ -17,6 +17,7 @@ return new class extends Migration
             $table->time('planned_start_time');
             $table->time('planned_end_time');
             $table->unsignedInteger('planned_minutes');
+            $table->decimal('rate_multiplier', 5, 2)->default(1.50);
             $table->unsignedInteger('actual_minutes')->nullable();
             $table->string('status', 20)->default('pending');
             $table->text('reason')->nullable();

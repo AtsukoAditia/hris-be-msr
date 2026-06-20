@@ -10,13 +10,13 @@ class OvertimeRequest extends Model
 {
     use HasFactory, SoftDeletes;
 
-    const STATUS_PENDING = 'pending';
+    public const STATUS_PENDING = 'pending';
 
-    const STATUS_APPROVED = 'approved';
+    public const STATUS_APPROVED = 'approved';
 
-    const STATUS_REJECTED = 'rejected';
+    public const STATUS_REJECTED = 'rejected';
 
-    const STATUS_CANCELLED = 'cancelled';
+    public const STATUS_CANCELLED = 'cancelled';
 
     protected $fillable = [
         'employee_id',
@@ -27,6 +27,7 @@ class OvertimeRequest extends Model
         'planned_end_time',
         'planned_minutes',
         'actual_minutes',
+        'rate_multiplier',
         'status',
         'reason',
         'attachment',
@@ -40,6 +41,7 @@ class OvertimeRequest extends Model
         'planned_end_time' => 'string',
         'planned_minutes' => 'integer',
         'actual_minutes' => 'integer',
+        'rate_multiplier' => 'decimal:2',
         'approved_at' => 'datetime',
     ];
 
@@ -75,6 +77,6 @@ class OvertimeRequest extends Model
 
     public function isFinalized(): bool
     {
-        return in_array($this->status, [self::STATUS_APPROVED, self::STATUS_REJECTED]);
+        return in_array($this->status, [self::STATUS_APPROVED, self::STATUS_REJECTED], true);
     }
 }

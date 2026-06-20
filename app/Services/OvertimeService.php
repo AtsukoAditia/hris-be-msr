@@ -15,13 +15,19 @@ class OvertimeService
     {
         $query = OvertimeRequest::query()
             ->with(['employee.user', 'overtimePolicy', 'approver'])
-            ->latest('date');
+            ->latest('overtime_date');
 
         if ($actor->role === 'employee') {
-            $query->where('employee_id', $actor->employee->id);
+            $query->where('employee_id', $actor->employee?->id ?? 0);
         } elseif ($actor->role === 'manager') {
-            $subordinateIds = Employee::where('manager_id', $actor->employee->id)->pluck('id');
-            $query->whereIn('employee_id', $subordinateIds);
+            $managerEmployeeId = $actor->employee?->id;
+            $employeeIds = Employee::where('manager_id', $managerEmployeeId)->pluck('id');
+
+            if ($managerEmployeeId) {
+                $employeeIds->push($managerEmployeeId);
+            }
+
+            $query->whereIn('employee_id', $employeeIds->unique());
         }
 
         if (! empty($filters['status'])) {
@@ -33,11 +39,11 @@ class OvertimeService
         }
 
         if (! empty($filters['date_from'])) {
-            $query->whereDate('date', '>=', $filters['date_from']);
+            $query->whereDate('overtime_date', '>=', $filters['date_from']);
         }
 
         if (! empty($filters['date_to'])) {
-            $query->whereDate('date', '<=', $filters['date_to']);
+            $query->whereDate('overtime_date', '<=', $filters['date_to']);
         }
 
         return $query->paginate($filters['per_page'] ?? 15);
@@ -46,49 +52,73 @@ class OvertimeService
     public function submit(array $data, User $actor): OvertimeRequest
     {
         return DB::transaction(function () use ($data, $actor) {
+            $employee = $actor->employee;
+
+            if (! $employee) {
+                throw new \DomainException('Employee profile is required to submit overtime.');
+            }
+
             $plannedMinutes = $this->calculateMinutes(
-                $data['start_time'],
-                $data['end_time']
+                $data['planned_start_time'],
+                $data['planned_end_time']
             );
 
-            $policy = OvertimePolicy::findOrFail($data['overtime_policy_id']);
+            $policy = OvertimePolicy::query()
+                ->where('is_active', true)
+                ->findOrFail($data['overtime_policy_id']);
+
+            if ($plannedMinutes > $policy->daily_max_minutes) {
+                throw new \DomainException('Planned overtime exceeds the daily policy limit.');
+            }
 
             return OvertimeRequest::create([
-                'employee_id' => $actor->employee->id,
-                'overtime_policy_id' => $data['overtime_policy_id'],
-                'date' => $data['date'],
-                'start_time' => $data['start_time'],
-                'end_time' => $data['end_time'],
+                'employee_id' => $employee->id,
+                'overtime_policy_id' => $policy->id,
+                'overtime_date' => $data['overtime_date'],
+                'planned_start_time' => $data['planned_start_time'],
+                'planned_end_time' => $data['planned_end_time'],
                 'planned_minutes' => $plannedMinutes,
                 'rate_multiplier' => $policy->rate_multiplier,
                 'status' => OvertimeRequest::STATUS_PENDING,
-                'reason' => $data['reason'],
+                'reason' => $data['reason)],
+                'attachment' => $data['attachment'] ?? null,
             ]);
         });
     }
 
     public function cancel(OvertimeRequest $overtimeRequest): OvertimeRequest
     {
-        if (! $overtimeRequest->isPending()) {
-            throw new \DomainException('Only pending overtime requests can be cancelled.');
-        }
+        return DB::transaction(function () use ($overtimeRequest) {
+            $overtimeRequest = OvertimeRequest::query()
+                ->lockForUpdate()
+                ->findOrFail($overtimeRequest->id);
 
-        $overtimeRequest->update(['status' => OvertimeRequest::STATUS_CANCELLED]);
+            if (! $overtimeRequest->isPending()) {
+                throw new \DomainException('Only pending overtime requests can be cancelled.');
+            }
 
-        return $overtimeRequest->fresh();
+            $overtimeRequest->update(['status' => OvertimeRequest::STATUS_CANCELLED]);
+
+            return $overtimeRequest->fresh();
+        });
     }
 
     public function approve(OvertimeRequest $overtimeRequest, User $actor): OvertimeRequest
     {
-        if (! $overtimeRequest->isPending()) {
-            throw new \DomainException('Only pending overtime requests can be approved.');
-        }
-
         return DB::transaction(function () use ($overtimeRequest, $actor) {
+            $overtimeRequest = OvertimeRequest::query()
+                ->lockForUpdate()
+                ->findOrFail($overtimeRequest->id);
+
+            if (! $overtimeRequest->isPending()) {
+                throw new \DomainException('Only pending overtime requests can be approved.');
+            }
+
             $overtimeRequest->update([
                 'status' => OvertimeRequest::STATUS_APPROVED,
                 'approved_by' => $actor->id,
                 'approved_at' => now(),
+                'rejection_reason' => null,
             ]);
 
             return $overtimeRequest->fresh(['employee.user', 'overtimePolicy', 'approver']);
@@ -97,18 +127,24 @@ class OvertimeService
 
     public function reject(OvertimeRequest $overtimeRequest, User $actor, string $rejectionReason): OvertimeRequest
     {
-        if (! $overtimeRequest->isPending()) {
-            throw new \DomainException('Only pending overtime requests can be rejected.');
-        }
+        return DB::transaction(function () use ($overtimeRequest, $actor, $rejectionReason) {
+            $overtimeRequest = OvertimeRequest::query()
+                ->lockForUpdate()
+                ->findOrFail($overtimeRequest->id);
 
-        $overtimeRequest->update([
-            'status' => OvertimeRequest::STATUS_REJECTED,
-            'approved_by' => $actor->id,
-            'approved_at' => now(),
-            'rejection_reason' => $rejectionReason,
-        ]);
+            if (! $overtimeRequest->isPending()) {
+                throw new \DomainException('Only pending overtime requests can be rejected.');
+            }
 
-        return $overtimeRequest->fresh();
+            $overtimeRequest->update([
+                'status' => OvertimeRequest::STATUS_REJECTED,
+                'approved_by' => $actor->id,
+                'approved_at' => now(),
+                'rejection_reason' => $rejectionReason,
+            ]);
+
+            return $overtimeRequest->fresh(['employee.user', 'overtimePolicy', 'approver']);
+        });
     }
 
     public function recordActualMinutes(OvertimeRequest $overtimeRequest, int $actualMinutes): OvertimeRequest

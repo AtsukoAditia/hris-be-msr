@@ -9,12 +9,12 @@ class OvertimeRequestPolicy
 {
     public function viewAny(User $user): bool
     {
-        return in_array($user->role, ['admin', 'hr', 'manager', 'employee']);
+        return in_array($user->role, ['admin', 'hr', 'manager', 'employee'], true);
     }
 
     public function view(User $user, OvertimeRequest $overtimeRequest): bool
     {
-        if (in_array($user->role, ['admin', 'hr'])) {
+        if (in_array($user->role, ['admin', 'hr'], true)) {
             return true;
         }
 
@@ -28,7 +28,7 @@ class OvertimeRequestPolicy
 
     public function create(User $user): bool
     {
-        return in_array($user->role, ['admin', 'hr', 'manager', 'employee']);
+        return $user->employee !== null;
     }
 
     public function cancel(User $user, OvertimeRequest $overtimeRequest): bool
@@ -38,7 +38,7 @@ class OvertimeRequestPolicy
         }
 
         return $overtimeRequest->employee_id === $user->employee?->id
-            || in_array($user->role, ['admin', 'hr']);
+            || in_array($user->role, ['admin', 'hr'], true);
     }
 
     public function approve(User $user, OvertimeRequest $overtimeRequest): bool
@@ -47,7 +47,7 @@ class OvertimeRequestPolicy
             return false;
         }
 
-        if (in_array($user->role, ['admin', 'hr'])) {
+        if (in_array($user->role, ['admin', 'hr'], true)) {
             return true;
         }
 
@@ -65,6 +65,6 @@ class OvertimeRequestPolicy
 
     public function recordActual(User $user, OvertimeRequest $overtimeRequest): bool
     {
-        return in_array($user->role, ['admin', 'hr']);
+        return in_array($user->role, ['admin', 'hr'], true);
     }
 }
