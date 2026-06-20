@@ -6,18 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\PayrollResource;
 use App\Models\Payroll;
 use App\Models\PayrollItem;
-use App\Services\PayslipPdfService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PayrollReportAdminController extends Controller
 {
-    public function __construct(private readonly PayslipPdfService $pdfService) {}
-
     public function index(Request $request): JsonResponse
     {
         $query = $this->buildQuery($request);
@@ -105,23 +101,6 @@ class PayrollReportAdminController extends Controller
             fclose($handle);
         }, 'payroll-report-'.now()->format('Ymd-His').'.csv', [
             'Content-Type' => 'text/csv; charset=UTF-8',
-            'Cache-Control' => 'private, no-store, max-age=0',
-        ]);
-    }
-
-    public function payslip(Payroll $payroll): Response
-    {
-        abort_unless(in_array($payroll->status, [Payroll::STATUS_FINALIZED, Payroll::STATUS_PAID], true), 409, 'Payslip is only available for finalized or paid payroll.');
-        $payroll->load(['period', 'employee.user', 'employee.departmentMaster', 'employee.positionMaster', 'items']);
-        $filename = sprintf(
-            'payslip-%s-%s.pdf',
-            $payroll->employee?->employee_number ?? $payroll->employee_id,
-            str($payroll->period?->name ?? $payroll->id)->slug(),
-        );
-
-        return response($this->pdfService->generate($payroll), 200, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
             'Cache-Control' => 'private, no-store, max-age=0',
         ]);
     }
