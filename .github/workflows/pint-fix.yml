@@ -1,31 +1,29 @@
-name: Format Backend Fix
+name: Capture Backend Formatting
 
 on:
   pull_request:
     branches: [main]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   format:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-        with:
-          ref: feat/sprint-5-1
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
           tools: composer:v2
           coverage: none
       - run: composer install --no-interaction --prefer-dist --no-progress
-      - name: Format and commit
+      - name: Format files
         run: |
-          vendor/bin/pint app database routes tests
-          rm .github/workflows/pint-fix.yml
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add -A
-          git commit -m "style: format backend fixes"
-          git push origin HEAD:feat/sprint-5-1
+          vendor/bin/pint app/Models/OvertimeRequest.php app/Policies/OvertimeRequestPolicy.php app/Services/OvertimeService.php database/migrations/2026_06_19_205742_create_overtime_requests_table.php
+          tar -czf backend-format.tar.gz app/Models/OvertimeRequest.php app/Policies/OvertimeRequestPolicy.php app/Services/OvertimeService.php database/migrations/2026_06_19_205742_create_overtime_requests_table.php
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backend-format
+          path: backend-format.tar.gz
+          retention-days: 1
