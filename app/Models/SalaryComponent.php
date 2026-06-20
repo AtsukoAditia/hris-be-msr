@@ -13,14 +13,25 @@ class SalaryComponent extends Model
     use HasFactory, SoftDeletes;
 
     public const TYPE_EARNING = 'earning';
+
     public const TYPE_DEDUCTION = 'deduction';
+
     public const CALCULATION_FIXED = 'fixed';
+
     public const CALCULATION_PERCENTAGE = 'percentage';
+
     public const CALCULATION_FORMULA = 'formula';
 
     protected $fillable = [
-        'code', 'name', 'type', 'calculation_type', 'default_amount',
-        'percentage', 'formula', 'description', 'is_active',
+        'code',
+        'name',
+        'type',
+        'calculation_type',
+        'default_amount',
+        'percentage',
+        'formula',
+        'description',
+        'is_active',
     ];
 
     protected $casts = [
