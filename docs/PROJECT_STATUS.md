@@ -14,12 +14,12 @@
 | Shift, attendance, and attendance correction | ✅ | ✅ | Completed |
 | Leave and overtime workflows | ✅ | ✅ | Completed |
 | Reports and activity log | ✅ | ✅ | Completed |
-| Basic payroll foundation | ✅ | 🔵 | Backend complete; frontend next |
-| Payslip and payroll reporting | ⬜ | ⬜ | Planned Sprint 2 |
+| Basic payroll foundation | ✅ | ✅ | Completed |
+| Payslip and payroll reporting | 🔵 | ⬜ | Backend implementation in review; frontend next |
 
 ## Basic Payroll Foundation
 
-Backend capabilities:
+Completed capabilities:
 
 - Salary component master with earning and deduction types.
 - Fixed, percentage, and formula-ready calculation configuration.
@@ -32,6 +32,20 @@ Backend capabilities:
 - Cancellation with mandatory reason.
 - Transactions, row locking, audit records, and Admin/HR authorization.
 - Integer-cent calculation before persisting decimal values.
+- Responsive frontend workspace with component and mobile acceptance tests.
+
+## Payslip and Payroll Reporting
+
+Backend milestone scope:
+
+- Employee-owned payslip history.
+- Payslip detail with earning and deduction breakdown.
+- Authenticated employee PDF download.
+- Admin/HR protected payslip download.
+- Payroll summary by period and consistent filters.
+- CSV and PDF payroll report exports.
+- Private no-store download responses.
+- Ownership, status, and role regression tests.
 
 ## Payroll Rules
 
@@ -41,14 +55,8 @@ Backend capabilities:
 - Paid or cancelled payroll cannot be cancelled again.
 - Salary profiles used by finalized or paid payroll cannot be edited directly.
 - One payroll record exists per employee and period.
-
-## Scope Deferred to Sprint 2
-
-- Employee payslip access and download.
-- Payroll CSV/PDF report.
-- Tax and social-security calculations.
-- Post-finalization adjustment records.
-- Multi-level payroll approval.
+- Employee payslips expose only finalized or paid records owned by the authenticated employee.
+- Manager cannot access salary or payroll report endpoints.
 
 ## Testing and CI
 
@@ -61,19 +69,21 @@ vendor/bin/pint --test
 
 ## Current Focus
 
-Frontend payroll integration in `hris-fe-msr`:
+Complete backend CI and merge, then implement frontend:
 
-- Salary components.
-- Employee salary profiles.
-- Payroll periods.
-- Payroll list and detail.
-- Generate, recalculate, review, finalize, paid, and cancel actions.
-- Responsive UI, tests, lint, build, and documentation.
+- Employee payslip history and detail.
+- Authenticated file downloads through Axios blob responses.
+- Admin/HR payroll report summary.
+- CSV and PDF export actions.
+- Responsive employee and administrative pages.
+- Component tests, lint, build, and mobile acceptance.
 
 ## Source of Truth
 
 - Core routes: `routes/api_v1.php`
 - Payroll routes: `routes/payroll.php`
+- Payslip/report routes: `routes/payroll_reporting.php`
+- Payslip/report contract: `docs/PAYSLIP_REPORTING.md`
 - Module inventory: `docs/MODULES.md`
 - Roadmap: `docs/ROADMAP.md`
 - API matrix: `docs/API_MATRIX.md`
