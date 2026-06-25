@@ -127,9 +127,8 @@ Route::prefix('v1')->group(function () {
             Route::put('/attendance/settings', [AttendanceSettingController::class, 'update']);
             Route::post('/attendance/qr/generate', [AttendanceSettingController::class, 'generateQr']);
             Route::apiResource('/shifts', ShiftController::class);
-            Route::get('/shift-schedules/employee/{employeeId}', [ShiftScheduleController::class, 'getByEmployee']);
-            Route::get('/shift-schedules/date/{date}', [ShiftScheduleController::class, 'getByDate']);
             Route::post('/shift-schedules/bulk', [ShiftScheduleController::class, 'bulkStore']);
+            Route::post('/shift-schedules/copy-week', [ShiftScheduleController::class, 'copyWeek']);
             Route::apiResource('/shift-schedules', ShiftScheduleController::class);
 
             Route::get('/profile-change-requests', [ProfileChangeReviewController::class, 'index']);
@@ -188,6 +187,10 @@ Route::prefix('v1')->group(function () {
             // ========================
             Route::apiResource('/admin/overtime-policies', OvertimePolicyAdminController::class);
         });
+
+        // Shift schedule: employee & manager self-service
+        Route::get('/shift-schedules/my-schedule', [ShiftScheduleController::class, 'mySchedule']);
+        Route::get('/shift-schedules/team-schedule', [ShiftScheduleController::class, 'teamSchedule']);
 
         // ========================
         // Overtime Request Endpoints
