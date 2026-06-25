@@ -6,32 +6,16 @@ use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvid
 
 class AuthServiceProvider extends ServiceProvider
 {
-    /**
-     * The policy mappings for the application.
-
-     *
-
-     * @var array<class-string, class-string>
-     */
     protected $policies = [
-
-        // 'App\Models\Model' => 'App\Policies\ModelPolicy',
-
+        \App\Models\OvertimePolicy::class => \App\Policies\OvertimePolicyPolicy::class,
+        \App\Models\OvertimeRequest::class => \App\Policies\OvertimeRequestPolicy::class,
+        \App\Models\PayrollPeriod::class => \App\Policies\PayrollPeriodPolicy::class,
+        \App\Models\Payroll::class => \App\Policies\PayrollPolicy::class,
+        \App\Models\ShiftSchedule::class => \App\Policies\ShiftSchedulePolicy::class,
     ];
 
-    /**
-     * Register any authentication / authorization services.
-
-     *
-
-     * @return void
-     */
     public function boot()
     {
-
         $this->registerPolicies();
-
-        //
-
     }
 }
