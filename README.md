@@ -2,7 +2,7 @@
 
 Laravel REST API untuk **Smart Attendance HRIS**, terhubung dengan frontend React PWA `hris-fe-msr`.
 
-> Status terakhir diverifikasi: 7 Juli 2026  
+> Status terakhir diverifikasi: 8 Juli 2026  
 > Branch utama: `main`
 
 ## Tech Stack
@@ -36,8 +36,38 @@ Core modules already integrated with the frontend:
 - Reports, CSV export, and activity log viewer.
 - Basic payroll foundation.
 - Employee payslip and payroll reporting.
+- Sprint 3 shift schedule self-service, team view, copy-week, and rotating shift.
 
-### Basic Payroll Foundation
+## Sprint 3 Shift Schedule
+
+Backend and frontend contracts are synchronized on `main`.
+
+Available backend capabilities:
+
+- Schedule list with employee, department, branch, shift, date range, and day-off filters.
+- Single schedule create/update/delete.
+- Day-off schedule handling with nullable `shift_id`.
+- Bulk schedule assignment.
+- Copy-week schedule duplication with optional employee filter.
+- Rotating shift pattern generation.
+- Employee self-service schedule endpoint.
+- Manager/admin/HR team schedule endpoint.
+- Legacy custom lookup endpoints for employee and date, registered before the resource route to avoid route shadowing.
+
+Shift schedule endpoints are under:
+
+```text
+/api/v1/shift-schedules
+/api/v1/shift-schedules/bulk
+/api/v1/shift-schedules/copy-week
+/api/v1/shift-schedules/rotating
+/api/v1/shift-schedules/my-schedule
+/api/v1/shift-schedules/team-schedule
+/api/v1/shift-schedules/employee/{employee}
+/api/v1/shift-schedules/date/{date}
+```
+
+## Basic Payroll Foundation
 
 Backend implementation is complete and synchronized with the frontend payroll workspace.
 
@@ -65,9 +95,9 @@ Payroll foundation endpoints are under:
 /api/v1/admin/payrolls
 ```
 
-### Payslip and Payroll Reporting
+## Payslip and Payroll Reporting
 
-Payslip and payroll reporting are now implemented on the backend.
+Payslip and payroll reporting are implemented on the backend and synchronized with the frontend.
 
 Available backend capabilities:
 
@@ -91,15 +121,16 @@ Payslip and reporting endpoints are under:
 
 Detailed endpoint mapping is available in `docs/API_MATRIX.md`.
 
-## Payroll Scope Limitations
+## Current Scope Limitations
 
-The current payroll implementation intentionally excludes:
+The current implementation intentionally excludes:
 
 - Automatic tax and social-security calculation.
-- Post-finalization adjustment records.
+- Post-finalization payroll adjustment records.
 - Multi-level payroll approval.
+- Advanced shift schedule analytics/reporting.
 
-These remain candidates for a future payroll sprint.
+These remain candidates for future sprints.
 
 ## Security Rules
 
@@ -107,6 +138,8 @@ These remain candidates for a future payroll sprint.
 - Frontend role visibility is not treated as authorization.
 - Payroll administration is restricted to Admin and HR.
 - Employee payslip access is ownership-scoped.
+- Shift schedule self-service is employee-owned.
+- Team schedule access is role and manager-scope controlled.
 - Critical status transitions use database transactions and row locking.
 - Draft payroll can be recalculated; finalized and paid payroll cannot be edited directly.
 - Cancellation requires a reason and is blocked after payment.
@@ -154,4 +187,4 @@ docs/DEVELOPMENT_GUIDE.md
 
 ## Next Focus
 
-Sprint 3 shift schedule hardening: self-service schedule view, team schedule view, copy-week, rotating schedule, day-off handling, backend CI, and frontend/backend contract verification.
+Stabilization: full smoke testing across frontend and backend `main`, then future payroll tax/social-security calculation, post-finalization adjustments, multi-level approval, and advanced shift schedule reporting.
