@@ -217,9 +217,9 @@ class ShiftScheduleTest extends TestCase
         $payload = [
             'employee_ids' => [$this->staffEmployee->id],
             'schedules' => [
-                ['shift_id' => $this->shift->id, 'schedule_date' => '2026-07-01'],
-                ['shift_id' => $this->shift->id, 'schedule_date' => '2026-07-02'],
-                ['shift_id' => $this->shift->id, 'schedule_date' => '2026-07-03'],
+                ['shift_id' => $this->shift->id, 'date' => '2026-07-01'],
+                ['shift_id' => $this->shift->id, 'date' => '2026-07-02'],
+                ['shift_id' => $this->shift->id, 'date' => '2026-07-03'],
             ],
         ];
 
@@ -235,13 +235,13 @@ class ShiftScheduleTest extends TestCase
         $payload = [
             'employee_ids' => [$this->staffEmployee->id],
             'schedules' => [
-                ['shift_id' => $this->shift->id, 'schedule_date' => '2026-07-01'],
-                ['shift_id' => $this->shift->id, 'schedule_date' => '2026-07-02'],
-                ['schedule_date' => '2026-07-03', 'is_day_off' => true],
-                ['shift_id' => $this->shift->id, 'schedule_date' => '2026-07-04'],
-                ['shift_id' => $this->shift->id, 'schedule_date' => '2026-07-05'],
-                ['schedule_date' => '2026-07-06', 'is_day_off' => true],
-                ['schedule_date' => '2026-07-07', 'is_day_off' => true],
+                ['shift_id' => $this->shift->id, 'date' => '2026-07-01'],
+                ['shift_id' => $this->shift->id, 'date' => '2026-07-02'],
+                ['date' => '2026-07-03', 'is_day_off' => true],
+                ['shift_id' => $this->shift->id, 'date' => '2026-07-04'],
+                ['shift_id' => $this->shift->id, 'date' => '2026-07-05'],
+                ['date' => '2026-07-06', 'is_day_off' => true],
+                ['date' => '2026-07-07', 'is_day_off' => true],
             ],
         ];
 
@@ -265,8 +265,8 @@ class ShiftScheduleTest extends TestCase
         $payload = [
             'employee_ids' => [$this->staffEmployee->id],
             'schedules' => [
-                ['shift_id' => $this->shift->id, 'schedule_date' => '2026-07-01'],
-                ['shift_id' => $this->shift->id, 'schedule_date' => '2026-07-02'],
+                ['shift_id' => $this->shift->id, 'date' => '2026-07-01'],
+                ['shift_id' => $this->shift->id, 'date' => '2026-07-02'],
             ],
         ];
 
@@ -295,7 +295,7 @@ class ShiftScheduleTest extends TestCase
             ->postJson('/api/v1/shift-schedules/bulk', [
                 'employee_ids' => [$this->staffEmployee->id],
                 'schedules' => [
-                    ['shift_id' => $this->shift->id, 'schedule_date' => '2026-07-01'],
+                    ['shift_id' => $this->shift->id, 'date' => '2026-07-01'],
                 ],
             ]);
 
@@ -322,7 +322,7 @@ class ShiftScheduleTest extends TestCase
                 'target_start_date' => '2026-07-06',
             ]);
 
-        $response->assertOk();
+        $response->assertSuccessful();
         $targetCount = ShiftSchedule::whereBetween('schedule_date', ['2026-07-06', '2026-07-12'])->count();
         $this->assertEquals(5, $targetCount);
     }
@@ -351,7 +351,7 @@ class ShiftScheduleTest extends TestCase
                 'employee_ids' => [$this->staffEmployee->id],
             ]);
 
-        $response->assertOk();
+        $response->assertSuccessful();
         $this->assertEquals(3, ShiftSchedule::whereBetween('schedule_date', ['2026-07-06', '2026-07-12'])
             ->where('employee_id', $this->staffEmployee->id)->count());
         $this->assertEquals(0, ShiftSchedule::whereBetween('schedule_date', ['2026-07-06', '2026-07-12'])
@@ -498,7 +498,7 @@ class ShiftScheduleTest extends TestCase
         $this->actingAs($this->admin)->postJson('/api/v1/shift-schedules/bulk', [
             'employee_ids' => [$this->staffEmployee->id],
             'schedules' => [
-                ['shift_id' => $this->shift->id, 'schedule_date' => '2026-08-01'],
+                ['shift_id' => $this->shift->id, 'date' => '2026-08-01'],
             ],
         ])->assertStatus(201);
 
@@ -506,7 +506,7 @@ class ShiftScheduleTest extends TestCase
         $this->actingAs($this->hr)->postJson('/api/v1/shift-schedules/bulk', [
             'employee_ids' => [$this->staffEmployee->id],
             'schedules' => [
-                ['shift_id' => $this->shift->id, 'schedule_date' => '2026-08-02'],
+                ['shift_id' => $this->shift->id, 'date' => '2026-08-02'],
             ],
         ])->assertStatus(201);
 

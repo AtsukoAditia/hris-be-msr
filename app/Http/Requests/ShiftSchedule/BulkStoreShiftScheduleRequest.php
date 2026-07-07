@@ -8,7 +8,7 @@ class BulkStoreShiftScheduleRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('bulk-store-shift-schedule');
+        return true;
     }
 
     public function rules(): array

@@ -6,6 +6,7 @@ use App\Exceptions\BusinessValidationException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ShiftSchedule\BulkStoreShiftScheduleRequest;
 use App\Http\Requests\ShiftSchedule\CopyWeekRequest;
+use App\Http\Requests\ShiftSchedule\RotatingShiftScheduleRequest;
 use App\Http\Resources\ShiftScheduleResource;
 use App\Models\ShiftSchedule;
 use App\Services\ShiftScheduleService;
@@ -122,7 +123,7 @@ class ShiftScheduleController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage(),
-            ], 422);
+            ], 409);
         }
     }
 
@@ -195,6 +196,27 @@ class ShiftScheduleController extends Controller
         $schedules = $query->orderBy('schedule_date')->paginate(50);
 
         return ShiftScheduleResource::collection($schedules);
+    }
+
+    public function rotating(RotatingShiftScheduleRequest $request): JsonResponse
+    {
+        $result = $this->scheduleService->assignRotating(
+            employeeIds: $request->input('employee_ids'),
+            shiftPattern: $request->input('shift_pattern'),
+            startDate: $request->input('start_date'),
+            weeks: $request->input('weeks', 4),
+            createdBy: $request->user()->id,
+        );
+
+        $created = EloquentCollection::make($result['created']);
+        $created->load(['employee.department', 'employee.branch', 'shift', 'createdBy']);
+
+        return response()->json([
+            'success' => true,
+            'message' => count($result['created']).' rotating schedule berhasil dibuat',
+            'data' => ShiftScheduleResource::collection($created),
+            'errors' => $result['errors'],
+        ], count($result['errors']) > 0 ? 207 : 201);
     }
 
     public function teamSchedule(Request $request): AnonymousResourceCollection

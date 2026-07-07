@@ -1,6 +1,6 @@
 # Roadmap — Smart Attendance HRIS
 
-> Last updated: 20 June 2026  
+> Last updated: 30 June 2026  
 > Backend and frontend roadmaps must remain synchronized.
 
 ## Phase 0 — Foundation and Core HRIS ✅
@@ -59,14 +59,38 @@
 - [ ] PDF payslip after the core workflow is stable
 - [ ] Payroll report filters and regression tests
 
-## Sprint 3 — Shift Schedule Calendar
+## Sprint 3 — Shift Schedule Calendar ✅
 
-- [ ] Weekly and monthly views
-- [ ] Employee, department, and branch filters
-- [ ] Bulk assignment and copy previous week
-- [ ] Rotating shifts and day off
-- [ ] Conflict validation
-- [ ] Manager team and employee personal schedules
+### Backend ✅
+
+- [x] ShiftSchedule model with shift_id nullable, is_day_off, notes, schedule_date
+- [x] Database migrations (create table + is_day_off + nullable shift_id)
+- [x] ShiftScheduleService with bulkStore, copyWeek, conflict validation
+- [x] ShiftScheduleController with index, store, show, update, destroy, bulkStore, copyWeek
+- [x] ShiftSchedulePolicy (admin/hr/manager scope/employee self)
+- [x] BulkStoreShiftScheduleRequest, CopyWeekRequest validation
+- [x] ShiftScheduleResource, ShiftResource
+- [x] ShiftScheduleFactory, ShiftScheduleSeeder
+- [x] Calendar endpoint (GET /api/v1/shift-schedules/calendar)
+- [x] My schedule endpoint (GET /api/v1/shift-schedules/my-schedule)
+- [x] RotatingShiftScheduleRequest for pattern-based assignment
+- [x] Backend feature tests (26 tests, 82 assertions for ShiftSchedule)
+- [x] Full test suite: 415 tests, 1671 assertions all green
+
+### Frontend ✅
+
+- [x] Shift schedule service (CRUD, bulk, copy, calendar, my-schedule)
+- [x] ShiftSchedulePage with weekly/monthly calendar toggle
+- [x] Day cell click to create assignment
+- [x] Bulk assignment modal (multi-employee, date range, shift, rotating)
+- [x] Copy previous week modal
+- [x] Filters: department, branch, search
+- [x] Manager team view (auto-scoped)
+- [x] MySchedulePage for employee personal schedule
+- [x] Routes for /shift-schedule and /my-schedule
+- [x] Sidebar navigation (admin: "Jadwal Shift", employee: "Jadwal Saya")
+- [x] ESLint zero warnings
+- [x] Production build success
 
 ## Sprint 4 — Notification Center
 

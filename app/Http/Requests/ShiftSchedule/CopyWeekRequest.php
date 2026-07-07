@@ -8,7 +8,7 @@ class CopyWeekRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('store-shift-schedule');
+        return in_array($this->user()->role, ['admin', 'hr', 'manager']);
     }
 
     public function rules(): array

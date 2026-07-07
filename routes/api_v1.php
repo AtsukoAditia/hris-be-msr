@@ -123,13 +123,26 @@ Route::prefix('v1')->group(function () {
         Route::get('/documents/my/{employeeDocument}/download', [MyDocumentController::class, 'download']);
         Route::get('/documents/my/{employeeDocument}', [MyDocumentController::class, 'show']);
 
+        // Shift schedule self-service (registered before apiResource to avoid {shiftSchedule} capture)
+        Route::get('/shift-schedules/my-schedule', [ShiftScheduleController::class, 'mySchedule']);
+        Route::middleware('role:admin,hr,manager')->group(function () {
+            Route::get('/shift-schedules/team-schedule', [ShiftScheduleController::class, 'teamSchedule']);
+        });
+
         Route::middleware('role:admin,hr')->group(function () {
             Route::put('/attendance/settings', [AttendanceSettingController::class, 'update']);
             Route::post('/attendance/qr/generate', [AttendanceSettingController::class, 'generateQr']);
             Route::apiResource('/shifts', ShiftController::class);
+        });
+
+        Route::middleware('role:admin,hr,manager')->group(function () {
             Route::post('/shift-schedules/bulk', [ShiftScheduleController::class, 'bulkStore']);
             Route::post('/shift-schedules/copy-week', [ShiftScheduleController::class, 'copyWeek']);
+            Route::post('/shift-schedules/rotating', [ShiftScheduleController::class, 'rotating']);
             Route::apiResource('/shift-schedules', ShiftScheduleController::class);
+        });
+
+        Route::middleware('role:admin,hr')->group(function () {
 
             Route::get('/profile-change-requests', [ProfileChangeReviewController::class, 'index']);
             Route::post('/profile-change-requests/{profileChangeRequest}/approve', [ProfileChangeReviewController::class, 'approve']);
@@ -188,11 +201,8 @@ Route::prefix('v1')->group(function () {
             Route::apiResource('/admin/overtime-policies', OvertimePolicyAdminController::class);
         });
 
-        // Shift schedule: employee & manager self-service
-        Route::get('/shift-schedules/my-schedule', [ShiftScheduleController::class, 'mySchedule']);
-        Route::get('/shift-schedules/team-schedule', [ShiftScheduleController::class, 'teamSchedule']);
 
-        // ========================
+
         // Overtime Request Endpoints
         // ========================
         // All authenticated users can list/view/submit
