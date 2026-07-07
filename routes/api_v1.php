@@ -123,9 +123,11 @@ Route::prefix('v1')->group(function () {
         Route::get('/documents/my/{employeeDocument}/download', [MyDocumentController::class, 'download']);
         Route::get('/documents/my/{employeeDocument}', [MyDocumentController::class, 'show']);
 
-        // Shift schedule self-service (registered before apiResource to avoid {shiftSchedule} capture)
+        // Shift schedule self-service and custom routes must stay before apiResource.
         Route::get('/shift-schedules/my-schedule', [ShiftScheduleController::class, 'mySchedule']);
         Route::middleware('role:admin,hr,manager')->group(function () {
+            Route::get('/shift-schedules/employee/{employee}', [ShiftScheduleController::class, 'getByEmployee']);
+            Route::get('/shift-schedules/date/{date}', [ShiftScheduleController::class, 'getByDate']);
             Route::get('/shift-schedules/team-schedule', [ShiftScheduleController::class, 'teamSchedule']);
         });
 
