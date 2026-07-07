@@ -8,6 +8,7 @@ use App\Http\Requests\ShiftSchedule\BulkStoreShiftScheduleRequest;
 use App\Http\Requests\ShiftSchedule\CopyWeekRequest;
 use App\Http\Requests\ShiftSchedule\RotatingShiftScheduleRequest;
 use App\Http\Resources\ShiftScheduleResource;
+use App\Models\Employee;
 use App\Models\ShiftSchedule;
 use App\Services\ShiftScheduleService;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -178,11 +179,40 @@ class ShiftScheduleController extends Controller
         ], count($result['errors']) > 0 ? 207 : 201);
     }
 
+    public function getByEmployee(Employee $employee): JsonResponse
+    {
+        $schedules = ShiftSchedule::with(['shift', 'createdBy'])
+            ->where('employee_id', $employee->id)
+            ->orderByDesc('schedule_date')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'employee' => $employee,
+                'schedules' => ShiftScheduleResource::collection($schedules),
+            ],
+        ]);
+    }
+
+    public function getByDate(string $date): JsonResponse
+    {
+        $schedules = ShiftSchedule::with(['employee.department', 'employee.branch', 'shift', 'createdBy'])
+            ->whereDate('schedule_date', $date)
+            ->orderBy('schedule_date')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => ShiftScheduleResource::collection($schedules),
+        ]);
+    }
+
     public function mySchedule(Request $request): AnonymousResourceCollection
     {
         $employee = $request->user()->employee;
 
-        if (! $employee) {
+        if (!$employee) {
             return ShiftScheduleResource::collection(collect());
         }
 
@@ -223,7 +253,7 @@ class ShiftScheduleController extends Controller
     {
         $manager = $request->user()->employee;
 
-        if (! $manager) {
+        if (!$manager) {
             return ShiftScheduleResource::collection(collect());
         }
 
