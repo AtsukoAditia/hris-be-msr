@@ -150,11 +150,13 @@ class ShiftScheduleController extends Controller
 
         $created = EloquentCollection::make($result['created']);
         $created->load(['employee.department', 'employee.branch', 'shift', 'createdBy']);
+        $createdPayload = ShiftScheduleResource::collection($created)->resolve($request);
 
         return response()->json([
             'success' => true,
             'message' => count($result['created']).' schedule berhasil dibuat',
-            'data' => ShiftScheduleResource::collection($created),
+            'created' => $createdPayload,
+            'data' => $createdPayload,
             'errors' => $result['errors'],
         ], count($result['errors']) > 0 ? 207 : 201);
     }
@@ -170,11 +172,13 @@ class ShiftScheduleController extends Controller
 
         $created = EloquentCollection::make($result['created']);
         $created->load(['employee.department', 'employee.branch', 'shift', 'createdBy']);
+        $createdPayload = ShiftScheduleResource::collection($created)->resolve($request);
 
         return response()->json([
             'success' => true,
             'message' => count($result['created']).' schedule berhasil di-copy',
-            'data' => ShiftScheduleResource::collection($created),
+            'created' => $createdPayload,
+            'data' => $createdPayload,
             'errors' => $result['errors'],
         ], count($result['errors']) > 0 ? 207 : 201);
     }
@@ -240,11 +244,13 @@ class ShiftScheduleController extends Controller
 
         $created = EloquentCollection::make($result['created']);
         $created->load(['employee.department', 'employee.branch', 'shift', 'createdBy']);
+        $createdPayload = ShiftScheduleResource::collection($created)->resolve($request);
 
         return response()->json([
             'success' => true,
             'message' => count($result['created']).' rotating schedule berhasil dibuat',
-            'data' => ShiftScheduleResource::collection($created),
+            'created' => $createdPayload,
+            'data' => $createdPayload,
             'errors' => $result['errors'],
         ], count($result['errors']) > 0 ? 207 : 201);
     }
