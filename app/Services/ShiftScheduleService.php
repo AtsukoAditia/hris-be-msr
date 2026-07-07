@@ -59,6 +59,7 @@ class ShiftScheduleService
             foreach ($employeeIds as $empIndex => $employeeId) {
                 if (! Employee::find($employeeId)) {
                     $errors[] = "Employee ID {$employeeId} not found.";
+
                     continue;
                 }
 
@@ -185,6 +186,7 @@ class ShiftScheduleService
             foreach ($employeeIds as $employeeId) {
                 if (! Employee::find($employeeId)) {
                     $errors[] = "Employee ID {$employeeId} not found.";
+
                     continue;
                 }
 
