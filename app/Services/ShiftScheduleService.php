@@ -7,6 +7,7 @@ use App\Models\Employee;
 use App\Models\ShiftSchedule;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 class ShiftScheduleService
 {
@@ -85,7 +86,7 @@ class ShiftScheduleService
             }
 
             DB::commit();
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             DB::rollBack();
             throw $e;
         }
@@ -145,7 +146,7 @@ class ShiftScheduleService
             }
 
             DB::commit();
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             DB::rollBack();
             throw $e;
         }
@@ -211,7 +212,7 @@ class ShiftScheduleService
             }
 
             DB::commit();
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             DB::rollBack();
             throw $e;
         }
