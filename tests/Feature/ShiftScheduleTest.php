@@ -14,12 +14,19 @@ class ShiftScheduleTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private User $hr;
+
     private User $manager;
+
     private User $employee;
+
     private Employee $managerEmployee;
+
     private Employee $staffEmployee;
+
     private Shift $shift;
+
     private Shift $shift2;
 
     protected function setUp(): void
