@@ -212,7 +212,7 @@ class ShiftScheduleController extends Controller
     {
         $employee = $request->user()->employee;
 
-        if (!$employee) {
+        if (! $employee) {
             return ShiftScheduleResource::collection(collect());
         }
 
@@ -253,7 +253,7 @@ class ShiftScheduleController extends Controller
     {
         $manager = $request->user()->employee;
 
-        if (!$manager) {
+        if (! $manager) {
             return ShiftScheduleResource::collection(collect());
         }
 
