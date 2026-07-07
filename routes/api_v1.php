@@ -143,7 +143,6 @@ Route::prefix('v1')->group(function () {
         });
 
         Route::middleware('role:admin,hr')->group(function () {
-
             Route::get('/profile-change-requests', [ProfileChangeReviewController::class, 'index']);
             Route::post('/profile-change-requests/{profileChangeRequest}/approve', [ProfileChangeReviewController::class, 'approve']);
             Route::post('/profile-change-requests/{profileChangeRequest}/reject', [ProfileChangeReviewController::class, 'reject']);
@@ -201,8 +200,7 @@ Route::prefix('v1')->group(function () {
             Route::apiResource('/admin/overtime-policies', OvertimePolicyAdminController::class);
         });
 
-
-
+        // ========================
         // Overtime Request Endpoints
         // ========================
         // All authenticated users can list/view/submit
