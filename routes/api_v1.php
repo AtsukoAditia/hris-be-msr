@@ -123,15 +123,28 @@ Route::prefix('v1')->group(function () {
         Route::get('/documents/my/{employeeDocument}/download', [MyDocumentController::class, 'download']);
         Route::get('/documents/my/{employeeDocument}', [MyDocumentController::class, 'show']);
 
+        // Shift schedule self-service and custom routes must stay before apiResource.
+        Route::get('/shift-schedules/my-schedule', [ShiftScheduleController::class, 'mySchedule']);
+        Route::middleware('role:admin,hr,manager')->group(function () {
+            Route::get('/shift-schedules/employee/{employee}', [ShiftScheduleController::class, 'getByEmployee']);
+            Route::get('/shift-schedules/date/{date}', [ShiftScheduleController::class, 'getByDate']);
+            Route::get('/shift-schedules/team-schedule', [ShiftScheduleController::class, 'teamSchedule']);
+        });
+
         Route::middleware('role:admin,hr')->group(function () {
             Route::put('/attendance/settings', [AttendanceSettingController::class, 'update']);
             Route::post('/attendance/qr/generate', [AttendanceSettingController::class, 'generateQr']);
             Route::apiResource('/shifts', ShiftController::class);
-            Route::get('/shift-schedules/employee/{employeeId}', [ShiftScheduleController::class, 'getByEmployee']);
-            Route::get('/shift-schedules/date/{date}', [ShiftScheduleController::class, 'getByDate']);
-            Route::post('/shift-schedules/bulk', [ShiftScheduleController::class, 'bulkStore']);
-            Route::apiResource('/shift-schedules', ShiftScheduleController::class);
+        });
 
+        Route::middleware('role:admin,hr,manager')->group(function () {
+            Route::post('/shift-schedules/bulk', [ShiftScheduleController::class, 'bulkStore']);
+            Route::post('/shift-schedules/copy-week', [ShiftScheduleController::class, 'copyWeek']);
+            Route::post('/shift-schedules/rotating', [ShiftScheduleController::class, 'rotating']);
+            Route::apiResource('/shift-schedules', ShiftScheduleController::class);
+        });
+
+        Route::middleware('role:admin,hr')->group(function () {
             Route::get('/profile-change-requests', [ProfileChangeReviewController::class, 'index']);
             Route::post('/profile-change-requests/{profileChangeRequest}/approve', [ProfileChangeReviewController::class, 'approve']);
             Route::post('/profile-change-requests/{profileChangeRequest}/reject', [ProfileChangeReviewController::class, 'reject']);

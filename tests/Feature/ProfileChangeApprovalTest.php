@@ -50,7 +50,7 @@ class ProfileChangeApprovalTest extends TestCase
 
         $this->assertDatabaseHas('employees', [
             'id' => $employee->id,
-            'birth_date' => '1995-02-11',
+            'birth_date' => '1995-02-11 00:00:00',
         ]);
         $this->assertDatabaseHas('employee_profiles', [
             'employee_id' => $employee->id,

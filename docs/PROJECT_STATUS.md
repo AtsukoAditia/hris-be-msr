@@ -1,89 +1,72 @@
-# Project Status — Smart Attendance HRIS Backend
+# PROJECT_STATUS.md
 
-> Last verified: 20 June 2026  
-> Repository: `AtsukoAditia/hris-be-msr`  
-> Main branch: `main`
+## Recent Completed Work
 
-## Module Status
+### Sprint 1: Employee Data Management ✅ DONE
 
-| Module | Backend | Frontend | Status |
-|---|:---:|:---:|---|
-| Authentication, RBAC, dashboard | ✅ | ✅ | Completed |
-| Organization and employee management | ✅ | ✅ | Completed |
-| Employee profile, documents, and self-service | ✅ | ✅ | Completed |
-| Shift, attendance, and attendance correction | ✅ | ✅ | Completed |
-| Leave and overtime workflows | ✅ | ✅ | Completed |
-| Reports and activity log | ✅ | ✅ | Completed |
-| Basic payroll foundation | ✅ | ✅ | Completed |
-| Payslip and payroll reporting | 🔵 | ⬜ | Backend implementation in review; frontend next |
+- Employee CRUD (admin)
+- Department & Branch management
+- Employee profile & document management
+- Employee self-service profile viewing/editing
 
-## Basic Payroll Foundation
+### Sprint 2: Attendance & Correction ✅ DONE
 
-Completed capabilities:
+- Attendance check-in/check-out (GPS + selfie)
+- Attendance correction request workflow (employee submit, manager approve/reject)
+- Manual attendance correction by HR/Admin
+- Attendance reporting
 
-- Salary component master with earning and deduction types.
-- Fixed, percentage, and formula-ready calculation configuration.
-- Effective-dated employee salary profiles and component assignments.
-- Payroll periods and cutoff dates.
-- Draft generation and recalculation.
-- Inputs from basic salary, attendance, absence, approved unpaid leave, and approved overtime actual minutes.
-- Payroll items and calculation snapshots.
-- Status flow: `draft → reviewed → finalized → paid`.
-- Cancellation with mandatory reason.
-- Transactions, row locking, audit records, and Admin/HR authorization.
-- Integer-cent calculation before persisting decimal values.
-- Responsive frontend workspace with component and mobile acceptance tests.
+### Sprint 2.5: Leave & Overtime Management ✅ DONE
 
-## Payslip and Payroll Reporting
+- Leave management (types, policies, balances, request/approve/reject/cancel)
+- Overtime management (request, approval, actual recording)
+- Admin leave type & policy management
+- Holiday management
+- Payroll periods & basic payroll generation
 
-Backend milestone scope:
+### Sprint 3: Shift Schedule Calendar ✅ DONE
 
-- Employee-owned payslip history.
-- Payslip detail with earning and deduction breakdown.
-- Authenticated employee PDF download.
-- Admin/HR protected payslip download.
-- Payroll summary by period and consistent filters.
-- CSV and PDF payroll report exports.
-- Private no-store download responses.
-- Ownership, status, and role regression tests.
+**Backend:**
 
-## Payroll Rules
+- `ShiftSchedule` model with `is_day_off`, `notes`, soft deletes
+- `ShiftSchedulePolicy` — admin/hr full, manager team, employee own
+- `ShiftScheduleService` — bulk assign, copy week, rotating shifts, conflict detection
+- `ShiftScheduleController` — full REST + bulk/copy/rotating endpoints
+- Form Requests: `StoreShiftScheduleRequest`, `BulkStoreShiftScheduleRequest`, `CopyWeekRequest`, `RotatingShiftScheduleRequest`
+- `ShiftScheduleResource` — consistent response shape
+- Migrations: `add_is_day_off_to_shift_schedules_table`, `make_shift_id_nullable_on_shift_schedules_table`
+- Conflict validation: duplicate schedule detection per employee per date
+- 26 feature tests passing
 
-- Payroll generation requires an open period.
-- Recalculation is allowed only while payroll is draft.
-- Finalized or paid data cannot be changed directly.
-- Paid or cancelled payroll cannot be cancelled again.
-- Salary profiles used by finalized or paid payroll cannot be edited directly.
-- One payroll record exists per employee and period.
-- Employee payslips expose only finalized or paid records owned by the authenticated employee.
-- Manager cannot access salary or payroll report endpoints.
+**Frontend:**
 
-## Testing and CI
+- `ShiftSchedulePage` — weekly calendar grid with admin actions
+- `MySchedulePage` — employee personal schedule (filtered, read-only)
+- `shiftScheduleService` — API layer for all schedule endpoints
+- Routes: `/shift-schedule` (admin/hr/manager), `/my-schedule` (all roles)
+- Sidebar navigation updated
 
-Backend CI validates Composer metadata, MySQL migrations, Laravel Pint, and the full Laravel test suite.
+**Endpoints:**
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/v1/shift-schedules` | All roles | List (filtered by role scope) |
+| POST | `/api/v1/shift-schedules` | Admin/HR | Create single schedule |
+| GET | `/api/v1/shift-schedules/{id}` | All roles | Show (scope-checked) |
+| PUT | `/api/v1/shift-schedules/{id}` | Admin/HR | Update |
+| DELETE | `/api/v1/shift-schedules/{id}` | Admin/HR | Delete |
+| POST | `/api/v1/shift-schedules/bulk` | Admin/HR | Bulk assign |
+| POST | `/api/v1/shift-schedules/copy-week` | Admin/HR | Copy week schedule |
+| POST | `/api/v1/shift-schedules/rotating` | Admin/HR | Rotating shift pattern |
 
-```bash
-composer test
-vendor/bin/pint --test
-```
+**Authorization:**
 
-## Current Focus
+- Admin/HR: full CRUD on all schedules
+- Manager: view team schedules, no write
+- Employee: view own schedule only
 
-Complete backend CI and merge, then implement frontend:
+**Known Limitations:**
 
-- Employee payslip history and detail.
-- Authenticated file downloads through Axios blob responses.
-- Admin/HR payroll report summary.
-- CSV and PDF export actions.
-- Responsive employee and administrative pages.
-- Component tests, lint, build, and mobile acceptance.
-
-## Source of Truth
-
-- Core routes: `routes/api_v1.php`
-- Payroll routes: `routes/payroll.php`
-- Payslip/report routes: `routes/payroll_reporting.php`
-- Payslip/report contract: `docs/PAYSLIP_REPORTING.md`
-- Module inventory: `docs/MODULES.md`
-- Roadmap: `docs/ROADMAP.md`
-- API matrix: `docs/API_MATRIX.md`
+- Single-day view not yet implemented (week view only)
+- No drag-and-drop calendar
+- No shift swap requests
+- No automatic conflict resolution for overlapping shifts
