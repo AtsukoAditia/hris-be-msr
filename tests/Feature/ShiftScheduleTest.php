@@ -67,9 +67,20 @@ class ShiftScheduleTest extends TestCase
 
     public function test_admin_can_list_schedules(): void
     {
-        ShiftSchedule::factory()->count(3)->create([
+        ShiftSchedule::factory()->create([
             'employee_id' => $this->staffEmployee->id,
             'shift_id' => $this->shift->id,
+            'schedule_date' => '2026-07-20',
+        ]);
+        ShiftSchedule::factory()->create([
+            'employee_id' => $this->staffEmployee->id,
+            'shift_id' => $this->shift->id,
+            'schedule_date' => '2026-07-21',
+        ]);
+        ShiftSchedule::factory()->create([
+            'employee_id' => $this->staffEmployee->id,
+            'shift_id' => $this->shift->id,
+            'schedule_date' => '2026-07-22',
         ]);
 
         $response = $this->actingAs($this->admin)
