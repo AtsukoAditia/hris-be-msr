@@ -124,8 +124,8 @@ class ShiftScheduleService
 
         try {
             foreach ($sourceSchedules as $source) {
-                $dayOffset = Carbon::parse($source->schedule_date)->startOfDay()
-                    ->diffInDays($sourceStart->startOfDay());
+                $sourceDate = Carbon::parse($source->schedule_date)->startOfDay();
+                $dayOffset = $sourceStart->copy()->startOfDay()->diffInDays($sourceDate);
                 $targetDate = $targetStart->copy()->addDays($dayOffset)->toDateString();
 
                 try {
