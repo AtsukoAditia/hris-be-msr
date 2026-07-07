@@ -1,57 +1,79 @@
-# Module Inventory — Smart Attendance HRIS
+# Module Inventory — Smart Attendance HRIS Backend
 
-> Last updated: 20 June 2026
+> Last updated: 8 July 2026  
+> Repository: `AtsukoAditia/hris-be-msr`  
+> Main branch: `main`
 
-## Completed Core Modules
+## Current Backend Module Status
 
-| Module | Main Capabilities | Access |
-|---|---|---|
-| Authentication and RBAC | Sanctum, Admin, HR, Manager, Employee, ownership and manager scope | All roles |
-| Dashboard | Role-based summaries | All roles |
-| Organization Master | Department, position, branch | Admin, HR; Manager read |
-| Employee Management | Employee records, direct manager, profile, contacts, documents | Admin, HR; employee self-service |
-| Shift and Schedule | Shift CRUD and basic assignments | Admin, HR |
-| Attendance | GPS, photo, radius, QR, history, monitoring | All roles; reviewer scope |
-| Attendance Correction | Request, review, attachment, manual correction | All roles; reviewer scope |
-| Leave | Request, approval, type, policy, holiday, balance | All roles; reviewer/admin scope |
-| Overtime | Policy, request, approval, actual minutes | All roles; reviewer/admin scope |
-| Activity Log | Actor, action, endpoint, status, IP, timestamp | Admin, HR |
-| Reports | Attendance, leave, employee, CSV export | Admin, HR, Manager |
+| Module | Main Capabilities | Access | Backend Status | Frontend Contract |
+|---|---|---|---|---|
+| Authentication and RBAC | Sanctum login/logout/me, password change, role middleware, ownership scope | Public/Auth | ✅ Complete | ✅ Synced |
+| Dashboard | Role-based summary data | All roles | ✅ Complete | ✅ Synced |
+| Organization Master | Departments, positions, branches | Admin/HR; Manager read | ✅ Complete | ✅ Synced |
+| Employee Management | Employee CRUD, manager relation, profile linkage, face enrollment support | Admin/HR | ✅ Complete | ✅ Synced |
+| Profile Self-Service | Employee profile, emergency contacts, change requests | Auth/Admin/HR review | ✅ Complete | ✅ Synced |
+| Documents | Employee private documents, categories, self-service and admin document flows | Auth/Admin/HR | ✅ Complete | ✅ Synced |
+| Shift Master | Shift definitions and administration | Admin/HR | ✅ Complete | ✅ Synced |
+| Attendance | GPS/photo/radius/QR check-in/out, history, monitoring, export | Auth; reviewer scope | ✅ Complete | ✅ Synced |
+| Attendance Correction | Request, cancel, attachment, review, manual correction | Auth; reviewer/admin scope | ✅ Complete | ✅ Synced |
+| Leave | Request, balance, approval, leave type, policy, holiday, admin balance | Auth; reviewer/admin scope | ✅ Complete | ✅ Synced |
+| Overtime | Policy, request, approval/reject, cancel, actual minutes | Auth; reviewer/admin scope | ✅ Complete | ✅ Synced |
+| Reports | Attendance, leave, employee reports, CSV export | Admin/HR/Manager | ✅ Complete | ✅ Synced |
+| Activity Log | Actor, action, endpoint, status, IP, timestamp | Admin/HR | ✅ Complete | ✅ Synced |
+| Payroll Foundation | Salary components, salary profiles, periods, payroll generation, lifecycle | Admin/HR | ✅ Complete | ✅ Synced |
+| Payslip and Payroll Reporting | Employee payslip history/detail/download, admin summary/export/download | Employee owner; Admin/HR | ✅ Complete | ✅ Synced |
+| Sprint 3 Shift Schedule | CRUD, day off, bulk, copy-week, rotating, self schedule, team schedule | Owner/Admin/HR/Manager | ✅ Complete | ✅ Synced |
 
 ## Payroll Foundation
 
-| Module | Main Capabilities | Access | Status |
+| Submodule | Main Capabilities | Access | Status |
 |---|---|---|---|
-| Salary Components | Earning/deduction; fixed, percentage, formula-ready | Admin, HR | Backend Complete |
-| Employee Salary Profile | Effective dates and component assignments | Admin, HR | Backend Complete |
-| Payroll Period | Period, cutoff, open/closed state | Admin, HR | Backend Complete |
-| Payroll Calculation | Salary, attendance, absence, unpaid leave, overtime | Admin, HR | Backend Complete |
-| Payroll Workflow | Generate, recalculate, review, finalize, paid, cancel | Admin, HR | Backend Complete |
-| Payroll Workspace | Responsive administration UI | Admin, HR | Frontend In Progress |
-| Payslip | Employee breakdown and history | Employee, Admin, HR | Planned |
-| Payroll Report | Period summary and CSV/PDF | Admin, HR | Planned |
+| Salary Components | Earning/deduction; fixed, percentage, formula-ready calculation type | Admin/HR | ✅ Complete |
+| Employee Salary Profile | Effective dates, base salary, currency, notes, component assignments | Admin/HR | ✅ Complete |
+| Payroll Period | Period dates, cutoff dates, open/closed state | Admin/HR | ✅ Complete |
+| Payroll Calculation | Basic salary, attendance, absence, unpaid leave, overtime actual minutes | Admin/HR | ✅ Complete |
+| Payroll Items | Snapshot breakdown for earnings/deductions and calculation traceability | Admin/HR | ✅ Complete |
+| Payroll Workflow | Generate, recalculate draft, review, finalize, paid, cancel | Admin/HR | ✅ Complete |
+| Payroll Reports | Summary, filter, CSV/PDF export, admin payslip download | Admin/HR | ✅ Complete |
+| Employee Payslips | Finalized/paid history, detail, authenticated PDF download | Owner | ✅ Complete |
 
-## Payroll Foundation Rules
+## Shift Schedule Foundation
 
-- One payroll record per employee and period.
-- Generation requires an open period.
-- Recalculation is limited to draft payroll.
-- Status flow is `draft → reviewed → finalized → paid`.
-- Cancellation requires a reason and is blocked after payment.
-- Finalized salary data cannot be silently changed.
-- Critical transitions use database transactions and row locking.
+| Submodule | Main Capabilities | Access | Status |
+|---|---|---|---|
+| Schedule CRUD | Create, list, show, update, delete schedules | Admin/HR; scoped Manager | ✅ Complete |
+| Day Off | Nullable `shift_id`, `is_day_off`, notes | Admin/HR; scoped Manager | ✅ Complete |
+| Bulk Assign | Multi-employee, multi-date assignment | Admin/HR; scoped Manager contract exists | ✅ Complete |
+| Copy Week | Copy schedules from source week to target week with optional employee filter | Admin/HR; scoped Manager contract exists | ✅ Complete |
+| Rotating Pattern | Generate multi-week rotating pattern from shift sequence | Admin/HR; scoped Manager contract exists | ✅ Complete |
+| My Schedule | Employee-owned weekly schedule endpoint | Owner | ✅ Complete |
+| Team Schedule | Manager/admin/HR team schedule endpoint | Admin/HR/Manager | ✅ Complete |
+| Route Hardening | Custom lookup routes before resource route | Admin/HR/Manager | ✅ Complete |
 
-## Planned Enhancements
+## Current Scope Limitations
 
-- Payslip and payroll reporting.
-- Weekly/monthly shift calendar.
-- Notification center.
-- Generic approval workflow.
-- Attendance and leave enhancements.
-- Excel/PDF and background reporting.
-- System settings.
-- Production hardening and final documentation.
+These are intentionally not implemented yet and must be treated as future roadmap, not bugs:
 
-## Optional Modules
+- Automatic tax/social-security calculation.
+- Post-finalization payroll adjustment ledger.
+- Multi-level payroll approval.
+- Advanced shift schedule conflict and coverage analytics.
+- Shift swap request and approval workflow.
+- Notification center and preference management.
+- Attendance anomaly intelligence.
+- Employee lifecycle and performance management.
 
-Organization chart, recruitment, onboarding/offboarding, performance, reimbursement, assets, announcements, training, and employee loans remain deferred until core payroll and production readiness are complete.
+## Integration Rules
+
+- Backend authorization is the source of truth; frontend role guards are only UX controls.
+- All business endpoints must remain under `/api/v1`.
+- Use Form Request validation for write endpoints.
+- Critical payroll transitions must use transactions and row locks.
+- Employee payslip access must be ownership-scoped and status-scoped to finalized/paid records.
+- Shift schedule custom routes must stay before `apiResource('/shift-schedules', ...)` to avoid `{shiftSchedule}` shadowing.
+- Bulk/copy/rotating shift responses should keep both `data` and `created` arrays for frontend compatibility.
+
+## Deferred Optional Modules
+
+Organization chart, recruitment, onboarding/offboarding, performance management, reimbursement, asset management, announcements, training, and employee loans are deferred until stabilization and payroll/workforce intelligence are stable.
