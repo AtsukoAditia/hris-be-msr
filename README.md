@@ -2,7 +2,7 @@
 
 Laravel REST API untuk **Smart Attendance HRIS**, terhubung dengan frontend React PWA `hris-fe-msr`.
 
-> Status terakhir diverifikasi: 20 Juni 2026  
+> Status terakhir diverifikasi: 7 Juli 2026  
 > Branch utama: `main`
 
 ## Tech Stack
@@ -34,10 +34,12 @@ Core modules already integrated with the frontend:
 - Shift, attendance, GPS/photo/radius/QR, and attendance correction.
 - Leave, leave administration, and overtime workflow.
 - Reports, CSV export, and activity log viewer.
+- Basic payroll foundation.
+- Employee payslip and payroll reporting.
 
 ### Basic Payroll Foundation
 
-Backend implementation is complete and the frontend workspace is the active integration milestone.
+Backend implementation is complete and synchronized with the frontend payroll workspace.
 
 Available backend capabilities:
 
@@ -63,25 +65,48 @@ Payroll foundation endpoints are under:
 /api/v1/admin/payrolls
 ```
 
+### Payslip and Payroll Reporting
+
+Payslip and payroll reporting are now implemented on the backend.
+
+Available backend capabilities:
+
+- Employee payslip history.
+- Authenticated employee payslip detail and download.
+- Admin/HR payroll report summary.
+- Payroll CSV/PDF export.
+- Admin/HR payslip download for finalized or paid payroll records.
+- Ownership and role enforcement through backend authorization.
+
+Payslip and reporting endpoints are under:
+
+```text
+/api/v1/payslips
+/api/v1/payslips/{payroll}
+/api/v1/payslips/{payroll}/download
+/api/v1/admin/payroll-reports/summary
+/api/v1/admin/payroll-reports/export
+/api/v1/admin/payrolls/{payroll}/payslip/download
+```
+
 Detailed endpoint mapping is available in `docs/API_MATRIX.md`.
 
 ## Payroll Scope Limitations
 
-The foundation release intentionally excludes:
+The current payroll implementation intentionally excludes:
 
-- Employee payslip and PDF download.
-- Payroll CSV/PDF reporting.
-- Tax and social-security calculation.
+- Automatic tax and social-security calculation.
 - Post-finalization adjustment records.
 - Multi-level payroll approval.
 
-These are planned for Payroll Sprint 2.
+These remain candidates for a future payroll sprint.
 
 ## Security Rules
 
 - All business endpoints use Sanctum authentication.
 - Frontend role visibility is not treated as authorization.
 - Payroll administration is restricted to Admin and HR.
+- Employee payslip access is ownership-scoped.
 - Critical status transitions use database transactions and row locking.
 - Draft payroll can be recalculated; finalized and paid payroll cannot be edited directly.
 - Cancellation requires a reason and is blocked after payment.
@@ -122,10 +147,11 @@ docs/PROJECT_STATUS.md
 docs/MODULES.md
 docs/ROADMAP.md
 docs/API_MATRIX.md
+docs/PAYSLIP_REPORTING.md
 docs/ARCHITECTURE.md
 docs/DEVELOPMENT_GUIDE.md
 ```
 
 ## Next Focus
 
-Frontend Basic Payroll Foundation: salary components, employee salary profiles, payroll periods, payroll processing, lifecycle actions, responsive states, tests, and documentation.
+Sprint 3 shift schedule hardening: self-service schedule view, team schedule view, copy-week, rotating schedule, day-off handling, backend CI, and frontend/backend contract verification.
