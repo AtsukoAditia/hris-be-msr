@@ -18,6 +18,7 @@ class ShiftScheduleFactory extends Factory
             'shift_id' => Shift::factory(),
             'schedule_date' => fake()->dateTimeBetween('+1 day', '+30 days')->format('Y-m-d'),
             'is_day_off' => false,
+            'version' => 1,
         ];
     }
 

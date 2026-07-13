@@ -30,6 +30,7 @@ use App\Http\Controllers\API\ProfileController;
 use App\Http\Controllers\API\ReportController;
 use App\Http\Controllers\API\ShiftController;
 use App\Http\Controllers\API\ShiftScheduleController;
+use App\Http\Controllers\API\ShiftSwapController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -132,18 +133,33 @@ Route::prefix('v1')->group(function () {
             Route::get('/shift-schedules/team-schedule', [ShiftScheduleController::class, 'teamSchedule']);
         });
 
+        Route::middleware('role:admin,hr,manager')->group(function () {
+            Route::post('/shift-schedules/validate-conflicts', [ShiftScheduleController::class, 'validateConflicts']);
+            Route::post('/shift-schedules/bulk', [ShiftScheduleController::class, 'bulkStore']);
+            Route::post('/shift-schedules/copy-week', [ShiftScheduleController::class, 'copyWeek']);
+            Route::post('/shift-schedules/rotating', [ShiftScheduleController::class, 'rotating']);
+            Route::post('/shift-schedules/{shiftSchedule}/publish', [ShiftScheduleController::class, 'publish']);
+            Route::post('/shift-schedules/{shiftSchedule}/unpublish', [ShiftScheduleController::class, 'unpublish']);
+            Route::get('/shift-schedules/{shiftSchedule}/versions', [ShiftScheduleController::class, 'versions']);
+            Route::apiResource('/shift-schedules', ShiftScheduleController::class);
+        });
+
         Route::middleware('role:admin,hr')->group(function () {
             Route::put('/attendance/settings', [AttendanceSettingController::class, 'update']);
             Route::post('/attendance/qr/generate', [AttendanceSettingController::class, 'generateQr']);
             Route::apiResource('/shifts', ShiftController::class);
         });
 
+        // Shift swap requests
+        Route::get('/shift-swap-requests/my', [ShiftSwapController::class, 'myRequests']);
+        Route::get('/shift-swap-requests/incoming', [ShiftSwapController::class, 'incomingRequests']);
         Route::middleware('role:admin,hr,manager')->group(function () {
-            Route::post('/shift-schedules/bulk', [ShiftScheduleController::class, 'bulkStore']);
-            Route::post('/shift-schedules/copy-week', [ShiftScheduleController::class, 'copyWeek']);
-            Route::post('/shift-schedules/rotating', [ShiftScheduleController::class, 'rotating']);
-            Route::apiResource('/shift-schedules', ShiftScheduleController::class);
+            Route::get('/shift-swap-requests', [ShiftSwapController::class, 'index']);
+            Route::post('/shift-swap-requests/{shiftSwapRequest}/approve', [ShiftSwapController::class, 'approve']);
+            Route::post('/shift-swap-requests/{shiftSwapRequest}/reject', [ShiftSwapController::class, 'reject']);
         });
+        Route::post('/shift-swap-requests/{shiftSwapRequest}/cancel', [ShiftSwapController::class, 'cancel']);
+        Route::post('/shift-swap-requests', [ShiftSwapController::class, 'store']);
 
         Route::middleware('role:admin,hr')->group(function () {
             Route::get('/profile-change-requests', [ProfileChangeReviewController::class, 'index']);

@@ -4,7 +4,10 @@ namespace App\Services;
 
 use App\Exceptions\BusinessValidationException;
 use App\Models\Employee;
+use App\Models\ScheduleConflictLog;
+use App\Models\Shift;
 use App\Models\ShiftSchedule;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Throwable;
@@ -233,5 +236,210 @@ class ShiftScheduleService
                 "Employee already has a schedule for {$date}."
             );
         }
+    }
+
+    /**
+     * Validate rest hours: minimum 11 hours between consecutive shifts.
+     * Returns conflict logs array (empty if no conflicts).
+     */
+    public function validateRestHours(int $employeeId, string $startDate, string $endDate): array
+    {
+        $conflicts = [];
+        $schedules = ShiftSchedule::with('shift')
+            ->where('employee_id', $employeeId)
+            ->whereBetween('schedule_date', [$startDate, $endDate])
+            ->where('is_day_off', false)
+            ->whereNotNull('shift_id')
+            ->orderBy('schedule_date')
+            ->get();
+
+        $prevEndTime = null;
+        $prevDate = null;
+
+        foreach ($schedules as $schedule) {
+            $shift = $schedule->shift;
+            if (! $shift) continue;
+
+            $dateStr = Carbon::parse($schedule->schedule_date)->toDateString();
+            $startDateTime = Carbon::parse($dateStr . ' ' . $shift->start_time);
+            $endDateTime = $shift->is_overnight
+                ? Carbon::parse($dateStr . ' ' . $shift->end_time)->addDay()
+                : Carbon::parse($dateStr . ' ' . $shift->end_time);
+
+            if ($prevEndTime) {
+                $hoursDiff = $prevEndTime->floatDiffInHours($startDateTime);
+                if ($hoursDiff < 11) {
+                    $msg = "Only {$hoursDiff}h rest between {$prevDate} shift and {$schedule->schedule_date} shift (min 11h).";
+                    $conflicts[] = [
+                        'type' => ScheduleConflictLog::REST_HOUR,
+                        'date' => $schedule->schedule_date,
+                        'message' => $msg,
+                        'details' => ['hours_between' => round($hoursDiff, 1), 'prev_date' => $prevDate],
+                    ];
+                }
+            }
+
+            $prevEndTime = $endDateTime;
+            $prevDate = $schedule->schedule_date;
+        }
+
+        return $conflicts;
+    }
+
+    /**
+     * Validate max hours: max 40 hours per week.
+     */
+    public function validateMaxHours(int $employeeId, string $startDate, string $endDate): array
+    {
+        $conflicts = [];
+        $start = Carbon::parse($startDate)->startOfWeek(Carbon::MONDAY);
+        $end = Carbon::parse($endDate);
+
+        while ($start->lte($end)) {
+            $weekEnd = $start->copy()->endOfWeek(Carbon::MONDAY);
+            $weekStart = $start->toDateString();
+            $weekEndStr = $weekEnd->toDateString();
+
+            $schedules = ShiftSchedule::with('shift')
+                ->where('employee_id', $employeeId)
+                ->whereBetween('schedule_date', [$weekStart, $weekEndStr])
+                ->where('is_day_off', false)
+                ->whereNotNull('shift_id')
+                ->get();
+
+            $totalHours = 0;
+            foreach ($schedules as $schedule) {
+                $shift = $schedule->shift;
+                if (! $shift) continue;
+
+                $startTime = Carbon::parse($shift->start_time);
+                $endTime = Carbon::parse($shift->end_time);
+                if ($shift->is_overnight) {
+                    $endTime->addDay();
+                }
+                $totalHours += $startTime->floatDiffInHours($endTime);
+            }
+
+            if ($totalHours > 40) {
+                $msg = "Employee scheduled for {$totalHours}h in week of {$weekStart} (max 40h).";
+                $conflicts[] = [
+                    'type' => ScheduleConflictLog::MAX_HOURS,
+                    'date' => $weekStart,
+                    'message' => $msg,
+                    'details' => ['total_hours' => round($totalHours, 1), 'week_start' => $weekStart],
+                ];
+            }
+
+            $start->addWeek();
+        }
+
+        return $conflicts;
+    }
+
+    /**
+     * Validate overlap: check for duplicate schedules on same date.
+     */
+    public function validateOverlap(int $employeeId, string $startDate, string $endDate): array
+    {
+        $conflicts = [];
+        $duplicates = ShiftSchedule::where('employee_id', $employeeId)
+            ->whereBetween('schedule_date', [$startDate, $endDate])
+            ->selectRaw('schedule_date, COUNT(*) as cnt')
+            ->groupBy('schedule_date')
+            ->having('cnt', '>', 1)
+            ->get();
+
+        foreach ($duplicates as $dup) {
+            $msg = "Duplicate schedule found for {$dup->schedule_date}.";
+            $conflicts[] = [
+                'type' => ScheduleConflictLog::OVERLAP,
+                'date' => $dup->schedule_date,
+                'message' => $msg,
+                'details' => ['count' => $dup->cnt],
+            ];
+        }
+
+        return $conflicts;
+    }
+
+    /**
+     * Validate coverage: check minimum coverage per department.
+     * ponytail: hardcoded min_coverage=1 per department per day. Upgrade: make configurable per department.
+     */
+    public function validateCoverage(string $startDate, string $endDate, int $minCoverage = 1): array
+    {
+        $conflicts = [];
+
+        $start = Carbon::parse($startDate);
+        $end = Carbon::parse($endDate);
+
+        // Group employees by department, check each day
+        $dates = [];
+        $current = $start->copy();
+        while ($current->lte($end)) {
+            $dates[] = $current->toDateString();
+            $current->addDay();
+        }
+
+        $departments = Employee::where('is_active', true)
+            ->selectRaw('department_id, COUNT(*) as employee_count')
+            ->whereNotNull('department_id')
+            ->groupBy('department_id')
+            ->get();
+
+        foreach ($departments as $dept) {
+            foreach ($dates as $date) {
+                $scheduledCount = ShiftSchedule::whereHas('employee', function ($q) use ($dept) {
+                    $q->where('department_id', $dept->department_id);
+                })
+                    ->whereDate('schedule_date', $date)
+                    ->where('is_day_off', false)
+                    ->count();
+
+                if ($scheduledCount < $minCoverage) {
+                    $conflicts[] = [
+                        'type' => ScheduleConflictLog::COVERAGE,
+                        'date' => $date,
+                        'message' => "Department #{$dept->department_id} has only {$scheduledCount} scheduled employee(s) on {$date} (min {$minCoverage}).",
+                        'details' => ['department_id' => $dept->department_id, 'scheduled' => $scheduledCount, 'required' => $minCoverage],
+                    ];
+                }
+            }
+        }
+
+        return $conflicts;
+    }
+
+    /**
+     * Run all conflict validations and return combined results.
+     */
+    public function validateAllConflicts(string $startDate, string $endDate, ?int $employeeId = null): array
+    {
+        $allConflicts = [];
+
+        if ($employeeId) {
+            $allConflicts = array_merge($allConflicts, $this->validateRestHours($employeeId, $startDate, $endDate));
+            $allConflicts = array_merge($allConflicts, $this->validateMaxHours($employeeId, $startDate, $endDate));
+            $allConflicts = array_merge($allConflicts, $this->validateOverlap($employeeId, $startDate, $endDate));
+        }
+
+        $allConflicts = array_merge($allConflicts, $this->validateCoverage($startDate, $endDate));
+
+        return $allConflicts;
+    }
+
+    public function publishSchedule(ShiftSchedule $schedule, int $userId): ShiftSchedule
+    {
+        $user = User::findOrFail($userId);
+        $schedule->publish($user);
+
+        return $schedule->fresh();
+    }
+
+    public function unpublishSchedule(ShiftSchedule $schedule): ShiftSchedule
+    {
+        $schedule->unpublish();
+
+        return $schedule->fresh();
     }
 }
