@@ -75,6 +75,32 @@ class PayrollAdminController extends Controller
         return $this->runTransition(fn () => $this->payrollService->recalculate($payroll, $request->user()));
     }
 
+    public function submit(Request $request, Payroll $payroll): JsonResponse
+    {
+        return $this->runTransition(fn () => $this->payrollService->submit($payroll, $request->user()));
+    }
+
+    public function approve(Request $request, Payroll $payroll): JsonResponse
+    {
+        return $this->runTransition(fn () => $this->payrollService->approve($payroll, $request->user()));
+    }
+
+    public function simulate(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'employee_id' => 'required|integer',
+            'payroll_period_id' => 'required|integer',
+        ]);
+
+        $result = $this->payrollService->simulate(
+            $validated['employee_id'],
+            $validated['payroll_period_id'],
+            $request->user(),
+        );
+
+        return response()->json(['data' => $result]);
+    }
+
     public function review(Request $request, Payroll $payroll): JsonResponse
     {
         return $this->runTransition(fn () => $this->payrollService->review($payroll, $request->user()));
