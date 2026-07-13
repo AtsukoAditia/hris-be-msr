@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  db:
+    image: mysql:8.0
+    container_name: hris-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: hris_msr
+      MYSQL_USER: hris
+      MYSQL_PASSWORD: hris_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - hris-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 5s
+      retries: 10
+
+  # Backend Laravel
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: hris-backend
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - ./backend:/var/www
+      - ./backend/storage:/var/www/storage
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_DATABASE=hris_msr
+      - DB_USERNAME=hris
+      - DB_PASSWORD=hris_password
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - hris-network
+    ports:
+      - "8000:8000"
+    command: >
+      sh -c "composer install && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000"
+
+  # Frontend React
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: hris-frontend
+    restart: unless-stopped
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_BASE_URL=http://43.157.207.183:8000/api/v1
+    depends_on:
+      - backend
+    networks:
+      - hris-network
+    ports:
+      - "3000:3000"
+    command: npm run dev
+
+volumes:
+  mysql_data:
+
+networks:
+  hris-network:
+    driver: bridge
