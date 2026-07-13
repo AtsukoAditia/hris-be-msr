@@ -81,6 +81,49 @@ class PayrollPeriodAdminController extends Controller
         return response()->json(['message' => 'Payroll period deleted.']);
     }
 
+    public function lock(Request $request, PayrollPeriod $payrollPeriod): PayrollPeriodResource
+    {
+        if ($payrollPeriod->isLocked()) {
+            abort(409, 'Period is already locked.');
+        }
+
+        $payrollPeriod->update([
+            'locked_at' => now(),
+            'locked_by' => $request->user()->id,
+        ]);
+
+        ActivityLog::log(ActivityAction::UPDATE, PayrollPeriod::class, $payrollPeriod->id, [
+            'action' => 'lock',
+            'locked_at' => $payrollPeriod->locked_at->toIso8601String(),
+            'locked_by' => $request->user()->id,
+        ]);
+
+        return new PayrollPeriodResource($payrollPeriod->fresh()->loadCount('payrolls'));
+    }
+
+    public function unlock(Request $request, PayrollPeriod $payrollPeriod): PayrollPeriodResource
+    {
+        if (!$payrollPeriod->isLocked()) {
+            abort(409, 'Period is not locked.');
+        }
+
+        if ($payrollPeriod->payrolls()->whereIn('status', [Payroll::STATUS_FINALIZED, Payroll::STATUS_PAID])->exists()) {
+            abort(409, 'Cannot unlock period with finalized or paid payroll.');
+        }
+
+        $payrollPeriod->update([
+            'locked_at' => null,
+            'locked_by' => null,
+        ]);
+
+        ActivityLog::log(ActivityAction::UPDATE, PayrollPeriod::class, $payrollPeriod->id, [
+            'action' => 'unlock',
+            'unlocked_by' => $request->user()->id,
+        ]);
+
+        return new PayrollPeriodResource($payrollPeriod->fresh()->loadCount('payrolls'));
+    }
+
     private function assertNoOverlap(string $startDate, string $endDate, ?int $exceptId = null): void
     {
         $overlap = PayrollPeriod::query()

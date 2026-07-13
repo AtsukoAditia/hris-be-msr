@@ -13,7 +13,11 @@ class Payroll extends Model
 
     public const STATUS_DRAFT = 'draft';
 
+    public const STATUS_SUBMITTED = 'submitted';
+
     public const STATUS_REVIEWED = 'reviewed';
+
+    public const STATUS_APPROVED = 'approved';
 
     public const STATUS_FINALIZED = 'finalized';
 
@@ -38,12 +42,16 @@ class Payroll extends Model
         'overtime_minutes',
         'input_snapshot',
         'generated_by',
+        'submitted_by',
         'reviewed_by',
+        'approved_by',
         'finalized_by',
         'paid_by',
         'cancelled_by',
         'generated_at',
+        'submitted_at',
         'reviewed_at',
+        'approved_at',
         'finalized_at',
         'paid_at',
         'cancelled_at',
@@ -57,7 +65,9 @@ class Payroll extends Model
         'net_salary' => 'decimal:2',
         'input_snapshot' => 'array',
         'generated_at' => 'datetime',
+        'submitted_at' => 'datetime',
         'reviewed_at' => 'datetime',
+        'approved_at' => 'datetime',
         'finalized_at' => 'datetime',
         'paid_at' => 'datetime',
         'cancelled_at' => 'datetime',
@@ -81,5 +91,10 @@ class Payroll extends Model
     public function items(): HasMany
     {
         return $this->hasMany(PayrollItem::class)->orderBy('type')->orderBy('id');
+    }
+
+    public function adjustments(): HasMany
+    {
+        return $this->hasMany(PayrollAdjustment::class);
     }
 }
