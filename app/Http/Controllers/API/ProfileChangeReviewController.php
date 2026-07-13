@@ -89,11 +89,11 @@ class ProfileChangeReviewController extends Controller
             ->when($filters['search'] ?? null, function (Builder $builder, string $search): void {
                 $builder->whereHas('employee', function (Builder $employeeQuery) use ($search): void {
                     $employeeQuery
-                        ->where('employee_number', 'like', '%'.$search.'%')
+                        ->where('employee_number', 'ilike', '%'.$search.'%')
                         ->orWhereHas('user', function (Builder $userQuery) use ($search): void {
                             $userQuery
-                                ->where('name', 'like', '%'.$search.'%')
-                                ->orWhere('email', 'like', '%'.$search.'%');
+                                ->where('name', 'ilike', '%'.$search.'%')
+                                ->orWhere('email', 'ilike', '%'.$search.'%');
                         });
                 });
             });

@@ -56,19 +56,19 @@ class EmployeeQueryService
         if ($request->filled('search')) {
             $search = trim((string) $request->search);
             $query->where(function ($filter) use ($search) {
-                $filter->where('employee_number', 'like', '%'.$search.'%')
-                    ->orWhere('nik', 'like', '%'.$search.'%')
-                    ->orWhere('department', 'like', '%'.$search.'%')
-                    ->orWhere('position', 'like', '%'.$search.'%')
-                    ->orWhere('employment_type', 'like', '%'.$search.'%')
-                    ->orWhereHas('departmentMaster', fn ($master) => $master->where('code', 'like', '%'.$search.'%')->orWhere('name', 'like', '%'.$search.'%'))
-                    ->orWhereHas('positionMaster', fn ($master) => $master->where('code', 'like', '%'.$search.'%')->orWhere('name', 'like', '%'.$search.'%'))
-                    ->orWhereHas('branch', fn ($branch) => $branch->where('code', 'like', '%'.$search.'%')->orWhere('name', 'like', '%'.$search.'%')->orWhere('address', 'like', '%'.$search.'%'))
+                $filter->where('employee_number', 'ilike', '%'.$search.'%')
+                    ->orWhere('nik', 'ilike', '%'.$search.'%')
+                    ->orWhere('department', 'ilike', '%'.$search.'%')
+                    ->orWhere('position', 'ilike', '%'.$search.'%')
+                    ->orWhere('employment_type', 'ilike', '%'.$search.'%')
+                    ->orWhereHas('departmentMaster', fn ($master) => $master->where('code', 'ilike', '%'.$search.'%')->orWhere('name', 'ilike', '%'.$search.'%'))
+                    ->orWhereHas('positionMaster', fn ($master) => $master->where('code', 'ilike', '%'.$search.'%')->orWhere('name', 'ilike', '%'.$search.'%'))
+                    ->orWhereHas('branch', fn ($branch) => $branch->where('code', 'ilike', '%'.$search.'%')->orWhere('name', 'ilike', '%'.$search.'%')->orWhere('address', 'ilike', '%'.$search.'%'))
                     ->orWhereHas('manager', function ($manager) use ($search) {
-                        $manager->where('employee_number', 'like', '%'.$search.'%')
-                            ->orWhereHas('user', fn ($user) => $user->where('name', 'like', '%'.$search.'%')->orWhere('email', 'like', '%'.$search.'%'));
+                        $manager->where('employee_number', 'ilike', '%'.$search.'%')
+                            ->orWhereHas('user', fn ($user) => $user->where('name', 'ilike', '%'.$search.'%')->orWhere('email', 'ilike', '%'.$search.'%'));
                     })
-                    ->orWhereHas('user', fn ($user) => $user->where('name', 'like', '%'.$search.'%')->orWhere('email', 'like', '%'.$search.'%'));
+                    ->orWhereHas('user', fn ($user) => $user->where('name', 'ilike', '%'.$search.'%')->orWhere('email', 'ilike', '%'.$search.'%'));
             });
         }
 
@@ -101,9 +101,9 @@ class EmployeeQueryService
         if ($request->filled('search')) {
             $search = trim((string) $request->search);
             $query->where(function ($filter) use ($search) {
-                $filter->where('employee_number', 'like', '%'.$search.'%')
-                    ->orWhereHas('user', fn ($user) => $user->where('name', 'like', '%'.$search.'%')->orWhere('email', 'like', '%'.$search.'%'))
-                    ->orWhereHas('positionMaster', fn ($position) => $position->where('code', 'like', '%'.$search.'%')->orWhere('name', 'like', '%'.$search.'%'));
+                $filter->where('employee_number', 'ilike', '%'.$search.'%')
+                    ->orWhereHas('user', fn ($user) => $user->where('name', 'ilike', '%'.$search.'%')->orWhere('email', 'ilike', '%'.$search.'%'))
+                    ->orWhereHas('positionMaster', fn ($position) => $position->where('code', 'ilike', '%'.$search.'%')->orWhere('name', 'ilike', '%'.$search.'%'));
             });
         }
 

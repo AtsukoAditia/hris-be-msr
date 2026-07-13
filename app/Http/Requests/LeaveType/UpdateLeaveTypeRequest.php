@@ -25,7 +25,7 @@ class UpdateLeaveTypeRequest extends FormRequest
             'requires_balance' => ['boolean'],
             'max_consecutive_days' => ['nullable', 'integer', 'min:1', 'max:365'],
             'max_days_per_year' => ['nullable', 'integer', 'min:1', 'max:366'],
-            'default_days_per_year' => ['sometimes', 'required', 'integer', 'min:0', 'max:366'],
+            'default_days_per_year' => ['sometimes', 'integer', 'min:0', 'max:366'],
             'min_service_months' => ['nullable', 'integer', 'min:0', 'max:120'],
             'gender_restriction' => ['nullable', Rule::in(['male', 'female', 'all'])],
             'carry_forward_enabled' => ['boolean'],

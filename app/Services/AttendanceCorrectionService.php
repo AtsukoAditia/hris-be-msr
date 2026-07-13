@@ -60,9 +60,9 @@ class AttendanceCorrectionService
         if (! empty($filters['search'])) {
             $search = $filters['search'];
             $query->where(function ($q) use ($search) {
-                $q->where('reason', 'like', "%{$search}%")
+                $q->where('reason', 'ilike', "%{$search}%")
                   ->orWhereHas('employee', function ($eq) use ($search) {
-                      $eq->where('full_name', 'like', "%{$search}%");
+                      $eq->where('full_name', 'ilike', "%{$search}%");
                   });
             });
         }
