@@ -24,6 +24,11 @@ class StoreAttendanceCorrectionRequest extends FormRequest
             }
         }
 
+        // Backward compatibility: accept correction_date as attendance_date
+        if (! $this->has('attendance_date') && $this->has('correction_date')) {
+            $values['attendance_date'] = $this->input('correction_date');
+        }
+
         $this->merge($values);
     }
 
