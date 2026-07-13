@@ -24,12 +24,18 @@ class LeaveTypeAdminController extends Controller
 
     public function store(StoreLeaveTypeRequest $request): JsonResponse
     {
-        $type = LeaveType::create($request->validated());
+        try {
+            $type = LeaveType::create($request->validated());
 
-        return response()->json([
-            'message' => 'Leave type created successfully.',
-            'data' => new LeaveTypeResource($type),
-        ], 201);
+            return response()->json([
+                'message' => 'Leave type created successfully.',
+                'data' => new LeaveTypeResource($type),
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to create leave type: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function show(LeaveType $leaveType): LeaveTypeResource
@@ -39,30 +45,42 @@ class LeaveTypeAdminController extends Controller
 
     public function update(UpdateLeaveTypeRequest $request, LeaveType $leaveType): JsonResponse
     {
-        $leaveType->update($request->validated());
+        try {
+            $leaveType->update($request->validated());
 
-        return response()->json([
-            'message' => 'Leave type updated successfully.',
-            'data' => new LeaveTypeResource($leaveType),
-        ]);
+            return response()->json([
+                'message' => 'Leave type updated successfully.',
+                'data' => new LeaveTypeResource($leaveType),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to update leave type: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
-    public function destroy(LeaveType $leaveType): Response
+    public function destroy(LeaveType $leaveType): JsonResponse|Response
     {
-        if ($leaveType->leaves()->exists()) {
+        try {
+            if ($leaveType->leaves()->exists()) {
+                return response()->json([
+                    'message' => 'Cannot delete leave type with existing leaves.',
+                ], 409);
+            }
+
+            if ($leaveType->policies()->exists()) {
+                return response()->json([
+                    'message' => 'Cannot delete leave type with existing policies. Delete policies first.',
+                ], 409);
+            }
+
+            $leaveType->delete();
+
+            return response()->noContent();
+        } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Cannot delete leave type with existing leaves.',
-            ], 409);
+                'message' => 'Failed to delete leave type: ' . $e->getMessage(),
+            ], 500);
         }
-
-        if ($leaveType->policies()->exists()) {
-            return response()->json([
-                'message' => 'Cannot delete leave type with existing policies. Delete policies first.',
-            ], 409);
-        }
-
-        $leaveType->delete();
-
-        return response()->noContent();
     }
 }
