@@ -8,6 +8,8 @@ use App\Http\Requests\AttendanceCorrection\IndexAttendanceCorrectionRequest;
 use App\Http\Requests\AttendanceCorrection\ManualCorrectionRequest;
 use App\Http\Requests\AttendanceCorrection\RejectCorrectionRequest;
 use App\Http\Requests\AttendanceCorrection\StoreAttendanceCorrectionRequest;
+use App\Http\Resources\CorrectionResource;
+use App\Models\Attendance;
 use App\Models\AttendanceCorrectionRequest;
 use App\Models\Employee;
 use App\Services\AttendanceCorrectionService;
@@ -47,7 +49,7 @@ class AttendanceCorrectionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Data permintaan koreksi kehadiran berhasil diambil.',
-            'data' => $result,
+            'data' => CorrectionResource::collection($result)->response()->getData(true),
         ]);
     }
 
@@ -74,7 +76,7 @@ class AttendanceCorrectionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Riwayat permintaan koreksi berhasil diambil.',
-            'data' => $result,
+            'data' => CorrectionResource::collection($result)->response()->getData(true),
         ]);
     }
 
@@ -108,7 +110,7 @@ class AttendanceCorrectionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Permintaan koreksi kehadiran berhasil dikirim.',
-            'data' => $correctionRequest->load(['attendance', 'employee', 'reviewer']),
+            'data' => new CorrectionResource($correctionRequest->load(['attendance', 'employee', 'reviewer'])),
         ], 201);
     }
 
@@ -148,7 +150,7 @@ class AttendanceCorrectionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Detail permintaan koreksi berhasil diambil.',
-            'data' => $correction,
+            'data' => new CorrectionResource($correction),
         ]);
     }
 
@@ -175,7 +177,7 @@ class AttendanceCorrectionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Permintaan koreksi berhasil disetujui.',
-            'data' => $result->load(['attendance', 'employee', 'reviewer']),
+            'data' => new CorrectionResource($result->load(['attendance', 'employee', 'reviewer'])),
         ]);
     }
 
@@ -202,7 +204,7 @@ class AttendanceCorrectionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Permintaan koreksi berhasil ditolak.',
-            'data' => $result->load(['attendance', 'employee', 'reviewer']),
+            'data' => new CorrectionResource($result->load(['attendance', 'employee', 'reviewer'])),
         ]);
     }
 
@@ -232,7 +234,7 @@ class AttendanceCorrectionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Permintaan koreksi berhasil dibatalkan.',
-            'data' => $result->load(['attendance', 'employee', 'reviewer']),
+            'data' => new CorrectionResource($result->load(['attendance', 'employee', 'reviewer'])),
         ]);
     }
 
@@ -259,7 +261,7 @@ class AttendanceCorrectionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Koreksi manual berhasil dilakukan.',
-            'data' => $correction->load(['attendance', 'employee', 'reviewer']),
+            'data' => new CorrectionResource($correction->load(['attendance', 'employee', 'reviewer'])),
         ], 201);
     }
 
@@ -312,6 +314,55 @@ class AttendanceCorrectionController extends Controller
             Storage::disk('local')->path($correction->attachment_path),
             $correction->attachment_name ?? 'attachment'
         );
+    }
+
+    /**
+     * Lookup attendance record for a given employee and date (for pre-filling correction form).
+     */
+    public function lookupAttendance(): JsonResponse
+    {
+        $employeeId = request()->query('employee_id');
+        $date = request()->query('date');
+
+        if (! $employeeId || ! $date) {
+            return response()->json([
+                'success' => false,
+                'message' => 'employee_id and date parameters are required.',
+            ], 422);
+        }
+
+        $employee = Employee::find($employeeId);
+        if (! $employee) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Karyawan tidak ditemukan.',
+            ], 404);
+        }
+
+        $attendance = Attendance::where('employee_id', $employeeId)
+            ->where('attendance_date', $date)
+            ->first();
+
+        if (! $attendance) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Record attendance tidak ditemukan untuk tanggal tersebut.',
+                'data' => null,
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Record attendance ditemukan.',
+            'data' => [
+                'id' => $attendance->id,
+                'employee_id' => $attendance->employee_id,
+                'attendance_date' => $attendance->attendance_date->toDateString(),
+                'check_in_time' => $attendance->check_in_time?->format('H:i'),
+                'check_out_time' => $attendance->check_out_time?->format('H:i'),
+                'status' => $attendance->status,
+            ],
+        ]);
     }
 
     /**

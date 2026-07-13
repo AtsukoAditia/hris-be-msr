@@ -30,6 +30,10 @@ class AttendanceCorrectionService
             $query->where('status', $filters['status']);
         }
 
+        if (! empty($filters['correction_type'])) {
+            $query->where('correction_type', $filters['correction_type']);
+        }
+
         if (! empty($filters['employee_id'])) {
             $query->where('employee_id', $filters['employee_id']);
         }
@@ -52,7 +56,26 @@ class AttendanceCorrectionService
             $query->where('correction_date', '<=', $filters['date_to']);
         }
 
-        return $query->orderByDesc('created_at')->paginate($filters['per_page'] ?? 15);
+        // Search filter
+        if (! empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where(function ($q) use ($search) {
+                $q->where('reason', 'like', "%{$search}%")
+                  ->orWhereHas('employee', function ($eq) use ($search) {
+                      $eq->where('full_name', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        // Sort filter
+        $sort = $filters['sort'] ?? 'newest';
+        if ($sort === 'oldest') {
+            $query->orderBy('created_at', 'asc');
+        } else {
+            $query->orderByDesc('created_at');
+        }
+
+        return $query->paginate($filters['per_page'] ?? 15);
     }
 
     /**
@@ -76,15 +99,21 @@ class AttendanceCorrectionService
                 ->whereDate('attendance_date', $correctionDate)
                 ->first();
 
-            // Check for duplicate pending request
+            // Check for duplicate: prevent resubmission if pending OR recent rejection/cancellation (within 7 days)
             $duplicate = AttendanceCorrectionRequest::where('employee_id', $employee->id)
                 ->where('correction_date', $correctionDate)
                 ->where('correction_type', $data['correction_type'])
-                ->where('status', AttendanceCorrectionRequest::STATUS_PENDING)
+                ->where(function ($q) {
+                    $q->where('status', AttendanceCorrectionRequest::STATUS_PENDING)
+                      ->orWhere(function ($sq) {
+                          $sq->whereIn('status', [AttendanceCorrectionRequest::STATUS_REJECTED, AttendanceCorrectionRequest::STATUS_CANCELLED])
+                             ->where('created_at', '>=', now()->subDays(7));
+                      });
+                })
                 ->exists();
 
             if ($duplicate) {
-                throw new \DomainException('Anda sudah memiliki permohonan koreksi pending untuk tanggal dan tipe yang sama.');
+                throw new \DomainException('Anda sudah memiliki permohonan koreksi untuk tanggal dan tipe yang sama (pending atau baru saja ditolak/dibatalkan dalam 7 hari terakhir).');
             }
 
             // Build requested times
@@ -112,7 +141,7 @@ class AttendanceCorrectionService
                 $attachmentSize = $attachment->getSize();
             }
 
-            return AttendanceCorrectionRequest::create([
+            $correction = AttendanceCorrectionRequest::create([
                 'employee_id' => $employee->id,
                 'attendance_id' => $attendance?->id,
                 'correction_date' => $correctionDate,
@@ -128,6 +157,18 @@ class AttendanceCorrectionService
                 'attachment_size' => $attachmentSize,
                 'status' => AttendanceCorrectionRequest::STATUS_PENDING,
             ]);
+
+            ActivityLog::log(
+                ActivityAction::SUBMIT,
+                AttendanceCorrectionRequest::class,
+                $correction->id,
+                [
+                    'correction_date' => $correctionDate,
+                    'correction_type' => $data['correction_type'],
+                ]
+            );
+
+            return $correction;
         });
     }
 
