@@ -277,4 +277,58 @@ class ShiftScheduleController extends Controller
 
         return ShiftScheduleResource::collection($schedules);
     }
+
+    public function validateConflicts(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'employee_id' => 'nullable|integer|exists:employees,id',
+        ]);
+
+        $conflicts = $this->scheduleService->validateAllConflicts(
+            $validated['start_date'],
+            $validated['end_date'],
+            $validated['employee_id'] ?? null
+        );
+
+        return response()->json([
+            'success' => true,
+            'conflicts' => $conflicts,
+            'count' => count($conflicts),
+        ]);
+    }
+
+    public function publish(ShiftSchedule $shiftSchedule, Request $request): JsonResponse
+    {
+        $this->authorize('update', $shiftSchedule);
+
+        $schedule = $this->scheduleService->publishSchedule($shiftSchedule, $request->user()->id);
+
+        return (new ShiftScheduleResource($schedule->load(['employee.department', 'employee.branch', 'shift', 'createdBy'])))
+            ->response();
+    }
+
+    public function unpublish(ShiftSchedule $shiftSchedule): JsonResponse
+    {
+        $this->authorize('update', $shiftSchedule);
+
+        $schedule = $this->scheduleService->unpublishSchedule($shiftSchedule);
+
+        return (new ShiftScheduleResource($schedule->load(['employee.department', 'employee.branch', 'shift', 'createdBy'])))
+            ->response();
+    }
+
+    public function versions(ShiftSchedule $shiftSchedule): JsonResponse
+    {
+        $versions = $shiftSchedule->versions()
+            ->with('changedBy')
+            ->orderByDesc('version')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $versions,
+        ]);
+    }
 }
