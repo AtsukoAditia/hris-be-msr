@@ -28,12 +28,22 @@ http://localhost:8000/api/v1
 1. Read the active milestone in `docs/ROADMAP.md`.
 2. Confirm current module status in `docs/PROJECT_STATUS.md`.
 3. Inspect the related migration, model, request, service, controller, route, and test.
-4. Define or update the API contract before connecting the frontend.
-5. Implement authorization and business rules in the backend.
-6. Add automated tests for success and failure paths.
-7. Run formatting and tests.
-8. Synchronize frontend integration.
-9. Update documentation in both repositories.
+4. **Create a new branch** for every update — branch name must describe the change (e.g., `feat/shift-schedule-calendar`, `fix/leave-duplicate-check`).
+5. Define or update the API contract before connecting the frontend.
+6. Implement authorization and business rules in the backend.
+7. Add automated tests for success and failure paths.
+8. Run formatting and tests.
+9. Synchronize frontend integration.
+10. **Merge branch to `main`** only after all tests pass.
+11. Update documentation in both repositories.
+
+### Branch Rules
+
+- **Never commit directly to `main`.**
+- Create one branch per feature/fix in **both** `hris-be-msr` and `hris-fe-msr`.
+- Use consistent naming: `feat/<module>`, `fix/<module>`, `docs/<module>`, `refactor/<module>`.
+- Merge to `main` only after backend tests, frontend tests, lint, build, and E2E pass.
+- Branch per repo, commit per repo — do not mix backend and frontend in one commit.
 
 ## Recommended Module Structure
 
@@ -117,11 +127,19 @@ Use row locking where duplicate concurrent processing could corrupt state.
 Run locally:
 
 ```bash
+# Backend unit & feature tests
 composer test
 vendor/bin/pint --test
+
+# Frontend unit tests
+npm run test
+npm run lint
+
+# Frontend E2E tests (Playwright)
+npm run test:e2e
 ```
 
-Minimum feature-test cases:
+### Backend Test Cases (minimum)
 
 - Unauthenticated request.
 - Forbidden role.
@@ -133,6 +151,26 @@ Minimum feature-test cases:
 - Database side effects and audit records.
 
 Calculation-heavy services such as leave duration, overtime, and payroll require focused unit tests.
+
+### Frontend E2E Testing (Playwright)
+
+Every sprint that touches UI must include Playwright E2E tests for:
+
+- Critical happy-path flows (login, create, submit).
+- Role-based access (Admin vs Employee sees correct UI).
+- Form validation and error states.
+- Navigation and routing.
+- Mobile responsive critical flows.
+
+Run E2E tests before merging to `main`:
+
+```bash
+npx playwright install        # install browsers (once)
+npm run test:e2e              # run all E2E tests
+npx playwright show-report    # view HTML report
+```
+
+E2E tests run against a real browser (Chromium, Firefox, WebKit). If environment blocks E2E, document the limitation explicitly.
 
 ## Documentation Checklist
 
