@@ -23,7 +23,7 @@ class SalaryComponentAdminController extends Controller
         if ($request->filled('search')) {
             $search = trim((string) $request->input('search'));
             $query->where(function ($builder) use ($search) {
-                $builder->where('code', 'like', '%'.$search.'%')->orWhere('name', 'like', '%'.$search.'%');
+                $builder->where('code', 'ilike', '%'.$search.'%')->orWhere('name', 'ilike', '%'.$search.'%');
             });
         }
 

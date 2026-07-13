@@ -17,6 +17,10 @@ class OvertimeRequestFactory extends Factory
         $startMinutes = (int) substr($startTime, 0, 2) * 60 + (int) substr($startTime, 3, 2);
         $plannedMinutes = $this->faker->numberBetween(60, 240);
         $endMinutes = $startMinutes + $plannedMinutes;
+        // Cap at 23:59 for PostgreSQL time type
+        if ($endMinutes >= 1440) {
+            $endMinutes = 1439;
+        }
         $endTime = sprintf('%02d:%02d', intdiv($endMinutes, 60), $endMinutes % 60);
 
         return [

@@ -22,7 +22,7 @@ class ActivityLogController extends Controller
 
         // Apply filters
         if (! empty($filters['module'])) {
-            $query->where('module', 'LIKE', "%{$filters['module']}%");
+            $query->where('module', 'ILIKE', "%{$filters['module']}%");
         }
 
         if (! empty($filters['action'])) {
@@ -48,10 +48,10 @@ class ActivityLogController extends Controller
         if (! empty($filters['search'])) {
             $search = $filters['search'];
             $query->where(function ($q) use ($search) {
-                $q->where('user_name', 'LIKE', "%{$search}%")
-                    ->orWhere('user_email', 'LIKE', "%{$search}%")
-                    ->orWhere('description', 'LIKE', "%{$search}%")
-                    ->orWhere('endpoint', 'LIKE', "%{$search}%");
+                $q->where('user_name', 'ILIKE', "%{$search}%")
+                    ->orWhere('user_email', 'ILIKE', "%{$search}%")
+                    ->orWhere('description', 'ILIKE', "%{$search}%")
+                    ->orWhere('endpoint', 'ILIKE', "%{$search}%");
             });
         }
 

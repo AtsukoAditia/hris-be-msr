@@ -17,8 +17,8 @@ class PayrollReportingService
             ->when($filters['status'] ?? null, fn (Builder $query, $status) => $query->where('status', $status))
             ->when($filters['search'] ?? null, function (Builder $query, string $search) {
                 $query->whereHas('employee', function (Builder $employeeQuery) use ($search) {
-                    $employeeQuery->where('employee_number', 'like', '%'.$search.'%')
-                        ->orWhereHas('user', fn (Builder $userQuery) => $userQuery->where('name', 'like', '%'.$search.'%'));
+                    $employeeQuery->where('employee_number', 'ilike', '%'.$search.'%')
+                        ->orWhereHas('user', fn (Builder $userQuery) => $userQuery->where('name', 'ilike', '%'.$search.'%'));
                 });
             })
             ->latest('id');

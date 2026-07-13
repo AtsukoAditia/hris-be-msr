@@ -38,8 +38,8 @@ class PayrollAdminController extends Controller
         if ($request->filled('search')) {
             $search = trim((string) $request->input('search'));
             $query->whereHas('employee', function ($employeeQuery) use ($search) {
-                $employeeQuery->where('employee_number', 'like', '%'.$search.'%')
-                    ->orWhereHas('user', fn ($userQuery) => $userQuery->where('name', 'like', '%'.$search.'%'));
+                $employeeQuery->where('employee_number', 'ilike', '%'.$search.'%')
+                    ->orWhereHas('user', fn ($userQuery) => $userQuery->where('name', 'ilike', '%'.$search.'%'));
             });
         }
 

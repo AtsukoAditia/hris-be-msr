@@ -100,17 +100,17 @@ class ShiftConflictTest extends TestCase
 
     public function test_rest_hour_conflict_detected(): void
     {
-        // Create two consecutive shifts with only 8h gap
+        // Night shift ends at 06:00, morning shift starts at 08:00 same day = 2h gap < 11h
         ShiftSchedule::factory()->create([
             'employee_id' => $this->staffEmployee->id,
-            'shift_id' => $this->shift->id, // 08:00-17:00
+            'shift_id' => $this->nightShift->id, // 22:00-06:00 next day
             'schedule_date' => '2026-08-01',
             'is_day_off' => false,
         ]);
 
         ShiftSchedule::factory()->create([
             'employee_id' => $this->staffEmployee->id,
-            'shift_id' => $this->nightShift->id, // 22:00-06:00 next day
+            'shift_id' => $this->shift->id, // 08:00-17:00
             'schedule_date' => '2026-08-02',
             'is_day_off' => false,
         ]);
@@ -130,20 +130,20 @@ class ShiftConflictTest extends TestCase
 
     public function test_max_hours_conflict_detected(): void
     {
-        // Create 5 days of 8h shifts in one week = 40h exactly OK, 6th day = 48h
+        // Aug 3 Mon to Aug 8 Sat = 6 x 8h = 48h in same Mon-Sun week
         for ($i = 0; $i < 6; $i++) {
             ShiftSchedule::factory()->create([
                 'employee_id' => $this->staffEmployee->id,
                 'shift_id' => $this->shift->id,
-                'schedule_date' => "2026-08-0" . ($i + 1),
+                'schedule_date' => '2026-08-' . str_pad($i + 3, 2, '0', STR_PAD_LEFT),
                 'is_day_off' => false,
             ]);
         }
 
         $response = $this->actingAs($this->admin)
             ->postJson('/api/v1/shift-schedules/validate-conflicts', [
-                'start_date' => '2026-08-01',
-                'end_date' => '2026-08-06',
+                'start_date' => '2026-08-03',
+                'end_date' => '2026-08-08',
                 'employee_id' => $this->staffEmployee->id,
             ]);
 

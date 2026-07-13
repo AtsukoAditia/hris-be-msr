@@ -48,13 +48,13 @@ class Position extends Model
 
         return $query->where(function (Builder $positionQuery) use ($keyword) {
             $positionQuery
-                ->where('code', 'like', '%'.$keyword.'%')
-                ->orWhere('name', 'like', '%'.$keyword.'%')
-                ->orWhere('description', 'like', '%'.$keyword.'%')
+                ->where('code', 'ilike', '%'.$keyword.'%')
+                ->orWhere('name', 'ilike', '%'.$keyword.'%')
+                ->orWhere('description', 'ilike', '%'.$keyword.'%')
                 ->orWhereHas('department', function (Builder $departmentQuery) use ($keyword) {
                     $departmentQuery
-                        ->where('code', 'like', '%'.$keyword.'%')
-                        ->orWhere('name', 'like', '%'.$keyword.'%');
+                        ->where('code', 'ilike', '%'.$keyword.'%')
+                        ->orWhere('name', 'ilike', '%'.$keyword.'%');
                 });
         });
     }

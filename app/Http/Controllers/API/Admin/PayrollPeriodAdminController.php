@@ -24,7 +24,7 @@ class PayrollPeriodAdminController extends Controller
         $query = PayrollPeriod::query()->withCount('payrolls');
 
         if ($request->filled('search')) {
-            $query->where('name', 'like', '%'.trim((string) $request->input('search')).'%');
+            $query->where('name', 'ilike', '%'.trim((string) $request->input('search')).'%');
         }
 
         if ($request->filled('status')) {

@@ -48,10 +48,10 @@ class Branch extends Model
 
         return $query->where(function (Builder $branchQuery) use ($keyword) {
             $branchQuery
-                ->where('code', 'like', '%'.$keyword.'%')
-                ->orWhere('name', 'like', '%'.$keyword.'%')
-                ->orWhere('address', 'like', '%'.$keyword.'%')
-                ->orWhere('timezone', 'like', '%'.$keyword.'%');
+                ->where('code', 'ilike', '%'.$keyword.'%')
+                ->orWhere('name', 'ilike', '%'.$keyword.'%')
+                ->orWhere('address', 'ilike', '%'.$keyword.'%')
+                ->orWhere('timezone', 'ilike', '%'.$keyword.'%');
         });
     }
 }

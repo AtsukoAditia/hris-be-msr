@@ -296,7 +296,7 @@ class ShiftScheduleService
         $end = Carbon::parse($endDate);
 
         while ($start->lte($end)) {
-            $weekEnd = $start->copy()->endOfWeek(Carbon::MONDAY);
+            $weekEnd = $start->copy()->endOfWeek(Carbon::SUNDAY);
             $weekStart = $start->toDateString();
             $weekEndStr = $weekEnd->toDateString();
 
@@ -342,11 +342,11 @@ class ShiftScheduleService
     public function validateOverlap(int $employeeId, string $startDate, string $endDate): array
     {
         $conflicts = [];
-        $duplicates = ShiftSchedule::where('employee_id', $employeeId)
+            $duplicates = ShiftSchedule::where('employee_id', $employeeId)
             ->whereBetween('schedule_date', [$startDate, $endDate])
             ->selectRaw('schedule_date, COUNT(*) as cnt')
             ->groupBy('schedule_date')
-            ->having('cnt', '>', 1)
+            ->havingRaw('COUNT(*) > 1')
             ->get();
 
         foreach ($duplicates as $dup) {

@@ -146,9 +146,18 @@ class PayrollFoundationTest extends TestCase
             ->json('data.0.id');
 
         $this->actingAs($hr)
+            ->postJson("/api/v1/admin/payrolls/{$payrollId}/submit")
+            ->assertOk();
+
+        $this->actingAs($hr)
             ->postJson("/api/v1/admin/payrolls/{$payrollId}/review")
             ->assertOk()
             ->assertJsonPath('data.status', Payroll::STATUS_REVIEWED);
+
+        $this->actingAs($hr)
+            ->postJson("/api/v1/admin/payrolls/{$payrollId}/approve")
+            ->assertOk()
+            ->assertJsonPath('data.status', Payroll::STATUS_APPROVED);
 
         $this->actingAs($hr)
             ->postJson("/api/v1/admin/payrolls/{$payrollId}/finalize")

@@ -40,14 +40,14 @@ class EmployeeDocumentQueryService
         if ($request->filled('search')) {
             $search = trim((string) $request->search);
             $query->where(function (Builder $filter) use ($search): void {
-                $filter->where('title', 'like', '%'.$search.'%')
-                    ->orWhere('original_name', 'like', '%'.$search.'%')
-                    ->orWhere('description', 'like', '%'.$search.'%')
+                $filter->where('title', 'ilike', '%'.$search.'%')
+                    ->orWhere('original_name', 'ilike', '%'.$search.'%')
+                    ->orWhere('description', 'ilike', '%'.$search.'%')
                     ->orWhereHas('employee', function (Builder $employeeQuery) use ($search): void {
-                        $employeeQuery->where('employee_number', 'like', '%'.$search.'%')
+                        $employeeQuery->where('employee_number', 'ilike', '%'.$search.'%')
                             ->orWhereHas('user', fn (Builder $user) => $user
-                                ->where('name', 'like', '%'.$search.'%')
-                                ->orWhere('email', 'like', '%'.$search.'%'));
+                                ->where('name', 'ilike', '%'.$search.'%')
+                                ->orWhere('email', 'ilike', '%'.$search.'%'));
                     });
             });
         }

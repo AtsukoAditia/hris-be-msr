@@ -46,9 +46,9 @@ class Department extends Model
 
         return $query->where(function (Builder $departmentQuery) use ($keyword) {
             $departmentQuery
-                ->where('code', 'like', '%'.$keyword.'%')
-                ->orWhere('name', 'like', '%'.$keyword.'%')
-                ->orWhere('description', 'like', '%'.$keyword.'%');
+                ->where('code', 'ilike', '%'.$keyword.'%')
+                ->orWhere('name', 'ilike', '%'.$keyword.'%')
+                ->orWhere('description', 'ilike', '%'.$keyword.'%');
         });
     }
 }
