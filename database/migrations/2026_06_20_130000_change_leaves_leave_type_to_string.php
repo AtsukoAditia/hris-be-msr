@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -10,10 +11,14 @@ return new class extends Migration
     {
         // Convert leave_type from ENUM to STRING so it can hold the
         // dynamic code from leave_types (e.g. "ANNUAL", "CUTI_TAHUNAN").
-        // Existing values are preserved by MySQL when the column widens.
-        Schema::table('leaves', function (Blueprint $table) {
-            $table->string('leave_type', 50)->change();
-        });
+        if (DB::getDriverName() === 'pgsql') {
+            // PostgreSQL: cast enum to varchar
+            DB::statement('ALTER TABLE leaves ALTER COLUMN leave_type TYPE VARCHAR(50) USING leave_type::VARCHAR');
+        } else {
+            Schema::table('leaves', function (Blueprint $table) {
+                $table->string('leave_type', 50)->change();
+            });
+        }
     }
 
     public function down(): void
@@ -21,9 +26,16 @@ return new class extends Migration
         // Narrow back to the original ENUM. Values that no longer fit
         // would need a data migration first; we only support narrowing
         // when data is compatible.
-        Schema::table('leaves', function (Blueprint $table) {
-            $table->enum('leave_type', ['annual', 'sick', 'emergency', 'maternity', 'paternity', 'unpaid', 'other'])
-                ->change();
-        });
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement("ALTER TABLE leaves ALTER COLUMN leave_type TYPE VARCHAR(20)");
+            DB::statement("ALTER TABLE leaves ALTER COLUMN leave_type SET DEFAULT 'annual'");
+            DB::statement("ALTER TABLE leaves ALTER COLUMN leave_type SET NOT NULL");
+            DB::statement("ALTER TABLE leaves ADD CONSTRAINT leaves_leave_type_check CHECK (leave_type IN ('annual', 'sick', 'emergency', 'maternity', 'paternity', 'unpaid', 'other'))");
+        } else {
+            Schema::table('leaves', function (Blueprint $table) {
+                $table->enum('leave_type', ['annual', 'sick', 'emergency', 'maternity', 'paternity', 'unpaid', 'other'])
+                    ->change();
+            });
+        }
     }
 };
