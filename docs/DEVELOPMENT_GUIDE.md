@@ -23,6 +23,38 @@ Default API base URL:
 http://localhost:8000/api/v1
 ```
 
+## Database Changes
+
+**SETIAP** penambahan fitur yang membutuhkan kolom atau tabel baru WAJIB:
+
+1. **Migration**: Buat migration baru di `database/migrations/`
+2. **Model**: Update atau buat model baru di `app/Models/`
+3. **Seeder**: Update atau buat seeder baru di `database/seeders/`
+4. **Factory**: Update atau buat factory baru di `database/factories/` (untuk testing)
+5. **Test Data**: Pastikan test data mencakup data baru
+6. **Documentation**: Update `docs/API_MATRIX.md` dan `docs/PROJECT_STATUS.md`
+
+### Checklist Database Changes:
+- [ ] Migration file created
+- [ ] Model updated/created
+- [ ] Seeder updated/created
+- [ ] Factory updated/created (for testing)
+- [ ] Test data includes new data
+- [ ] Documentation updated
+- [ ] Run `php artisan migrate:fresh --seed` to verify
+- [ ] Run tests to ensure data integrity
+
+### Example:
+Jika menambah fitur "Payroll Adjustments":
+1. Migration: `create_payroll_adjustments_table`
+2. Model: `PayrollAdjustment.php`
+3. Seeder: `PayrollAdjustmentSeeder.php`
+4. Factory: `PayrollAdjustmentFactory.php`
+5. Update `DatabaseSeeder.php` untuk include seeder baru
+6. Test dengan `php artisan migrate:fresh --seed`
+
+**JANGAN LUPA SEED!** Data dummy penting untuk development dan testing.
+
 ## Development Workflow
 
 1. Read the active milestone in `docs/ROADMAP.md`.
@@ -220,3 +252,35 @@ A module is complete when:
 - Responsive/mobile acceptance is complete.
 - Activity logging is sufficient.
 - Documentation is synchronized.
+
+## Database Changes
+
+**SETIAP** penambahan fitur yang membutuhkan kolom atau tabel baru WAJIB:
+
+1. **Migration**: Buat migration baru di `database/migrations/`
+2. **Model**: Update atau buat model baru di `app/Models/`
+3. **Seeder**: Update atau buat seeder baru di `database/seeders/`
+4. **Factory**: Update atau buat factory baru di `database/factories/` (untuk testing)
+5. **Test Data**: Pastikan test data mencakup data baru
+6. **Documentation**: Update `docs/API_MATRIX.md` dan `docs/PROJECT_STATUS.md`
+
+### Checklist Database Changes:
+- [ ] Migration file created
+- [ ] Model updated/created
+- [ ] Seeder updated/created
+- [ ] Factory updated/created (for testing)
+- [ ] Test data includes new data
+- [ ] Documentation updated
+- [ ] Run `php artisan migrate:fresh --seed` to verify
+- [ ] Run tests to ensure data integrity
+
+### Example:
+Jika menambah fitur "Payroll Adjustments":
+1. Migration: `create_payroll_adjustments_table`
+2. Model: `PayrollAdjustment.php`
+3. Seeder: `PayrollAdjustmentSeeder.php`
+4. Factory: `PayrollAdjustmentFactory.php`
+5. Update `DatabaseSeeder.php` untuk include seeder baru
+6. Test dengan `php artisan migrate:fresh --seed`
+
+**JANGAN LUPA SEED!** Data dummy penting untuk development dan testing.
