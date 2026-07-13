@@ -95,11 +95,10 @@ class AttendanceCorrectionTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->employee)->postJson('/api/v1/attendance-corrections', [
-            'attendance_id' => $this->attendance->id,
-            'correction_date' => $this->attendance->attendance_date,
+            'attendance_date' => $this->attendance->attendance_date->toDateString(),
             'correction_type' => 'check_in',
             'requested_check_in' => '07:50',
-            'reason' => 'Duplicate test',
+            'reason' => 'Duplicate test reason for this correction',
         ]);
 
         $response->assertStatus(422);
@@ -257,5 +256,109 @@ class AttendanceCorrectionTest extends TestCase
         $this->attendance->refresh();
         $this->assertEquals('07:50:00', $this->attendance->check_in_time->format('H:i:s'));
         $this->assertEquals('18:00:00', $this->attendance->check_out_time->format('H:i:s'));
+    }
+
+    public function test_cannot_cancel_already_approved(): void
+    {
+        $correction = AttendanceCorrectionRequest::factory()->create([
+            'employee_id' => $this->employeeRecord->id,
+            'status' => 'approved',
+        ]);
+
+        $response = $this->actingAs($this->employee)->postJson("/api/v1/attendance-corrections/{$correction->id}/cancel");
+        $response->assertStatus(422);
+    }
+
+    public function test_employee_cannot_cancel_other_employee(): void
+    {
+        $otherEmployee = User::factory()->create(['role' => 'employee']);
+        $otherEmployeeRecord = Employee::factory()->create(['user_id' => $otherEmployee->id, 'is_active' => true]);
+        $correction = AttendanceCorrectionRequest::factory()->create([
+            'employee_id' => $otherEmployeeRecord->id,
+            'status' => 'pending',
+        ]);
+
+        $response = $this->actingAs($this->employee)->postJson("/api/v1/attendance-corrections/{$correction->id}/cancel");
+        $response->assertStatus(403);
+    }
+
+    public function test_show_returns_correct_structure(): void
+    {
+        $correction = AttendanceCorrectionRequest::factory()->create([
+            'employee_id' => $this->employeeRecord->id,
+            'attendance_id' => $this->attendance->id,
+            'status' => 'pending',
+        ]);
+
+        $response = $this->actingAs($this->employee)->getJson("/api/v1/attendance-corrections/{$correction->id}");
+
+        $response->assertOk()->assertJsonStructure([
+            'success',
+            'message',
+            'data' => [
+                'id',
+                'employee_id',
+                'correction_date',
+                'correction_type',
+                'status',
+                'reason',
+            ],
+        ]);
+    }
+
+    public function test_my_endpoint_returns_only_own_corrections(): void
+    {
+        $otherEmployee = User::factory()->create(['role' => 'employee']);
+        $otherEmployeeRecord = Employee::factory()->create(['user_id' => $otherEmployee->id, 'is_active' => true]);
+
+        AttendanceCorrectionRequest::factory()->create([
+            'employee_id' => $this->employeeRecord->id,
+        ]);
+        AttendanceCorrectionRequest::factory()->create([
+            'employee_id' => $otherEmployeeRecord->id,
+        ]);
+
+        $response = $this->actingAs($this->employee)->getJson('/api/v1/attendance-corrections/my');
+        $response->assertOk();
+
+        $data = $response->json('data.data') ?? $response->json('data');
+        collect($data)->each(function ($item) {
+            $this->assertEquals($this->employeeRecord->id, $item['employee_id']);
+        });
+    }
+
+    public function test_admin_can_list_all_corrections(): void
+    {
+        AttendanceCorrectionRequest::factory()->count(3)->create();
+
+        $response = $this->actingAs($this->admin)->getJson('/api/v1/attendance-corrections');
+        $response->assertOk();
+
+        $data = $response->json('data.data') ?? $response->json('data');
+        $this->assertGreaterThanOrEqual(3, count($data));
+    }
+
+    public function test_store_rejects_future_date(): void
+    {
+        $response = $this->actingAs($this->employee)->postJson('/api/v1/attendance-corrections', [
+            'attendance_date' => now()->addDays(5)->toDateString(),
+            'correction_type' => 'check_in',
+            'requested_check_in' => '07:55',
+            'reason' => 'Future date test reason',
+        ]);
+
+        $response->assertStatus(422);
+    }
+
+    public function test_store_rejects_short_reason(): void
+    {
+        $response = $this->actingAs($this->employee)->postJson('/api/v1/attendance-corrections', [
+            'attendance_date' => $this->attendance->attendance_date->toDateString(),
+            'correction_type' => 'check_in',
+            'requested_check_in' => '07:55',
+            'reason' => 'Short',
+        ]);
+
+        $response->assertStatus(422);
     }
 }
