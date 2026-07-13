@@ -21,6 +21,13 @@ class ShiftScheduleResource extends JsonResource
                 : $this->schedule_date,
             'is_day_off' => (bool) $this->is_day_off,
             'notes' => $this->notes,
+            'status' => $this->status ?? 'draft',
+            'is_published' => ($this->status ?? 'draft') === 'published',
+            'version' => $this->version ?? 1,
+            'published_at' => $this->published_at?->toISOString(),
+            'published_by' => $this->published_by,
+            'conflict_type' => $this->conflict_type,
+            'conflict_message' => $this->conflict_message,
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];
