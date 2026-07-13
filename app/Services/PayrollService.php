@@ -64,17 +64,33 @@ class PayrollService
         });
     }
 
+    public function submit(Payroll $payroll, User $actor): Payroll
+    {
+        return $this->transition($payroll, Payroll::STATUS_DRAFT, Payroll::STATUS_SUBMITTED, $actor, [
+            'submitted_by' => $actor->id,
+            'submitted_at' => now(),
+        ], ActivityAction::MANUAL_UPDATE);
+    }
+
     public function review(Payroll $payroll, User $actor): Payroll
     {
-        return $this->transition($payroll, Payroll::STATUS_DRAFT, Payroll::STATUS_REVIEWED, $actor, [
+        return $this->transition($payroll, Payroll::STATUS_SUBMITTED, Payroll::STATUS_REVIEWED, $actor, [
             'reviewed_by' => $actor->id,
             'reviewed_at' => now(),
         ], ActivityAction::APPROVE);
     }
 
+    public function approve(Payroll $payroll, User $actor): Payroll
+    {
+        return $this->transition($payroll, Payroll::STATUS_REVIEWED, Payroll::STATUS_APPROVED, $actor, [
+            'approved_by' => $actor->id,
+            'approved_at' => now(),
+        ], ActivityAction::APPROVE);
+    }
+
     public function finalize(Payroll $payroll, User $actor): Payroll
     {
-        return $this->transition($payroll, Payroll::STATUS_REVIEWED, Payroll::STATUS_FINALIZED, $actor, [
+        return $this->transition($payroll, Payroll::STATUS_APPROVED, Payroll::STATUS_FINALIZED, $actor, [
             'finalized_by' => $actor->id,
             'finalized_at' => now(),
         ], ActivityAction::FINALIZE);
@@ -86,6 +102,53 @@ class PayrollService
             'paid_by' => $actor->id,
             'paid_at' => now(),
         ], ActivityAction::UPDATE);
+    }
+
+    public function simulate(int $employeeId, int $periodId, User $actor): array
+    {
+        $period = PayrollPeriod::findOrFail($periodId);
+        $employee = Employee::findOrFail($employeeId);
+        $basicSalaryCents = PayrollMoney::toCents($employee->basic_salary ?? 0);
+        $summary = $this->buildInputSummary($period, $employee, $basicSalaryCents);
+
+        $profile = EmployeeSalaryProfile::query()
+            ->with('components.salaryComponent')
+            ->where('employee_id', $employeeId)
+            ->effectiveFor($period->start_date->toDateString(), $period->end_date->toDateString())
+            ->latest('effective_from')
+            ->first();
+
+        $items = [['code' => 'BASIC', 'name' => 'Basic Salary', 'type' => 'earning', 'amount' => PayrollMoney::fromCents($basicSalaryCents)]];
+
+        foreach ($profile?->components ?? [] as $profileComponent) {
+            $component = $profileComponent->salaryComponent;
+            if (!$component || !$component->is_active) continue;
+            $amountCents = match ($component->calculation_type) {
+                SalaryComponent::CALCULATION_PERCENTAGE => PayrollMoney::percentage($basicSalaryCents, $profileComponent->percentage ?? $component->percentage),
+                default => PayrollMoney::toCents($profileComponent->amount ?? $component->default_amount),
+            };
+            $items[] = ['code' => $component->code, 'name' => $component->name, 'type' => $component->type, 'amount' => PayrollMoney::fromCents($amountCents)];
+        }
+
+        if ($summary['overtime_amount_cents'] > 0) $items[] = ['code' => 'OVERTIME', 'name' => 'Approved Overtime', 'type' => 'earning', 'amount' => PayrollMoney::fromCents($summary['overtime_amount_cents'])];
+        if ($summary['absent_deduction_cents'] > 0) $items[] = ['code' => 'ABSENCE', 'name' => 'Absence Deduction', 'type' => 'deduction', 'amount' => PayrollMoney::fromCents($summary['absent_deduction_cents'])];
+        if ($summary['unpaid_leave_deduction_cents'] > 0) $items[] = ['code' => 'UNPAID_LEAVE', 'name' => 'Unpaid Leave', 'type' => 'deduction', 'amount' => PayrollMoney::fromCents($summary['unpaid_leave_deduction_cents'])];
+
+        $totalEarnings = collect($items)->where('type', 'earning')->sum(fn ($i) => PayrollMoney::toCents($i['amount']));
+        $totalDeductions = collect($items)->where('type', 'deduction')->sum(fn ($i) => PayrollMoney::toCents($i['amount']));
+
+        return [
+            'employee_id' => $employeeId,
+            'employee_name' => $employee->user?->name ?? 'N/A',
+            'period' => $period->name,
+            'basic_salary' => PayrollMoney::fromCents($basicSalaryCents),
+            'items' => $items,
+            'attendance' => ['attendance_days' => $summary['attendance_days'], 'absent_days' => $summary['absent_days'], 'late_minutes' => $summary['late_minutes'], 'overtime_minutes' => $summary['overtime_minutes']],
+            'total_earnings' => PayrollMoney::fromCents($totalEarnings),
+            'total_deductions' => PayrollMoney::fromCents($totalDeductions),
+            'net_salary' => PayrollMoney::fromCents($totalEarnings - $totalDeductions),
+            'simulated' => true,
+        ];
     }
 
     public function cancel(Payroll $payroll, User $actor, string $reason): Payroll
