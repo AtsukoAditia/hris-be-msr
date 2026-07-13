@@ -101,7 +101,7 @@ class AttendanceCorrectionService
 
             // Check for duplicate: prevent resubmission if pending OR recent rejection/cancellation (within 7 days)
             $duplicate = AttendanceCorrectionRequest::where('employee_id', $employee->id)
-                ->where('correction_date', $correctionDate)
+                ->whereDate('correction_date', $correctionDate)
                 ->where('correction_type', $data['correction_type'])
                 ->where(function ($q) {
                     $q->where('status', AttendanceCorrectionRequest::STATUS_PENDING)
