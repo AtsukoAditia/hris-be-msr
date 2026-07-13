@@ -93,6 +93,7 @@ Route::prefix('v1')->group(function () {
         // ========================
         // Employee endpoints (any authenticated user)
         Route::get('/attendance-corrections/my', [AttendanceCorrectionController::class, 'my']);
+        Route::get('/attendance-corrections/attendance', [AttendanceCorrectionController::class, 'lookupAttendance']);
         Route::post('/attendance-corrections', [AttendanceCorrectionController::class, 'store']);
         Route::post('/attendance-corrections/{correction}/cancel', [AttendanceCorrectionController::class, 'cancel']);
         Route::get('/attendance-corrections/{correction}/attachment', [AttendanceCorrectionController::class, 'downloadAttachment']);
