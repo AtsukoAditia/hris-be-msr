@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\PayrollPeriod;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class PayrollPeriodFactory extends Factory
@@ -21,6 +22,16 @@ class PayrollPeriodFactory extends Factory
             'cutoff_start_date' => $start->format('Y-m-d'),
             'cutoff_end_date' => $end->format('Y-m-d'),
             'status' => 'open',
+            'locked_at' => null,
+            'locked_by' => null,
         ];
+    }
+
+    public function locked(): static
+    {
+        return $this->state([
+            'locked_at' => now(),
+            'locked_by' => User::factory(),
+        ]);
     }
 }

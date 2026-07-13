@@ -97,4 +97,34 @@ class Payroll extends Model
     {
         return $this->hasMany(PayrollAdjustment::class);
     }
+
+    public function submittedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'submitted_by');
+    }
+
+    public function approvedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function scopeDraft($query)
+    {
+        return $query->where('status', self::STATUS_DRAFT);
+    }
+
+    public function scopeSubmitted($query)
+    {
+        return $query->where('status', self::STATUS_SUBMITTED);
+    }
+
+    public function scopeApproved($query)
+    {
+        return $query->where('status', self::STATUS_APPROVED);
+    }
+
+    public function scopeFinalized($query)
+    {
+        return $query->where('status', self::STATUS_FINALIZED);
+    }
 }
