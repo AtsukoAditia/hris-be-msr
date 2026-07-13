@@ -12,7 +12,8 @@ return new class extends Migration
         // Convert leave_type from ENUM to STRING so it can hold the
         // dynamic code from leave_types (e.g. "ANNUAL", "CUTI_TAHUNAN").
         if (DB::getDriverName() === 'pgsql') {
-            // PostgreSQL: cast enum to varchar
+            // PostgreSQL: drop check constraint first, then cast enum to varchar
+            DB::statement('ALTER TABLE leaves DROP CONSTRAINT IF EXISTS leaves_leave_type_check');
             DB::statement('ALTER TABLE leaves ALTER COLUMN leave_type TYPE VARCHAR(50) USING leave_type::VARCHAR');
         } else {
             Schema::table('leaves', function (Blueprint $table) {

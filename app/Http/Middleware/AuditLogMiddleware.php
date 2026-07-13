@@ -42,7 +42,12 @@ class AuditLogMiddleware
                 'logged_at' => now(),
             ]);
         } catch (\Throwable $exception) {
-            report($exception);
+            // Silently ignore audit log failures - don't break the request
+            // This is especially important for PostgreSQL where transaction
+            // errors cascade and prevent further queries
+            if (!app()->runningInConsole()) {
+                report($exception);
+            }
         }
 
         return $response;
