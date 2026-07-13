@@ -44,6 +44,26 @@ http://localhost:8000/api/v1
 - Use consistent naming: `feat/<module>`, `fix/<module>`, `docs/<module>`, `refactor/<module>`.
 - Merge to `main` only after backend tests, frontend tests, lint, build, and E2E pass.
 - Branch per repo, commit per repo — do not mix backend and frontend in one commit.
+- **Never `git add .`** — always `git add` per-file.
+
+### Merge to Main (exact sequence)
+
+```text
+1. Pastikan semua test PASS (unit, feature, lint, E2E, build).
+2. git add <file1>       # per file, jangan per folder
+3. git commit -m "feat(module): description"
+4. git add <file2>
+5. git commit -m "feat(module): description"
+6. ulangi sampai semua file ter-commit.
+7. git checkout main
+8. git pull origin main
+9. git merge <branch-name> --no-ff -m "Merge branch '<branch>' into main"
+```
+
+**Peraturan keras:**
+- Jangan pernah `git add .` atau `git add -A`.
+- Satu commit = satu file atau satu unit logis yang berhubungan.
+- Selalu pull main sebelum merge agar up-to-date.
 
 ## Recommended Module Structure
 
