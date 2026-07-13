@@ -49,20 +49,22 @@ http://localhost:8000/api/v1
 ### Merge to Main (exact sequence)
 
 ```text
-1. Pastikan semua test PASS (unit, feature, lint, E2E, build).
-2. git add <file1>       # per file, jangan per folder
-3. git commit -m "feat(module): description"
-4. git add <file2>
-5. git commit -m "feat(module): description"
-6. ulangi sampai semua file ter-commit.
-7. git checkout main
-8. git pull origin main
-9. git merge <branch-name> --no-ff -m "Merge branch '<branch>' into main"
+1. Buat branch baru:     git checkout -b feat/module-name
+2. Edit & test file.
+3. git add <file>        # per file, jangan per folder.
+4. git commit -m "feat(module): description"
+5. Ulangi step 2-4 sampai semua file ter-commit.
+6. git checkout main
+7. git pull origin main
+8. git merge feat/module-name --no-ff -m "Merge branch 'feat/module-name' into main"
+9. git push origin main
+10. git checkout feat/module-name   # kembali ke branch aktif
 ```
 
-**Peraturan keras:**
+**Peraturan:**
+- Branch per repo, commit per repo.
 - Jangan pernah `git add .` atau `git add -A`.
-- Satu commit = satu file atau satu unit logis yang berhubungan.
+- Satu commit = satu file atau satu unit logis.
 - Selalu pull main sebelum merge agar up-to-date.
 
 ## Recommended Module Structure
