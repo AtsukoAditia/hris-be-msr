@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             EmployeeBranchSeeder::class,
             PayrollSeeder::class,
             ShiftSwapRequestSeeder::class,
+        AttendanceSeeder::class,
             ScheduleConflictLogSeeder::class,
         ]);
     }
