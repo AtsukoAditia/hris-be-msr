@@ -10,6 +10,7 @@ use App\Http\Controllers\API\AttendanceActionController;
 use App\Http\Controllers\API\AttendanceController;
 use App\Http\Controllers\API\AttendanceCorrectionController;
 use App\Http\Controllers\API\AttendanceSettingController;
+use App\Http\Controllers\API\AttendanceIntelligenceController;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\BranchController;
 use App\Http\Controllers\API\ContactController;
@@ -54,6 +55,10 @@ Route::prefix('v1')->group(function () {
             Route::get('/attendance/export', [AttendanceController::class, 'export']);
             Route::get('/attendance/employee/{employeeId}', [AttendanceController::class, 'getByEmployee']);
             Route::get('/attendance/settings', [AttendanceSettingController::class, 'show']);
+            Route::get('/attendance/who-is-in', [AttendanceIntelligenceController::class, 'whoIsIn']);
+            Route::get('/attendance/monthly-summary', [AttendanceIntelligenceController::class, 'monthlySummary']);
+            Route::get('/attendance/anomalies', [AttendanceIntelligenceController::class, 'anomalies']);
+            Route::get('/attendance/trend', [AttendanceIntelligenceController::class, 'trend']);
             Route::get('/attendance/{attendance}', [AttendanceController::class, 'show']);
             Route::get('/leaves', [LeaveController::class, 'index']);
             Route::post('/leaves/{leave}/approve', [LeaveController::class, 'approve']);
