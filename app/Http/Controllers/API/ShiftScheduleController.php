@@ -10,6 +10,7 @@ use App\Http\Requests\ShiftSchedule\RotatingShiftScheduleRequest;
 use App\Http\Resources\ShiftScheduleResource;
 use App\Models\Employee;
 use App\Models\ShiftSchedule;
+use App\Services\NotificationService;
 use App\Services\ShiftScheduleService;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\JsonResponse;
@@ -304,6 +305,15 @@ class ShiftScheduleController extends Controller
         $this->authorize('update', $shiftSchedule);
 
         $schedule = $this->scheduleService->publishSchedule($shiftSchedule, $request->user()->id);
+
+        NotificationService::create(
+            $schedule->employee->user_id,
+            'shift_published',
+            'Jadwal Shift Dipublish',
+            "Jadwal shift Anda ({$schedule->shift?->name}) pada {$schedule->schedule_date} telah dipublish.",
+            '📅',
+            '/my-schedule',
+        );
 
         return (new ShiftScheduleResource($schedule->load(['employee.department', 'employee.branch', 'shift', 'createdBy'])))
             ->response();
