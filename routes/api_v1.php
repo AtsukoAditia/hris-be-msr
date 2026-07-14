@@ -34,6 +34,7 @@ use App\Http\Controllers\API\ReportController;
 use App\Http\Controllers\API\ShiftController;
 use App\Http\Controllers\API\ShiftScheduleController;
 use App\Http\Controllers\API\ShiftSwapController;
+use App\Http\Controllers\API\TrainingController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -230,6 +231,11 @@ Route::prefix('v1')->group(function () {
             // Overtime Policy Admin CRUD
             // ========================
             Route::apiResource('/admin/overtime-policies', OvertimePolicyAdminController::class);
+
+            // Training Management (admin/hr)
+            Route::apiResource('/trainings', TrainingController::class);
+            Route::post('/trainings/{training}/publish', [TrainingController::class, 'publish']);
+            Route::get('/trainings/{training}/enrollments', [TrainingController::class, 'getEnrollments']);
         });
 
         // ========================
@@ -240,6 +246,11 @@ Route::prefix('v1')->group(function () {
         Route::post('/overtime-requests', [OvertimeController::class, 'store']);
         Route::post('/overtime-requests/{overtimeRequest}/cancel', [OvertimeController::class, 'cancel']);
         Route::get('/overtime-requests/{overtimeRequest}', [OvertimeController::class, 'show']);
+
+        // Training — employee self-enrollment
+        Route::get('/trainings/my', [TrainingController::class, 'myEnrollments']);
+        Route::post('/trainings/{training}/enroll', [TrainingController::class, 'enroll']);
+        Route::delete('/trainings/{training}/enrollments/{enrollment}', [TrainingController::class, 'cancelEnrollment']);
 
         Route::middleware('role:admin,hr,manager')->group(function () {
             Route::get('/overtime-requests', [OvertimeController::class, 'index']);
