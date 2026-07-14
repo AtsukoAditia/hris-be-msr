@@ -13,6 +13,7 @@ use App\Models\Leave;
 use App\Models\LeaveBalance;
 use App\Models\LeaveType;
 use App\Services\LeaveService;
+use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -150,6 +151,21 @@ class LeaveController extends Controller
             $leave = $this->leaveService->submit($employee, $data);
             $leave->load(['employee.user', 'approver', 'leaveType']);
 
+            // Notify manager(s) of the leave request
+            if ($employee->manager_id) {
+                $manager = Employee::find($employee->manager_id);
+                if ($manager) {
+                    NotificationService::create(
+                        $manager->user_id,
+                        'leave_requested',
+                        'Pengajuan Cuti Baru',
+                        "{$employee->full_name} mengajukan cuti {$leave->leaveType?->name} ({$leave->start_date} — {$leave->end_date}).",
+                        '📋',
+                        '/approval',
+                    );
+                }
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Pengajuan cuti berhasil dikirim.',
@@ -180,6 +196,15 @@ class LeaveController extends Controller
             $leave = $this->leaveService->approve($leave, $request->note);
             $leave->load(['employee.user', 'approver', 'leaveType']);
 
+            NotificationService::create(
+                $leave->employee->user_id,
+                'leave_approved',
+                'Cuti Disetujui',
+                "Pengajuan cuti {$leave->leaveType?->name} ({$leave->start_date} — {$leave->end_date}) telah disetujui.",
+                '✅',
+                '/leave',
+            );
+
             return response()->json([
                 'success' => true,
                 'message' => 'Pengajuan cuti disetujui.',
@@ -198,6 +223,15 @@ class LeaveController extends Controller
         try {
             $leave = $this->leaveService->reject($leave, $request->rejection_reason);
             $leave->load(['employee.user', 'approver', 'leaveType']);
+
+            NotificationService::create(
+                $leave->employee->user_id,
+                'leave_rejected',
+                'Cuti Ditolak',
+                "Pengajuan cuti {$leave->leaveType?->name} ({$leave->start_date} — {$leave->end_date}) ditolak: {$request->rejection_reason}",
+                '❌',
+                '/leave',
+            );
 
             return response()->json([
                 'success' => true,
