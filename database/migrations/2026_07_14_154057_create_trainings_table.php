@@ -29,6 +29,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index(['status', 'start_date']);
+            $table->softDeletes();
         });
     }
 
