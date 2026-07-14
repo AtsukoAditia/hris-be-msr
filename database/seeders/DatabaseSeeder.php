@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             AttendanceSeeder::class,
             ScheduleConflictLogSeeder::class,
             NotificationSeeder::class,
+            TrainingSeeder::class,
         ]);
     }
 }
