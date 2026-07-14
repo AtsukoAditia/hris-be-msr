@@ -6,6 +6,7 @@ use App\Http\Controllers\API\Admin\LeaveBalanceAdminController;
 use App\Http\Controllers\API\Admin\LeavePolicyAdminController;
 use App\Http\Controllers\API\Admin\LeaveTypeAdminController;
 use App\Http\Controllers\API\Admin\OvertimePolicyAdminController;
+use App\Http\Controllers\API\AnalyticsController;
 use App\Http\Controllers\API\AttendanceActionController;
 use App\Http\Controllers\API\AttendanceController;
 use App\Http\Controllers\API\AttendanceCorrectionController;
@@ -126,6 +127,11 @@ Route::prefix('v1')->group(function () {
             Route::get('/activity-logs/{activityLog}', [ActivityLogController::class, 'show']);
             Route::get('/audit-trail', [AuditTrailController::class, 'index']);
             Route::get('/audit-trail/{targetType}/{targetId}', [AuditTrailController::class, 'getTrail']);
+            // Analytics
+            Route::get('/analytics/department-costs', [AnalyticsController::class, 'departmentCosts']);
+            Route::get('/analytics/attendance-summary', [AnalyticsController::class, 'attendanceSummary']);
+            Route::get('/analytics/executive-summary', [AnalyticsController::class, 'executiveSummary']);
+            Route::get('/analytics/headcount', [AnalyticsController::class, 'headcount']);
         });
 
         Route::get('/profile/change-requests', [ProfileChangeRequestController::class, 'index']);
