@@ -16,6 +16,7 @@ use App\Http\Controllers\API\BranchController;
 use App\Http\Controllers\API\ContactController;
 use App\Http\Controllers\API\DashboardController;
 use App\Http\Controllers\API\DepartmentController;
+use App\Http\Controllers\API\NotificationController;
 use App\Http\Controllers\API\DocumentController;
 use App\Http\Controllers\API\EmployeeController;
 use App\Http\Controllers\API\LeaveController;
@@ -42,6 +43,10 @@ Route::prefix('v1')->group(function () {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
         Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
+        Route::get('/notifications', [NotificationController::class, 'index']);
+        Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
+        Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead']);
+        Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead']);
 
         Route::get('/attendance/my', [AttendanceController::class, 'my']);
         Route::get('/attendance/today', [AttendanceController::class, 'today']);
