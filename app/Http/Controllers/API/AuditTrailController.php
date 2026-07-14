@@ -83,6 +83,11 @@ class AuditTrailController extends Controller
     {
         return match (strtolower($type)) {
             'employee', 'emp' => 'Employee',
+            'leave' => 'Leave',
+            'attendance' => 'Attendance',
+            'shift' => 'Shift',
+            'shiftschedule', 'shift-schedule' => 'ShiftSchedule',
+            'payroll' => 'Payroll',
             default => ucfirst($type),
         };
     }
