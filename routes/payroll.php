@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\API\Admin\EmployeeSalaryProfileAdminController;
 use App\Http\Controllers\API\Admin\PayrollAdminController;
+use App\Http\Controllers\API\BankExportController;
 use App\Http\Controllers\API\Admin\PayrollAdjustmentController;
 use App\Http\Controllers\API\Admin\PayrollPeriodAdminController;
 use App\Http\Controllers\API\Admin\SalaryComponentAdminController;
@@ -40,4 +41,8 @@ Route::prefix('v1/admin')
         Route::get('/payrolls/{payroll}/adjustments', [PayrollAdjustmentController::class, 'index']);
         Route::post('/payrolls/{payroll}/adjustments', [PayrollAdjustmentController::class, 'store']);
         Route::delete('/adjustments/{adjustment}', [PayrollAdjustmentController::class, 'destroy']);
+
+        // Bank export
+        Route::get('/payroll-periods/{payrollPeriod}/bank-export', [BankExportController::class, 'preview']);
+        Route::get('/payroll-periods/{payrollPeriod}/bank-export/download', [BankExportController::class, 'download']);
     });
