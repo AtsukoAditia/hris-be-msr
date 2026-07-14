@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\Employee;
+use App\Services\AuditTrailService;
 use App\Services\EmployeeMutationService;
 use App\Services\EmployeeQueryService;
 use Illuminate\Http\JsonResponse;
@@ -41,6 +42,8 @@ class EmployeeController extends Controller
         $employee = $this->mutationService->create($request);
         $this->queryService->load($employee);
 
+        AuditTrailService::recordCreation($employee, "Karyawan baru ditambahkan: {$employee->full_name}");
+
         return response()->json([
             'success' => true,
             'message' => 'Karyawan berhasil ditambahkan.',
@@ -72,8 +75,15 @@ class EmployeeController extends Controller
 
     public function update(Request $request, Employee $employee): JsonResponse
     {
+        $oldValues = $employee->getAttributes();
         $employee = $this->mutationService->update($request, $employee);
+        $newValues = $employee->fresh()->getAttributes();
         $this->queryService->load($employee);
+
+        AuditTrailService::recordChange(
+            'employee', $employee, $oldValues, $newValues, 'update',
+            "Data karyawan #{$employee->id} ({$employee->full_name}) diperbarui"
+        );
 
         return response()->json([
             'success' => true,

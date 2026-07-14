@@ -11,6 +11,7 @@ use App\Http\Controllers\API\AttendanceController;
 use App\Http\Controllers\API\AttendanceCorrectionController;
 use App\Http\Controllers\API\AttendanceSettingController;
 use App\Http\Controllers\API\AttendanceIntelligenceController;
+use App\Http\Controllers\API\AuditTrailController;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\BranchController;
 use App\Http\Controllers\API\ContactController;
@@ -122,6 +123,8 @@ Route::prefix('v1')->group(function () {
             // Activity Log Viewer
             Route::get('/activity-logs', [ActivityLogController::class, 'index']);
             Route::get('/activity-logs/{activityLog}', [ActivityLogController::class, 'show']);
+            Route::get('/audit-trail', [AuditTrailController::class, 'index']);
+            Route::get('/audit-trail/{targetType}/{targetId}', [AuditTrailController::class, 'getTrail']);
         });
 
         Route::get('/profile/change-requests', [ProfileChangeRequestController::class, 'index']);
