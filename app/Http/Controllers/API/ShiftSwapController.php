@@ -8,6 +8,8 @@ use App\Http\Resources\ShiftScheduleResource;
 use App\Http\Resources\ShiftSwapResource;
 use App\Models\ShiftSchedule;
 use App\Models\ShiftSwapRequest;
+use App\Models\Employee;
+use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -56,6 +58,19 @@ class ShiftSwapController extends Controller
 
         $swap = ShiftSwapRequest::create($data);
 
+        // Notify the target employee
+        $targetEmp = Employee::find($data['target_id']);
+        if ($targetEmp) {
+            NotificationService::create(
+                $targetEmp->user_id,
+                'shift_swap_requested',
+                'Permintaan Tukar Shift',
+                "{$request->user()->employee?->full_name} mengajukan tukar shift dengan Anda.",
+                '🔄',
+                '/my-schedule',
+            );
+        }
+
         return (new ShiftSwapResource($swap->load(['requester', 'target', 'requesterSchedule', 'targetSchedule'])))
             ->response()
             ->setStatusCode(201);
@@ -74,7 +89,17 @@ class ShiftSwapController extends Controller
             $this->executeSwap($shiftSwapRequest);
         }
 
-        return (new ShiftSwapResource($shiftSwapRequest->load(['requester', 'target', 'requesterSchedule', 'targetSchedule'])))
+        $shiftSwapRequest->load(['requester', 'target', 'requesterSchedule', 'targetSchedule']);
+        NotificationService::create(
+            $shiftSwapRequest->requester->user_id,
+            'shift_swap_approved',
+            'Tukar Shift Disetujui',
+            'Permintaan tukar shift Anda telah disetujui.',
+            '✅',
+            '/my-schedule',
+        );
+
+        return (new ShiftSwapResource($shiftSwapRequest))
             ->response();
     }
 
@@ -85,6 +110,15 @@ class ShiftSwapController extends Controller
         }
 
         $shiftSwapRequest->reject($request->user(), $request->input('review_notes'));
+
+        NotificationService::create(
+            $shiftSwapRequest->requester->user_id,
+            'shift_swap_rejected',
+            'Tukar Shift Ditolak',
+            'Permintaan tukar shift Anda ditolak: ' . ($request->input('review_notes') ?: '-'),
+            '❌',
+            '/my-schedule',
+        );
 
         return (new ShiftSwapResource($shiftSwapRequest->load(['requester', 'target', 'requesterSchedule', 'targetSchedule'])))
             ->response();
